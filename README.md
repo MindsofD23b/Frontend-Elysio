@@ -1,8 +1,8 @@
 # Project Assignment  
 ## Elysio – Find your love with ease
 
-**Class:** BMSD23A
-**Module** IPT 9.1
+**Class:** BMSD23A <br>
+**Module:** IPT 9.1 <br>
 **Date:** 2nd Mai 2026  
 
 **Team:**  
