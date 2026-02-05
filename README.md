@@ -165,6 +165,16 @@ The project successfully fulfills the objectives of the IPT-9.1 module and prepa
 
 ---
 
+## Related Repositories
+
+| Repo | Description |
+|------|-------------|
+| **[Frontend](https://github.com/MindsofD23b/Frontend-Elysio)** | React + Tailwind frontend for the Elysio dashboard, user interface, and server management UI. |
+| **[Backend](https://github.com/MindsofD23b/Backend-Elysio)** | API, server logic, authentication, billing integrations, monitoring endpoints, and infrastructure connections. |
+
+
+---
+
 <p align="center">
   <a href="https://github.com/Jamie-Poeffel">
     <img src="https://github.com/Jamie-Poeffel.png" width="100" style="border-radius: 50%; margin: 0 20px;" />
@@ -181,3 +191,5 @@ The project successfully fulfills the objectives of the IPT-9.1 module and prepa
 </p>
 
 ---
+
+
