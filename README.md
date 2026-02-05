@@ -1,8 +1,9 @@
 # Project Assignment  
 ## Elysio – Find your love with ease
 
-**Module:** BMSD23A  
-**Date:** 15 January 2026  
+**Class:** BMSD23A
+**Module** IPT 9.1
+**Date:** 2nd Mai 2026  
 
 **Team:**  
 Gregory Ruoss · Jamie Poeffel · Kush Srigiri · Luis Allamand
