@@ -1,16 +1,19 @@
 import { Tabs } from "expo-router";
-import { HomeIcon, MessageCircle, Settings, Heart, PieChart } from "lucide-react-native";
+import { Heart, HomeIcon, MessageCircle, PieChart, Settings } from "lucide-react-native";
 import { Platform } from "react-native";
+import { useTheme } from "../theme/context";
 
 export default function TabLayout() {
+    const { theme } = useTheme();
+
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: '#FF2D55',
-                tabBarInactiveTintColor: '#C7C7CC',
+                tabBarActiveTintColor: theme.primary,
+                tabBarInactiveTintColor: theme.text,
                 tabBarShowLabel: false,
                 tabBarStyle: {
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: theme.background,
                     borderTopWidth: 0,
                     height: Platform.OS === 'ios' ? 88 : 65,
                     paddingBottom: Platform.OS === 'ios' ? 34 : 12,
