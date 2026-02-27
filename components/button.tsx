@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, useColorScheme } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 
 interface ButtonProps {
     children: React.ReactNode;
@@ -6,14 +6,6 @@ interface ButtonProps {
 }
 
 export default function Button({ children, onPress }: ButtonProps) {
-    let colorScheme = useColorScheme();
-
-    if (colorScheme === "dark") {
-
-    } else {
-
-    }
-
     return (
         <Pressable onPress={onPress} style={styles.button}>
             <Text style={styles.buttonText}>{children}</Text>
