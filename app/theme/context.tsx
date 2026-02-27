@@ -8,5 +8,5 @@ type ThemeContext = {
     gs: ReturnType<typeof makeGlobalStyles>;
 };
 
-export const ThemeContext = createContext<ThemeContext | null>(null);
-export const useTheme = () => useContext(ThemeContext)!;
+export const themeContext = createContext<ThemeContext | null>(null);
+export const useTheme = () => useContext(themeContext)!;

@@ -2,12 +2,13 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 interface ButtonProps {
     children: React.ReactNode;
+    disabled?: boolean;
     onPress: () => void;
 }
 
-export default function Button({ children, onPress }: ButtonProps) {
+export default function Button({ children, disabled, onPress }: ButtonProps) {
     return (
-        <Pressable onPress={onPress} style={styles.button}>
+        <Pressable onPress={onPress} style={styles.button} disabled={disabled}>
             <Text style={styles.buttonText}>{children}</Text>
         </Pressable>
     );
