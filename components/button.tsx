@@ -3,6 +3,7 @@ import { Pressable, Text } from "react-native";
 
 interface ButtonProps {
     children: React.ReactNode;
+    disabled?: boolean;
     onPress: () => void;
 }
 
