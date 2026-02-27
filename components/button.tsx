@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { useTheme } from "@/app/theme/context";
+import { Pressable, Text } from "react-native";
 
 interface ButtonProps {
     children: React.ReactNode;
@@ -6,23 +7,11 @@ interface ButtonProps {
 }
 
 export default function Button({ children, onPress }: ButtonProps) {
+    const { gs } = useTheme();
+
     return (
-        <Pressable onPress={onPress} style={styles.button}>
-            <Text style={styles.buttonText}>{children}</Text>
+        <Pressable onPress={onPress} style={gs.btn}>
+            <Text style={gs.btnText}>{children}</Text>
         </Pressable>
     );
 }
-
-const styles = StyleSheet.create({
-    button: {
-        backgroundColor: "#EC136A",
-        padding: 10,
-        borderRadius: 5,
-        alignItems: "center",
-    },
-    buttonText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "bold",
-    },
-});

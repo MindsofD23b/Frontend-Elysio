@@ -1,12 +1,15 @@
+import { useTheme } from "@/app/theme/context";
 import Button from "@/components/button";
 import { Link } from "expo-router";
 import { HomeIcon } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 export default function Login() {
+    const { gs, theme } = useTheme();
+
     return (
-        <View style={styles.container}>
-            <HomeIcon size={48} color="#EC136A" />
+        <View style={gs.container}>
+            <HomeIcon size={48} color={theme.primary} />
             <Text>Elysio</Text>
 
             <Text>Login to continue</Text>
@@ -17,11 +20,3 @@ export default function Login() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-});

@@ -16,7 +16,7 @@ export const makeGlobalStyles = (theme: Theme) =>
             borderRadius: 8,
             alignItems: "center" as const,
         },
-        btnText: { color: theme.accent, fontWeight: "bold", fontSize: 16 },
+        btnText: { color: theme.text, fontWeight: "bold", fontSize: 16 },
         btnOutline: {
             borderWidth: 1,
             borderColor: theme.primary,
