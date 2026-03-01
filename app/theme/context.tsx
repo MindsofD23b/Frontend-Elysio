@@ -1,7 +1,7 @@
 // theme/context.tsx
 import { createContext, useContext } from "react";
-import { makeGlobalStyles } from "./styles";
-import { colors } from "./theme";
+import { makeGlobalStyles } from "@/app/theme/styles";
+import { colors } from "@/app/theme/theme";
 
 type TThemeContext = {
     theme: typeof colors.light;
