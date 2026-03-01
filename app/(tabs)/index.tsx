@@ -11,7 +11,7 @@ export default function Index() {
         >
             <Text style={gs.bodyText}>Edit app/(tabs)/index.tsx to edit this screen.</Text>
             {/* TODO: REMOVE THIS CODE BEFORE COMMIT */}
-            <Link href="/login">Go to Login</Link>
+            <Link href="/auth/login">Go to Login</Link>
 
         </View>
     );
