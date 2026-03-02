@@ -11,8 +11,8 @@ export default function Register() {
     const styles = makeStyles(theme);
 
     useEffect(() => {
-        router.prefetch("/auth/login/withEmail");
-        router.prefetch("/auth/login/withPhoneNumber");
+        router.prefetch("/auth/register/withEmail");
+        router.prefetch("/auth/register/withPhoneNumber");
     }, []);
 
     return (
@@ -20,19 +20,19 @@ export default function Register() {
             <HomeIcon size={48} color={theme.primary} />
             <Text style={[styles.Title, { marginBottom: 64, color: theme.primary }]}>Elysio</Text>
 
-            <Text style={[styles.Subtitle, { color: theme.text }]}>Login to continue</Text>
-            <Text style={[gs.bodyText, { color: theme.accent, marginBottom: 32 }]}>Welcome back! Please login to your account.</Text>
+            <Text style={[styles.Subtitle, { color: theme.text }]}>Sign Up to continue</Text>
+            <Text style={[gs.bodyText, { color: theme.accent, marginBottom: 32 }]}>Create a new Love</Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
-                <Button onPress={() => router.push("/auth/login/withEmail")} >
+                <Button onPress={() => router.push("/auth/register/withEmail")} >
                     <BtnText>Continue with Email</BtnText>
                 </Button>
-                <Button variante="outline" onPress={() => router.push("/auth/login/withPhoneNumber")}>
+                <Button variante="outline" onPress={() => router.push("/auth/register/withPhoneNumber")}>
                     <BtnText>Continue with Phone Number</BtnText>
                 </Button>
             </View>
 
-            <Link href="/auth/register" style={{ color: theme.text, fontSize: 14, textAlign: "center" }}>
-                Don{"'"}t have an account?{" "}<Text style={{ color: theme.primary }}>Register</Text>
+            <Link href="/auth/login" style={{ color: theme.text, fontSize: 14, textAlign: "center" }}>
+                Already have an <Text style={{ color: theme.primary }}>Account</Text>
             </Link>
 
             <View style={{ width: "100%", flexDirection: "row", gap: 8, alignItems: "center", marginVertical: 16 }}>

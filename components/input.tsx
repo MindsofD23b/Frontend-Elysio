@@ -23,6 +23,9 @@ export default function Input({ placeholder, secureTextEntry, textContentType, k
             onChangeText={onChangeText}
             value={value}
             autoComplete={autoComplete}
+            returnKeyType="done"
+            submitBehavior="blurAndSubmit"
+            autoCapitalize="none"
             placeholderTextColor={theme.primary + "BF"}
             style={[{
                 width: "100%",

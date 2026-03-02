@@ -3,7 +3,6 @@ import { Loader2 as Load } from "lucide-react-native";
 import { createContext, useContext, useEffect, useRef } from "react";
 import { Animated, Pressable, StyleProp, Text, TextStyle, View, ViewProps, ViewStyle } from "react-native";
 
-// Internal context — variante flows from Button → BtnText automatically
 const ButtonContext = createContext<"default" | "outline">("default");
 
 interface ButtonProps {
