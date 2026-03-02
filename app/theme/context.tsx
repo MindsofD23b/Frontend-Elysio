@@ -1,6 +1,6 @@
-import { createContext, useContext } from 'react';
-import { makeGlobalStyles } from '@/app/theme/styles';
-import { colors } from '@/app/theme/theme';
+import { createContext, useContext } from "react";
+import { makeGlobalStyles } from "@/app/theme/styles";
+import { colors } from "@/app/theme/theme";
 
 type TThemeContext = {
   theme: typeof colors.light;

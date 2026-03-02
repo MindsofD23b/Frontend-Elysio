@@ -1,16 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
-import { BtnText, Button } from '@/components/button';
-import React, { useContext } from 'react';
-import {
-  Image,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import { BtnText, Button } from "@/components/button";
+import React, { useContext } from "react";
+import { Image, Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
-import { ThemeContext } from '../theme/context';
+import { ThemeContext } from "../theme/context";
 
 export default function SettingsScreen() {
   const { theme } = useContext(ThemeContext)!;
@@ -28,14 +21,12 @@ export default function SettingsScreen() {
         <View style={styles.profileWrap}>
           <Image
             source={{
-              uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80',
+              uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80",
             }}
             style={styles.avatar}
           />
           <Text style={[styles.name, { color: theme.text }]}>Lara Gut</Text>
-          <Text style={[styles.email, { color: mutedText }]}>
-            Lara.gut@example.com
-          </Text>
+          <Text style={[styles.email, { color: mutedText }]}>Lara.gut@example.com</Text>
         </View>
 
         {/* Menu */}
@@ -81,24 +72,17 @@ export default function SettingsScreen() {
         <View style={styles.modeRow}>
           <View style={styles.modeItem}>
             <Ionicons name="sunny-outline" size={20} color={mutedText} />
-            <Text style={[styles.modeMuted, { color: mutedText }]}>
-              Lightmode
-            </Text>
+            <Text style={[styles.modeMuted, { color: mutedText }]}>Lightmode</Text>
           </View>
 
           <View style={styles.modeItem}>
             <Ionicons name="moon-outline" size={20} color={theme.primary} />
-            <Text style={[styles.modeActive, { color: theme.primary }]}>
-              Darkmode
-            </Text>
+            <Text style={[styles.modeActive, { color: theme.primary }]}>Darkmode</Text>
           </View>
         </View>
 
         {/* LogOut Button */}
-        <Button
-          style={{ marginTop: 'auto', marginBottom: 30 }}
-          onPress={() => {}}
-        >
+        <Button style={{ marginTop: "auto", marginBottom: 30 }} onPress={() => {}}>
           <BtnText>Log Out</BtnText>
         </Button>
       </View>
@@ -130,7 +114,7 @@ function MenuRow({
 }
 
 function withAlpha(hex: string, alpha: number) {
-  const clean = hex.replace('#', '');
+  const clean = hex.replace("#", "");
   if (clean.length !== 6) return `rgba(255,255,255,${alpha})`;
   const r = parseInt(clean.slice(0, 2), 16);
   const g = parseInt(clean.slice(2, 4), 16);
@@ -145,17 +129,17 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 10,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
 
   title: {
     fontSize: 26,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
 
   profileWrap: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
   },
   avatar: {
@@ -165,7 +149,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 6,
   },
   email: {
@@ -182,24 +166,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   rowLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   modeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 8,
   },
   modeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -207,14 +191,14 @@ const styles = StyleSheet.create({
   },
   modeMuted: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   modeActive: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   buttonWrapper: {
-    marginBottom: Platform.OS === 'ios' ? 10 : 18,
+    marginBottom: Platform.OS === "ios" ? 10 : 18,
   },
 });
