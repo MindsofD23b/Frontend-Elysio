@@ -3,9 +3,9 @@ import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
 import { router } from "expo-router";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { set, z } from "zod";
+import { z } from "zod";
 
 const schema = z.object({
     password: z

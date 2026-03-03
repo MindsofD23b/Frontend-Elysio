@@ -70,6 +70,7 @@ export default function Input({
                     height: 50,
                     borderWidth: 1,
                     borderColor: theme.primary,
+                    color: theme.text,
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     marginTop: 16,

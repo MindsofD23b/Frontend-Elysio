@@ -147,6 +147,7 @@ export default function WithPhoneNumber() {
                             submitBehavior="blurAndSubmit"
                             autoCapitalize="none"
                             autoComplete="tel"
+                            style={{ color: theme.text }}
                             onChangeText={(text) => setTel(text)}
                             value={tel}
                         />
