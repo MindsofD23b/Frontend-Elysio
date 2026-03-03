@@ -2,19 +2,16 @@ import BackWrapper from '@/components/backwrapper';
 import { BtnText, Button } from '@/components/button';
 import { useTheme } from '@/app/theme/context';
 import { router } from 'expo-router';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  Animated,
-  FlatList,
   Keyboard,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
-  Dimensions,
 } from 'react-native';
+
 import {
   Camera,
   ChefHat,
@@ -27,37 +24,24 @@ import {
   Mountain,
   Snowflake,
   Waves,
-  Hash,
   ChessKnight,
-  X,
-  Search,
 } from 'lucide-react-native';
+import { Theme } from '@/app/theme/theme';
 
 type InterestItem = {
   label: string;
   icon: React.ComponentType<{ size?: number; color?: string }>;
 };
 
-type InterestGroup = {
-  title: string;
-  items: string[];
-};
-
-const PINK = '#FF63A1';
-const GREY_BORDER = 'rgba(0,0,0,0.25)';
-const GREY_TEXT = 'rgba(0,0,0,0.75)';
-const GREY_BG = '#FFFFFF';
-
 const MIN = 6;
 const MAX = 12;
 
-// Base interests (no preselection!)
 const INTERESTS: InterestItem[] = [
   { label: 'Movie', icon: Film },
   { label: 'Swimming', icon: Waves },
   { label: 'Ski', icon: Snowflake },
   { label: 'Gym', icon: Dumbbell },
-  { label: 'Reading Books', icon: BookOpen },
+  { label: 'Reading', icon: BookOpen },
   { label: 'Cooking', icon: ChefHat },
   { label: 'Photography', icon: Camera },
   { label: 'Hiking', icon: Mountain },
@@ -67,98 +51,69 @@ const INTERESTS: InterestItem[] = [
   { label: 'Chess', icon: ChessKnight },
 ];
 
-// Groups for the popup (you can extend)
-const GROUPS: InterestGroup[] = [
-  { title: 'Popular', items: INTERESTS.map((i) => i.label) },
-  { title: 'Sports', items: ['Swimming', 'Gym', 'Hiking', 'Ski'] },
-  { title: 'Creative', items: ['Art', 'Photography', 'Music', 'Movie'] },
-];
-
-function getIconForLabel(label: string) {
-  const found = INTERESTS.find(
-    (x) => x.label.toLowerCase() === label.toLowerCase(),
-  );
-  return found?.icon ?? Hash; //
-}
-
 export default function Interests() {
-  const { theme } = useTheme();
+  const { theme, gs } = useTheme();
+  const styles = makeStyles(theme);
+
+  const PINK = theme.primary;
+  const BORDER = theme.accent + '4D';
 
   const [selected, setSelected] = useState<string[]>([]);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [activeGroup, setActiveGroup] = useState<InterestGroup>(GROUPS[0]);
-
+  const [customText, setCustomText] = useState('');
+  const [customInterests, setCustomInterests] = useState<string[]>([]);
   const [errorOpen, setErrorOpen] = useState(false);
 
-  const anim = useRef(new Animated.Value(0)).current;
-  const screenH = Dimensions.get('window').height;
-
   const canContinue = selected.length >= MIN && selected.length <= MAX;
-
-  const showError = () => setErrorOpen(true);
-  const hideError = () => setErrorOpen(false);
 
   const toggleInterest = (label: string) => {
     setSelected((prev) => {
       const exists = prev.includes(label);
-
       if (exists) return prev.filter((x) => x !== label);
-
-      // Trying to add new
       if (prev.length >= MAX) {
-        showError();
+        setErrorOpen(true);
         return prev;
       }
-
       return [...prev, label];
     });
   };
 
-  const openSheet = () => {
-    setSheetOpen(true);
-    setQuery('');
-    Animated.timing(anim, {
-      toValue: 1,
-      duration: 220,
-      useNativeDriver: true,
-    }).start();
+  const removeCustom = (label: string) => {
+    setSelected((prev) => prev.filter((x) => x !== label));
+    setCustomInterests((prev) => prev.filter((x) => x !== label));
   };
 
-  const closeSheet = () => {
+  const addCustom = () => {
+    const raw = customText.trim();
+    if (!raw) return;
+    if (!/^[A-Za-z]{1,16}$/.test(raw)) return;
+
+    const label = raw[0].toUpperCase() + raw.slice(1).toLowerCase();
+
+    const existsAnywhere =
+      INTERESTS.some((i) => i.label.toLowerCase() === label.toLowerCase()) ||
+      customInterests.some((x) => x.toLowerCase() === label.toLowerCase());
+
+    if (!existsAnywhere) setCustomInterests((prev) => [label, ...prev]);
+
+    setCustomText('');
     Keyboard.dismiss();
-    Animated.timing(anim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) setSheetOpen(false);
-    });
+    toggleInterest(label);
   };
 
-  const sheetTranslateY = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [screenH, 0],
-  });
-
-  const filteredItems = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return activeGroup.items;
-
-    const typed = query.trim();
-    const inGroup = activeGroup.items.some((x) => x.toLowerCase() === q);
-    const matches = activeGroup.items.filter((x) =>
-      x.toLowerCase().includes(q),
-    );
-
-    // allow custom interest suggestion on top
-    if (typed.length > 0 && !inGroup) return [typed, ...matches];
-    return matches;
-  }, [query, activeGroup]);
+  const gridItems = useMemo(() => {
+    return [
+      ...INTERESTS.map((i) => ({
+        kind: 'default' as const,
+        label: i.label,
+        icon: i.icon,
+      })),
+      ...customInterests.map((label) => ({ kind: 'custom' as const, label })),
+    ];
+  }, [customInterests]);
 
   const onContinue = () => {
     if (!canContinue) {
-      showError();
+      setErrorOpen(true);
       return;
     }
     router.push('/auth/register/password');
@@ -166,454 +121,198 @@ export default function Interests() {
 
   return (
     <BackWrapper>
-      <View style={[styles.page, { backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.text }]}>
+      <View style={styles.page}>
+        <Text style={[gs.h1, { marginTop: 10, color: theme.text }]}>
           Select your Interest
         </Text>
 
-        <Text style={[styles.subtitle, { color: theme.text + '7A' }]}>
+        <Text
+          style={[gs.bodyText, { marginTop: 10, color: theme.text + '54' }]}
+        >
           Pick 6 interests to match with users who have similar things in common
         </Text>
 
-        {/* Search pill */}
-        <Pressable
-          onPress={openSheet}
-          style={[
-            styles.searchPill,
-            { borderColor: GREY_BORDER, backgroundColor: '#fff' },
-          ]}
-        >
-          <Search size={16} color="rgba(0,0,0,0.45)" />
-          <Text style={{ color: 'rgba(0,0,0,0.45)', fontSize: 14 }}>
-            Search / Groups / Add your own
-          </Text>
-        </Pressable>
-
-        {/* Grid */}
         <View style={styles.grid}>
-          {INTERESTS.map(({ label, icon: Icon }) => {
-            const active = selected.includes(label);
+          <View
+            style={[
+              styles.chip,
+              styles.addChip,
+              { borderColor: BORDER, backgroundColor: theme.background },
+            ]}
+          >
+            <TextInput
+              value={customText}
+              onChangeText={(t) =>
+                setCustomText(t.replace(/[^A-Za-z]/g, '').slice(0, 16))
+              }
+              placeholder="Add"
+              placeholderTextColor={theme.text + '66'}
+              style={[styles.addInput, { color: theme.text }]}
+              maxLength={16}
+              returnKeyType="done"
+              onSubmitEditing={addCustom}
+            />
+            <Pressable
+              onPress={addCustom}
+              style={[styles.addBtn, { borderColor: BORDER }]}
+            >
+              <Text style={{ color: theme.text, fontWeight: '800' }}>+</Text>
+            </Pressable>
+          </View>
+
+          {gridItems.map((item) => {
+            const active = selected.includes(item.label);
+
+            if (item.kind === 'default') {
+              const Icon = item.icon;
+              return (
+                <Pressable
+                  key={item.label}
+                  onPress={() => toggleInterest(item.label)}
+                  style={[
+                    styles.chip,
+                    {
+                      borderColor: active ? PINK : BORDER,
+                      backgroundColor: active ? PINK : theme.background,
+                    },
+                  ]}
+                >
+                  <Icon size={16} color={active ? '#fff' : theme.text} />
+                  <Text
+                    style={[
+                      styles.chipText,
+                      { color: active ? '#fff' : theme.text },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            }
+
             return (
               <Pressable
-                key={label}
-                onPress={() => toggleInterest(label)}
+                key={`custom-${item.label}`}
+                onPress={() => removeCustom(item.label)}
                 style={[
                   styles.chip,
-                  {
-                    borderColor: active ? PINK : GREY_BORDER,
-                    backgroundColor: active ? PINK : GREY_BG,
-                  },
+                  { borderColor: PINK, backgroundColor: PINK },
                 ]}
               >
-                <Icon size={18} color={active ? '#fff' : '#000'} />
-                <Text
-                  style={[styles.chipText, { color: active ? '#fff' : '#000' }]}
-                >
-                  {label}
+                <Text style={[styles.chipText, { color: '#fff' }]}>
+                  {item.label}
                 </Text>
               </Pressable>
             );
           })}
-
-          {/* show custom selected interests too */}
-          {selected
-            .filter((x) => !INTERESTS.some((i) => i.label === x))
-            .map((label) => {
-              const Icon = getIconForLabel(label);
-              return (
-                <Pressable
-                  key={label}
-                  onPress={() => toggleInterest(label)}
-                  style={[
-                    styles.chip,
-                    { borderColor: PINK, backgroundColor: PINK },
-                  ]}
-                >
-                  <Icon size={18} color="#fff" />
-                  <Text style={[styles.chipText, { color: '#fff' }]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
         </View>
 
-        {/* Continue */}
         <Button
-          style={[
-            styles.continueBtn,
-            {
-              marginTop: 'auto',
-              marginBottom: 30,
-              backgroundColor: canContinue ? PINK : 'rgba(0,0,0,0.15)',
-            },
-          ]}
+          style={{ marginTop: 'auto', marginBottom: 30 }}
+          disabled={!canContinue}
           onPress={onContinue}
         >
           <BtnText>Continue</BtnText>
         </Button>
 
-        {/* Bottom sheet */}
-        <Modal visible={sheetOpen} transparent animationType="none">
-          <Pressable style={styles.backdrop} onPress={closeSheet} />
-
-          <Animated.View
-            style={[
-              styles.sheet,
-              {
-                transform: [{ translateY: sheetTranslateY }],
-                backgroundColor: theme.background,
-              },
-            ]}
+        {errorOpen ? (
+          <Pressable
+            style={styles.errorWrap}
+            onPress={() => setErrorOpen(false)}
           >
-            <View style={styles.handle} />
-
-            <View style={styles.sheetHeader}>
-              <Text style={[styles.sheetTitle, { color: theme.text }]}>
-                Pick Interests
+            <View
+              style={[styles.errorCard, { backgroundColor: theme.background }]}
+            >
+              <Text style={[styles.errorTitle, { color: theme.text }]}>
+                Selection limit
               </Text>
-
-              <Pressable onPress={closeSheet} style={styles.closeBtn}>
-                <X size={18} color={theme.text} />
+              <Text style={[styles.errorText, { color: theme.text + 'B3' }]}>
+                Please choose minimum {MIN} and maximum {MAX} interests.
+              </Text>
+              <Pressable
+                style={[styles.errorOk, { backgroundColor: PINK }]}
+                onPress={() => setErrorOpen(false)}
+              >
+                <Text style={styles.errorOkText}>OK</Text>
               </Pressable>
             </View>
-
-            {/* Groups */}
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.groupRow}
-              data={GROUPS}
-              keyExtractor={(g) => g.title}
-              renderItem={({ item }) => {
-                const active = item.title === activeGroup.title;
-                return (
-                  <Pressable
-                    onPress={() => {
-                      setActiveGroup(item);
-                      setQuery('');
-                    }}
-                    style={[
-                      styles.groupPill,
-                      {
-                        borderColor: GREY_BORDER,
-                        backgroundColor: active ? PINK : '#fff',
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        color: active ? '#fff' : '#000',
-                        fontWeight: '600',
-                        fontSize: 13,
-                      }}
-                    >
-                      {item.title}
-                    </Text>
-                  </Pressable>
-                );
-              }}
-            />
-
-            {/* Search / Add */}
-            <View
-              style={[
-                styles.searchBox,
-                { borderColor: GREY_BORDER, backgroundColor: '#fff' },
-              ]}
-            >
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Type your interest…"
-                placeholderTextColor="rgba(0,0,0,0.45)"
-                style={styles.searchInput}
-                returnKeyType="done"
-                onSubmitEditing={() => {
-                  const t = query.trim();
-                  if (!t) return;
-
-                  toggleInterest(t);
-                  setQuery('');
-                }}
-              />
-              {query.length > 0 ? (
-                <Pressable onPress={() => setQuery('')} style={styles.clearX}>
-                  <X size={16} color="rgba(0,0,0,0.55)" />
-                </Pressable>
-              ) : null}
-            </View>
-
-            {/* Items */}
-            <FlatList
-              data={filteredItems}
-              keyExtractor={(x) => x}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 110 }}
-              renderItem={({ item }) => {
-                const active = selected.includes(item);
-                const Icon = getIconForLabel(item);
-
-                return (
-                  <Pressable
-                    onPress={() => toggleInterest(item)}
-                    style={[
-                      styles.sheetRow,
-                      {
-                        borderColor: 'rgba(0,0,0,0.08)',
-                        backgroundColor: active
-                          ? 'rgba(255,99,161,0.12)'
-                          : 'transparent',
-                      },
-                    ]}
-                  >
-                    <Icon
-                      size={18}
-                      color={active ? PINK : 'rgba(0,0,0,0.75)'}
-                    />
-                    <Text
-                      style={{
-                        color: GREY_TEXT,
-                        fontSize: 16,
-                        flex: 1,
-                        marginLeft: 10,
-                      }}
-                    >
-                      {item}
-                    </Text>
-                    <View
-                      style={[
-                        styles.checkDot,
-                        { backgroundColor: active ? PINK : 'rgba(0,0,0,0.12)' },
-                      ]}
-                    />
-                  </Pressable>
-                );
-              }}
-            />
-
-            <View style={styles.sheetBottom}>
-              <Button onPress={closeSheet}>
-                <BtnText>Select</BtnText>
-              </Button>
-            </View>
-          </Animated.View>
-        </Modal>
-
-        {/* Error popup */}
-        <Modal visible={errorOpen} transparent animationType="fade">
-          <Pressable style={styles.errorBackdrop} onPress={hideError} />
-          <View style={styles.errorCard}>
-            <Text style={styles.errorTitle}>Selection limit</Text>
-            <Text style={styles.errorText}>
-              Please choose minimum {MIN} and maximum {MAX} interests.
-            </Text>
-            <Pressable style={styles.errorOk} onPress={hideError}>
-              <Text style={styles.errorOkText}>OK</Text>
-            </Pressable>
-          </View>
-        </Modal>
+          </Pressable>
+        ) : null}
       </View>
     </BackWrapper>
   );
 }
 
-const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    flexDirection: 'column',
-    width: '100%',
-    height: '100%',
-    paddingHorizontal: 24,
-    paddingTop: 35,
-  },
+const makeStyles = (theme: Theme) =>
+  StyleSheet.create({
+    page: {
+      flex: 1,
+      width: '100%',
+      height: '100%',
+      paddingHorizontal: 24,
+    },
 
-  title: {
-    fontSize: 34,
-    fontWeight: '800',
-  },
-  subtitle: {
-    marginTop: 10,
-    fontSize: 16,
-    lineHeight: 22,
-  },
+    grid: {
+      marginTop: 22,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
 
-  searchPill: {
-    marginTop: 18,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    alignSelf: 'flex-start',
-  },
+    chip: {
+      borderWidth: 1.5,
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      minWidth: 78,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      justifyContent: 'center',
+    },
 
-  grid: {
-    marginTop: 24,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-  },
+    chipText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
 
-  chip: {
-    borderWidth: 1.5,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minWidth: 90,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    justifyContent: 'center',
-  },
-  chipText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
+    addChip: {
+      minWidth: 150,
+      justifyContent: 'space-between',
+      gap: 10,
+    },
 
-  continueBtn: {
-    width: '100%',
-  },
+    addInput: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
+    },
 
-  // Sheet
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 18,
-    paddingTop: 10,
-    minHeight: '72%',
-  },
-  handle: {
-    width: 44,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    alignSelf: 'center',
-    marginBottom: 10,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-  },
-  sheetTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    backgroundColor: '#fff',
-  },
+    addBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  groupRow: {
-    paddingVertical: 14,
-    gap: 10,
-    paddingHorizontal: 4,
-  },
-  groupPill: {
-    height: 36,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    errorWrap: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+    },
 
-  searchBox: {
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 4,
-    marginBottom: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#000',
-  },
-  clearX: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  sheetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  checkDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-  },
-
-  sheetBottom: {
-    position: 'absolute',
-    left: 18,
-    right: 18,
-    bottom: 24,
-  },
-
-  // Error modal
-  errorBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  errorCard: {
-    position: 'absolute',
-    left: 24,
-    right: 24,
-    top: '40%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 18,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#000',
-  },
-  errorText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: 'rgba(0,0,0,0.7)',
-    lineHeight: 20,
-  },
-  errorOk: {
-    marginTop: 14,
-    alignSelf: 'flex-end',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: PINK,
-  },
-  errorOkText: {
-    color: '#fff',
-    fontWeight: '800',
-  },
-});
+    errorCard: { borderRadius: 16, padding: 18 },
+    errorTitle: { fontSize: 18, fontWeight: '800' },
+    errorText: { marginTop: 8, fontSize: 14, lineHeight: 20 },
+    errorOk: {
+      marginTop: 14,
+      alignSelf: 'flex-end',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 10,
+    },
+    errorOkText: { color: '#fff', fontWeight: '800' },
+  });
