@@ -15,11 +15,11 @@ export default function TabLayout() {
                 tabBarStyle: {
                     backgroundColor: theme.background,
                     borderTopWidth: 0,
-                    height: Platform.OS === 'ios' ? 88 : 65,
-                    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
+                    height: Platform.OS === "ios" ? 88 : 65,
+                    paddingBottom: Platform.OS === "ios" ? 34 : 12,
                     paddingTop: 12,
                     elevation: 0,
-                    shadowColor: '#000',
+                    shadowColor: "#000",
                     shadowOffset: { width: 0, height: -1 },
                     shadowOpacity: 0.1,
                     shadowRadius: 3,
@@ -32,21 +32,17 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="favorites"
                 options={{
-                    title: 'Favorites',
+                    title: "Favorites",
                     headerShown: false,
                     tabBarIcon: ({ color, focused }) => (
-                        <Heart
-                            size={26}
-                            color={color}
-                            strokeWidth={focused ? 2 : 1.5}
-                        />
+                        <Heart size={26} color={color} strokeWidth={focused ? 2 : 1.5} />
                     ),
                 }}
             />
             <Tabs.Screen
                 name="stats"
                 options={{
-                    title: 'Stats',
+                    title: "Stats",
                     headerShown: false,
                     tabBarIcon: ({ color, focused }) => (
                         <PieChart
@@ -60,7 +56,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'Home',
+                    title: "Home",
                     headerShown: false,
                     tabBarIcon: ({ color, focused }) => (
                         <HomeIcon
@@ -74,7 +70,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="chat"
                 options={{
-                    title: 'Chat',
+                    title: "Chat",
                     headerShown: false,
                     tabBarIcon: ({ color, focused }) => (
                         <MessageCircle
@@ -88,7 +84,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="settings"
                 options={{
-                    title: 'Settings',
+                    title: "Settings",
                     headerShown: false,
                     tabBarIcon: ({ color, focused }) => (
                         <Settings

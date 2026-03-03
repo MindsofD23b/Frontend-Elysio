@@ -8,18 +8,16 @@ import { router } from "expo-router";
 
 type FormData = {
     email: string;
-    password: string;
 };
 
 export default function WithEmail() {
     useEffect(() => {
-        router.prefetch("/(tabs)");
+        router.prefetch("/auth/register/sendVerificationEmail");
     }, []);
 
     const { gs, theme } = useTheme();
 
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<{
         email?: { message: string };
@@ -37,9 +35,13 @@ export default function WithEmail() {
 
         setLoading(true);
         console.log(data);
+
         setTimeout(() => {
             setLoading(false);
-            router.push("/(tabs)");
+            router.push({
+                pathname: "/auth/register/sendVerificationEmail",
+                params: { email: data.email },
+            });
         }, 2000);
     };
 
@@ -54,12 +56,12 @@ export default function WithEmail() {
                         height: "100%",
                     }}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>Login with Email</Text>
+                    <Text style={[gs.h1, { marginTop: 35 }]}>Enter your Email</Text>
                     <Text
                         style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}
                     >
                         Please enter your{" "}
-                        <Text style={{ fontWeight: "bold" }}>Credentials</Text>
+                        <Text style={{ fontWeight: "bold" }}>Email Address</Text>
                     </Text>
                     <View style={{ width: "100%", marginTop: 30 }}>
                         <Input
@@ -74,25 +76,13 @@ export default function WithEmail() {
                                 {errors.email.message}
                             </Text>
                         )}
-                        <Input
-                            placeholder="Password"
-                            secureTextEntry
-                            onChangeText={(text) => setPassword(text)}
-                            value={password}
-                            autoComplete="current-password"
-                        />
-                        {errors.password && (
-                            <Text style={{ color: "red", fontSize: 12 }}>
-                                {errors.password.message}
-                            </Text>
-                        )}
                     </View>
                     <Button
                         style={{ marginTop: "auto", marginBottom: 0 }}
-                        onPress={() => onSubmit({ email, password })}
+                        onPress={() => onSubmit({ email })}
                         disabled={loading}
                     >
-                        {loading ? <Loader /> : <BtnText>Login</BtnText>}
+                        {loading ? <Loader /> : <BtnText>Continue</BtnText>}
                     </Button>
                 </View>
             </BackWrapper>

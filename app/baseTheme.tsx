@@ -8,9 +8,5 @@ export default function BaseTheme({ children }: { children: React.ReactNode }) {
   const theme = colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const gs = makeGlobalStyles(theme);
 
-  return (
-    <ThemeContext.Provider value={{ theme, gs }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, gs }}>{children}</ThemeContext.Provider>;
 }
