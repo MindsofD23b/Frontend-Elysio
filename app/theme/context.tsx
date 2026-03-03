@@ -3,8 +3,8 @@ import { makeGlobalStyles } from "@/app/theme/styles";
 import { colors } from "@/app/theme/theme";
 
 type TThemeContext = {
-  theme: typeof colors.light;
-  gs: ReturnType<typeof makeGlobalStyles>;
+    theme: typeof colors.light;
+    gs: ReturnType<typeof makeGlobalStyles>;
 };
 
 export const ThemeContext = createContext<TThemeContext | null>(null);
