@@ -32,7 +32,7 @@ export default function Login() {
             </View>
 
             <Link href="/auth/register" style={{ color: theme.text, fontSize: 14, textAlign: "center" }}>
-                Don`t have an account?{" "}<Text style={{ color: theme.primary }}>Register</Text>
+                Don{"'"}t have an account?{" "}<Text style={{ color: theme.primary }}>Register</Text>
             </Link>
 
             <View style={{ width: "100%", flexDirection: "row", gap: 8, alignItems: "center", marginVertical: 16 }}>
