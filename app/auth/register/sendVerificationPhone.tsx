@@ -1,8 +1,7 @@
 import BackWrapper from "@/components/backwrapper";
-import { Text, TextInput, View } from "react-native";
+import { Text } from "react-native";
 import { useTheme } from "@/app/theme/context";
 import { useSearchParams } from "expo-router/build/hooks";
-import Input from "@/components/input";
 import OTPInputs from "@/components/OTP";
 import { useEffect, useState } from "react";
 import { BtnText, Button, Loader } from "@/components/button";
@@ -48,7 +47,7 @@ export default function SendVerificationPhone() {
                 <Text
                     style={[
                         gs.bodyText,
-                        { marginTop: 30, color: theme.base + "54", textAlign: "left" },
+                        { marginTop: 10, color: theme.base + "54", textAlign: "left" },
                     ]}
                 >
                     We have sent a code to your
@@ -60,7 +59,7 @@ export default function SendVerificationPhone() {
                     </Text>
                 </Text>
 
-                <OTPInputs onChange={(code) => setCode(code)} style={{ marginTop: 40 }} />
+                <OTPInputs onChange={(code) => setCode(code)} style={{ marginTop: 15 }} />
 
                 {error.otp && (
                     <Text style={{ color: "red", fontSize: 12 }}>

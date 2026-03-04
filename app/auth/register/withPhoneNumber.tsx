@@ -127,9 +127,10 @@ export default function WithPhoneNumber() {
                                 onBackgroundTextColor: theme.text,
                                 filterPlaceholderTextColor: theme.text,
                             }}
+                            withFlag
                             withModal
                             withFilter
-                            withFlag
+                            withEmoji
                             countryCode={countryCode}
                             containerButtonStyle={{
                                 alignSelf: "flex-start",

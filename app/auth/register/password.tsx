@@ -17,7 +17,7 @@ const schema = z.object({
 });
 
 export default function Password() {
-    const { gs } = useTheme();
+    const { gs, theme } = useTheme();
 
     useEffect(() => {
         router.prefetch("/auth/register/gender");
@@ -70,8 +70,17 @@ export default function Password() {
         <>
             <BackWrapper>
                 <Text style={[gs.h1, { marginTop: 35 }]}>Set Your Password</Text>
+                <Text
+                    style={[
+                        gs.bodyText,
+                        { marginTop: 10, color: theme.base + "54", textAlign: "left" },
+                    ]}
+                >
+                    Your Password keeps your account safe.{"\n"}
+                    <Text style={{ fontWeight: "bold" }}>Choose wisely</Text>
+                </Text>
 
-                <View style={{ marginTop: 30 }}>
+                <View style={{ marginTop: 15 }}>
                     <Input
                         placeholder="Enter Password"
                         textContentType="newPassword"

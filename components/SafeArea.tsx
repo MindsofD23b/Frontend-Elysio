@@ -1,5 +1,5 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/app/theme/context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar, useColorScheme, View } from "react-native";
 
 export default function SafeAreaWrapper({ children }: { children: React.ReactNode }) {
