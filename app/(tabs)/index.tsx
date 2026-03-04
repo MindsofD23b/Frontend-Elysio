@@ -1,5 +1,8 @@
+import { useEffect, useRef } from "react";
 import {
+    Animated,
     Dimensions,
+    Easing,
     Image,
     Pressable,
     SafeAreaView,
@@ -7,12 +10,51 @@ import {
     Text,
     View,
 } from "react-native";
-
 const { width } = Dimensions.get("window");
 const GAP = 12;
 const PAD = 16;
 const COL_W = (width - PAD * 2 - GAP) / 2;
-
+const spin = useRef(new Animated.Value(0)).current;
+const spin2 = useRef(new Animated.Value(0)).current;
+const spin3 = useRef(new Animated.Value(0)).current;
+useEffect(() => {
+    Animated.loop(
+        Animated.timing(spin, {
+            toValue: 1,
+            duration: 2200,
+            easing: Easing.linear,
+            useNativeDriver: true,
+        }),
+    ).start();
+    Animated.loop(
+        Animated.timing(spin2, {
+            toValue: 1,
+            duration: 2200,
+            easing: Easing.linear,
+            useNativeDriver: true,
+        }),
+    ).start();
+    Animated.loop(
+        Animated.timing(spin3, {
+            toValue: 1,
+            duration: 2200,
+            easing: Easing.linear,
+            useNativeDriver: true,
+        }),
+    ).start();
+}, []);
+const r1 = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+});
+const r2 = spin2.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["360deg", "0deg"],
+}); // opposite
+const r3 = spin3.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+});
 const images = [
     // left column
     {
@@ -94,9 +136,27 @@ export default function Index() {
 
                 <View style={styles.centerWrap} pointerEvents="box-none">
                     {/* Rings */}
-                    <View style={[styles.ring, styles.ring1]} />
-                    <View style={[styles.ring, styles.ring2]} />
-                    <View style={[styles.ring, styles.ring3]} />
+                    <Animated.View
+                        style={[
+                            styles.ring,
+                            styles.ring1,
+                            { transform: [{ rotate: r1 }] },
+                        ]}
+                    />
+                    <Animated.View
+                        style={[
+                            styles.ring,
+                            styles.ring2,
+                            { transform: [{ rotate: r2 }] },
+                        ]}
+                    />
+                    <Animated.View
+                        style={[
+                            styles.ring,
+                            styles.ring3,
+                            { transform: [{ rotate: r3 }] },
+                        ]}
+                    />
 
                     {/* Button */}
                     <Pressable onPress={onStart} style={styles.startBtn}>
@@ -107,7 +167,9 @@ export default function Index() {
         </SafeAreaView>
     );
 }
-{/* This Background is only Dark mode must be changed later for Light mode or use Variables*/}
+{
+    /* This Background is only Dark mode must be changed later for Light mode or use Variables*/
+}
 const styles = StyleSheet.create({
     safe: { flex: 1, backgroundColor: "#0b0f14" },
     container: { flex: 1, backgroundColor: "#0b0f14" },
@@ -118,6 +180,7 @@ const styles = StyleSheet.create({
         paddingTop: 14,
         gap: GAP,
     },
+
     col: {
         flex: 1,
         gap: GAP,
@@ -126,7 +189,7 @@ const styles = StyleSheet.create({
     tile: {
         borderRadius: 16,
         overflow: "hidden",
-        backgroundColor: "#121a24", 
+        backgroundColor: "#121a24",
     },
     tileImg: {
         width: "100%",
@@ -145,7 +208,7 @@ const styles = StyleSheet.create({
     startBtn: {
         width: 150,
         height: 150,
-        borderRadius: 999,
+        borderRadius: 75,
         backgroundColor: "#ff1f8f",
         alignItems: "center",
         justifyContent: "center",
@@ -160,12 +223,14 @@ const styles = StyleSheet.create({
         fontWeight: "800",
         letterSpacing: 1,
         color: "#111",
+        textAlign: "center",
     },
 
     ring: {
         position: "absolute",
         borderColor: "#ff1f8f",
         borderRadius: 999,
+        borderStyle: "dashed",
     },
     ring1: { width: 210, height: 210, borderWidth: 10, opacity: 1 },
     ring2: { width: 260, height: 260, borderWidth: 6, opacity: 0.9 },
