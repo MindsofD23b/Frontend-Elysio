@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { BtnText, Button } from "@/components/button";
 import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
-import { ThemeContext } from "@/app/theme/context";
+import { useTheme } from "../theme/context";
+import { colors } from "../theme/theme";
 
 export default function SettingsScreen() {
     const { theme, setTheme } = useTheme();
