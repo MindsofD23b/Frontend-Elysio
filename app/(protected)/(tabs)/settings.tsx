@@ -3,7 +3,7 @@ import { BtnText, Button } from "@/components/button";
 import React, { useContext } from "react";
 import { Image, Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
-import { ThemeContext } from "../theme/context";
+import { ThemeContext } from "../../theme/context";
 
 export default function SettingsScreen() {
     const { theme } = useContext(ThemeContext)!;

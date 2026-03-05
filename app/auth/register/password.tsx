@@ -84,9 +84,10 @@ export default function Password() {
                     <Input
                         placeholder="Enter Password"
                         textContentType="newPassword"
-                        value={password}
                         passwordRules="minlength: 8;"
-                        autoComplete="new-password"
+                        value={password}
+                        autoComplete="current-password"
+                        keyboardType="default"
                         secureTextEntry
                         onChangeText={(val) => setPassword(val)}
                     />
@@ -98,9 +99,8 @@ export default function Password() {
                     <Input
                         placeholder="Confirm Password"
                         textContentType="newPassword"
-                        passwordRules="minlength: 8;"
                         value={confPassword}
-                        autoComplete="new-password"
+                        autoComplete="current-password"
                         secureTextEntry
                         onChangeText={(val) => setConfPassword(val)}
                     />
