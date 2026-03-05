@@ -2,7 +2,8 @@ import { useTheme } from "@/app/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { Link, router } from "expo-router";
 import { HomeIcon } from "lucide-react-native";
-import { Image, StyleSheet, Text, View, useColorScheme } from "react-native";
+import { StyleSheet, Text, View, useColorScheme } from "react-native";
+import { Image } from "expo-image";
 import { Theme } from "@/app/theme/theme";
 import { useEffect } from "react";
 
@@ -96,6 +97,10 @@ export default function Login() {
                     <Image
                         source={require("@/assets/google.png")}
                         style={{ width: 20, height: 20, marginRight: 8 }}
+                        placeholder={
+                            "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
+                        }
+                        transition={1000}
                     />
                     <BtnText style={{ color: theme.text }}>Google</BtnText>
                 </Button>
@@ -108,11 +113,19 @@ export default function Login() {
                         <Image
                             source={require("@/assets/apple_dark.png")}
                             style={{ width: 20, height: 20, marginRight: 8 }}
+                            placeholder={
+                                "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
+                            }
+                            transition={1000}
                         />
                     ) : (
                         <Image
                             source={require("@/assets/apple_light.png")}
                             style={{ width: 20, height: 20, marginRight: 8 }}
+                            placeholder={
+                                "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
+                            }
+                            transition={1000}
                         />
                     )}
                     <BtnText style={{ color: theme.text }}>Apple</BtnText>

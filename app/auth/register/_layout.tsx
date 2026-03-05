@@ -8,7 +8,8 @@ export default function RegisterLayout() {
             <Stack.Screen name="sendVerificationEmail" options={{ headerShown: false }} />
             <Stack.Screen name="sendVerificationPhone" options={{ headerShown: false }} />
             <Stack.Screen name="gender" options={{ headerShown: false }} />
-            <Stack.Screen name="addProfile" options={{ headerShown: false }} />
+            <Stack.Screen name="addProfilePicture" options={{ headerShown: false }} />
+            <Stack.Screen name="addProfileData" options={{ headerShown: false }} />
             <Stack.Screen name="interests" options={{ headerShown: false }} />
             <Stack.Screen name="password" options={{ headerShown: false }} />
         </Stack>

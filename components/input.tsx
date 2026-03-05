@@ -28,9 +28,11 @@ interface InputProps {
     textAlign?: "left" | "center" | "right";
     onKeyPress?: (e: TextInputKeyPressEvent) => void | undefined;
     ref?: React.Ref<TextInput> | undefined;
+    readonly?: boolean;
 }
 
 export default function Input({
+    readonly,
     placeholder,
     secureTextEntry,
     textContentType,
@@ -48,6 +50,7 @@ export default function Input({
     const { theme } = useTheme();
     return (
         <TextInput
+            readOnly={readonly}
             placeholder={placeholder}
             textContentType={textContentType}
             secureTextEntry={secureTextEntry}

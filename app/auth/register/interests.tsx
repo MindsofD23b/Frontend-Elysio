@@ -2,9 +2,17 @@ import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
 import { useTheme } from "@/app/theme/context";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    useColorScheme,
+    View,
+} from "react-native";
 import { Theme } from "@/app/theme/theme";
+import { BlurTint, BlurView } from "expo-blur";
 
 type Activity = { id: string | number; name: string };
 type ActivitiesByTitle = Record<string, Activity[]>;
@@ -16,12 +24,15 @@ export default function Interests() {
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
 
-    const primary = theme.primary;
+    useEffect(() => {
+        router.prefetch("/auth/register/addProfilePicture");
+    }, []);
 
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<ActivitiesByTitle>({});
     const [selected, setSelected] = useState<(string | number)[]>([]);
     const [errorOpen, setErrorOpen] = useState(false);
+    const tintColor = useColorScheme()?.toString();
 
     const canContinue = selected.length >= MIN && selected.length <= MAX;
 
@@ -43,10 +54,9 @@ export default function Interests() {
             setErrorOpen(true);
             return;
         }
-        router.push("/auth/register/addProfile");
+        router.push("/auth/register/addProfilePicture");
     };
 
-    // Demo dataa, pls change
     useEffect(() => {
         const t = setTimeout(() => {
             setData({
@@ -105,17 +115,20 @@ export default function Interests() {
     return (
         <BackWrapper>
             <View style={styles.page}>
-                <Text style={[gs.h1, { marginTop: 35 }]}>Select your Interests </Text>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <Text style={[gs.h1, { marginTop: 35 }]}>Select your Interests </Text>
 
-                <Text style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}>
-                    Pick 6 interests to match with users who have similar things in common
-                </Text>
-
-                <View style={styles.scrollArea}>
-                    <ScrollView
-                        contentContainerStyle={styles.scrollContent}
-                        showsVerticalScrollIndicator={false}
+                    <Text
+                        style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}
                     >
+                        Pick 6 interests to match with users who have similar things in
+                        common
+                    </Text>
+
+                    <View style={styles.scrollArea}>
                         {loading ? (
                             <>
                                 <View style={styles.section}>
@@ -236,10 +249,10 @@ export default function Interests() {
                                                         styles.chip,
                                                         {
                                                             borderColor: active
-                                                                ? primary
+                                                                ? theme.primary
                                                                 : theme.text + "22",
                                                             backgroundColor: active
-                                                                ? primary
+                                                                ? theme.primary
                                                                 : theme.background,
                                                         },
                                                     ]}
@@ -263,8 +276,8 @@ export default function Interests() {
                                 </View>
                             ))
                         )}
-                    </ScrollView>
-                </View>
+                    </View>
+                </ScrollView>
                 <Button
                     style={{ marginTop: "auto", width: "100%", alignSelf: "stretch" }}
                     disabled={!canContinue}
@@ -278,11 +291,10 @@ export default function Interests() {
                         style={styles.errorWrap}
                         onPress={() => setErrorOpen(false)}
                     >
-                        <View
-                            style={[
-                                styles.errorCard,
-                                { backgroundColor: theme.background },
-                            ]}
+                        <BlurView
+                            intensity={50}
+                            tint={(tintColor as BlurTint) || "dark"}
+                            style={[styles.errorCard]}
                         >
                             <Text style={[styles.errorTitle, { color: theme.text }]}>
                                 Selection limit
@@ -293,12 +305,15 @@ export default function Interests() {
                                 Please choose minimum {MIN} and maximum {MAX} interests.
                             </Text>
                             <Pressable
-                                style={[styles.errorOk, { backgroundColor: primary }]}
+                                style={[
+                                    styles.errorOk,
+                                    { backgroundColor: theme.primary },
+                                ]}
                                 onPress={() => setErrorOpen(false)}
                             >
                                 <Text style={styles.errorOkText}>OK</Text>
                             </Pressable>
-                        </View>
+                        </BlurView>
                     </Pressable>
                 ) : null}
             </View>
@@ -375,12 +390,18 @@ const makeStyles = (theme: Theme) =>
 
         errorWrap: {
             ...StyleSheet.absoluteFillObject,
-            backgroundColor: "rgba(0,0,0,0.35)",
             justifyContent: "center",
             paddingHorizontal: 24,
         },
 
-        errorCard: { borderRadius: 16, padding: 18 },
+        errorCard: {
+            borderRadius: 16,
+            padding: 18,
+            overflow: "hidden",
+            backgroundColor: theme.background + "CC",
+            borderWidth: 1,
+            borderColor: theme.base + "80",
+        },
         errorTitle: { fontSize: 18, fontWeight: "800" },
         errorText: { marginTop: 8, fontSize: 14, lineHeight: 20 },
         errorOk: {
