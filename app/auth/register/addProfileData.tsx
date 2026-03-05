@@ -28,6 +28,7 @@ export default function AddProfileDataPage() {
                 </Text>
                 <PhoneNumberInput sendData={handleTelefonData} />
                 <Input placeholder="Full name" style={{ marginVertical: 16 }} />
+                <Input placeholder="Job Title" style={{ marginVertical: 16 }} />
 
                 {!dateSelect && (
                     <Button onPress={() => setDateSelect(true)}>
