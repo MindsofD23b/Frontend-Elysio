@@ -1,7 +1,7 @@
 import { useColorScheme } from 'react-native';
-import { ThemeContext } from './theme/context';
-import { makeGlobalStyles } from './theme/styles';
-import { colors } from './theme/theme';
+import { ThemeContext } from "@/app/theme/context";
+import { makeGlobalStyles } from "@/app/theme/styles";
+import { colors } from "@/app/theme/theme";
 
 export default function BaseTheme({ children }: { children: React.ReactNode }) {
   const colorScheme = useColorScheme();

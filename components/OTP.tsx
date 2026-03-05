@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { View, TextInput, StyleProp, ViewStyle } from "react-native";
 import Input from "@/components/input";
-import { useStore } from "@/hooks/index.d";
+import { useStore } from "@/hooks";
 
 interface OTPInputsProps {
     onChange?: (code: string) => void;

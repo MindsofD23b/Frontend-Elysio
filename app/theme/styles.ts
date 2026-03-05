@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { Theme } from "./theme";
+import { Theme } from "@/app/theme/theme";
 
 export const makeGlobalStyles = (theme: Theme) =>
     StyleSheet.create({

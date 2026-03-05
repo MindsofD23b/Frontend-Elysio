@@ -14,7 +14,7 @@ type FormData = {
 
 export default function WithPhoneNumber() {
     useEffect(() => {
-        router.prefetch("/(tabs)");
+        router.prefetch("/(protected)/(tabs)");
     }, []);
 
     const { gs, theme } = useTheme();
@@ -42,7 +42,7 @@ export default function WithPhoneNumber() {
         console.log(data);
         setTimeout(() => {
             setLoading(false);
-            router.push("/(tabs)");
+            router.push("/(protected)/(tabs)");
         }, 2000);
     };
 
