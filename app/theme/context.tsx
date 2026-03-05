@@ -1,4 +1,3 @@
-// with ChatGPT
 import { createContext, useContext } from "react";
 import { makeGlobalStyles } from "@/app/theme/styles";
 import { Theme } from "@/app/theme/theme";
@@ -7,6 +6,7 @@ import { Theme } from "@/app/theme/theme";
 type TThemeContext = {
     theme: Theme;
     gs: ReturnType<typeof makeGlobalStyles>;
+    // with ChatGPT
     setTheme: (t: Theme) => void;
 };
 
