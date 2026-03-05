@@ -1,12 +1,21 @@
-import { useColorScheme } from 'react-native';
-import { ThemeContext } from './theme/context';
-import { makeGlobalStyles } from './theme/styles';
-import { colors } from './theme/theme';
+import React, { useState } from "react";
+import { useColorScheme } from "react-native";
+import { ThemeContext } from "./theme/context";
+import { makeGlobalStyles } from "./theme/styles";
+import { colors, Theme } from "./theme/theme";
 
 export default function BaseTheme({ children }: { children: React.ReactNode }) {
-  const colorScheme = useColorScheme();
-  const theme = colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  const gs = makeGlobalStyles(theme);
+    const system = useColorScheme();
 
-  return <ThemeContext.Provider value={{ theme, gs }}>{children}</ThemeContext.Provider>;
+    const [theme, setTheme] = useState<Theme>(
+        colors[system === "dark" ? "dark" : "light"],
+    );
+
+    const gs = makeGlobalStyles(theme);
+
+    return (
+        <ThemeContext.Provider value={{ theme, gs, setTheme }}>
+            {children}
+        </ThemeContext.Provider>
+    );
 }
