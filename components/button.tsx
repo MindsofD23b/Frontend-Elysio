@@ -1,9 +1,17 @@
 import { useTheme } from "@/app/theme/context";
 import { Loader2 as Load } from "lucide-react-native";
 import { createContext, useContext, useEffect, useRef } from "react";
-import { Animated, Pressable, StyleProp, Text, TextStyle, View, ViewProps, ViewStyle } from "react-native";
+import {
+    Animated,
+    Pressable,
+    StyleProp,
+    Text,
+    TextStyle,
+    View,
+    ViewProps,
+    ViewStyle,
+} from "react-native";
 
-// Internal context — variante flows from Button → BtnText automatically
 const ButtonContext = createContext<"default" | "outline">("default");
 
 interface ButtonProps {
@@ -19,16 +27,35 @@ interface BtnTextProps {
     style?: StyleProp<TextStyle>;
 }
 
-function Button({ children, onPress, disabled, variante = "default", style }: ButtonProps) {
+function Button({
+    children,
+    onPress,
+    disabled,
+    variante = "default",
+    style,
+}: ButtonProps) {
     const { gs } = useTheme();
+
     return (
         <ButtonContext.Provider value={variante}>
             <Pressable
                 onPress={onPress}
                 disabled={disabled}
-                style={[gs.btn, variante === "outline" ? gs.btnOutline : gs.btnDefault, disabled ? gs.btnDisabled : null, style]}
+                style={[
+                    gs.btn,
+                    variante === "outline" ? gs.btnOutline : gs.btnDefault,
+                    disabled ? gs.btnDisabled : null,
+                    style,
+                ]}
             >
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <View
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                    }}
+                >
                     {children}
                 </View>
             </Pressable>
@@ -40,7 +67,13 @@ function BtnText({ children, style }: BtnTextProps) {
     const variante = useContext(ButtonContext);
     const { gs } = useTheme();
     return (
-        <Text style={[gs.btnText, variante === "outline" ? gs.btnTextOutline : gs.btnTextDefault, style]}>
+        <Text
+            style={[
+                gs.btnText,
+                variante === "outline" ? gs.btnTextOutline : gs.btnTextDefault,
+                style,
+            ]}
+        >
             {children}
         </Text>
     );
@@ -56,7 +89,7 @@ function Loader({ style }: { style?: StyleProp<ViewProps> }) {
                 toValue: 1,
                 duration: 800,
                 useNativeDriver: true,
-            })
+            }),
         ).start();
     }, []);
 

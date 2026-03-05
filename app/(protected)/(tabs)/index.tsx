@@ -9,9 +9,8 @@ import {
     Text,
     View,
 } from "react-native";
-import { useTheme } from "../theme/context";
-import { Theme } from "../theme/theme";
-import { preventAutoHideAsync } from "expo-router/build/utils/splash";
+import { useTheme } from "@/app/theme/context";
+import { Theme } from "@/app/theme/theme";
 
 const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
@@ -73,22 +72,14 @@ const images = [
     },
 ];
 function calcColHeight(imgs: typeof images) {
-    return imgs.reduce(
-        (sum, img) => sum + Math.round(img.h * H_SCALE) + GAP,
-        0,
-    );
+    return imgs.reduce((sum, img) => sum + Math.round(img.h * H_SCALE) + GAP, 0);
 }
 function Tile({ uri, h }: { uri: string; h: number }) {
     const { theme } = useTheme();
     const styles = makeStyles(theme);
 
     return (
-        <View
-            style={[
-                styles.tile,
-                { height: Math.round(h * H_SCALE), width: COL_W },
-            ]}
-        >
+        <View style={[styles.tile, { height: Math.round(h * H_SCALE), width: COL_W }]}>
             <Image
                 source={{ uri }}
                 style={styles.tileImg}
@@ -184,7 +175,7 @@ export default function Index() {
     const [count, setCount] = useState(10);
 
     const onStart = () => {
-        setCount(prev => prev > 0 ? prev -1 : 0);
+        setCount((prev) => (prev > 0 ? prev - 1 : 0));
     };
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;
@@ -274,31 +265,21 @@ export default function Index() {
             <View style={styles.centerWrap} pointerEvents="box-none">
                 {/* Rings */}
                 <Animated.View
-                    style={[
-                        styles.ring,
-                        styles.ring1,
-                        { transform: [{ rotate: r1 }] },
-                    ]}
+                    style={[styles.ring, styles.ring1, { transform: [{ rotate: r1 }] }]}
                 />
                 <Animated.View
-                    style={[
-                        styles.ring,
-                        styles.ring2,
-                        { transform: [{ rotate: r2 }] },
-                    ]}
+                    style={[styles.ring, styles.ring2, { transform: [{ rotate: r2 }] }]}
                 />
                 <Animated.View
-                    style={[
-                        styles.ring,
-                        styles.ring3,
-                        { transform: [{ rotate: r3 }] },
-                    ]}
+                    style={[styles.ring, styles.ring3, { transform: [{ rotate: r3 }] }]}
                 />
 
                 {/* Button */}
                 <Pressable onPress={onStart} style={styles.startBtn}>
-                    <Text style={[gs.btnTextDefault,{fontSize: 22} ]}>START</Text>
-                    <Text style={[gs.btnTextDefault, { fontSize: 28, marginTop: 4 }]}>{count}</Text>
+                    <Text style={[gs.btnTextDefault, { fontSize: 22 }]}>START</Text>
+                    <Text style={[gs.btnTextDefault, { fontSize: 28, marginTop: 4 }]}>
+                        {count}
+                    </Text>
                 </Pressable>
             </View>
         </View>

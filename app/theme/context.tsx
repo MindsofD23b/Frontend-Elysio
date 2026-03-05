@@ -1,12 +1,19 @@
-// theme/context.tsx
 import { createContext, useContext } from "react";
 import { makeGlobalStyles } from "@/app/theme/styles";
-import { colors } from "@/app/theme/theme";
+import { Theme } from "@/app/theme/theme";
 
+// Made with https://claude.ai
 type TThemeContext = {
-    theme: typeof colors.light;
+    theme: Theme;
     gs: ReturnType<typeof makeGlobalStyles>;
+    // with ChatGPT
+    setTheme: (t: Theme) => void;
 };
 
 export const ThemeContext = createContext<TThemeContext | null>(null);
-export const useTheme = () => useContext(ThemeContext)!;
+
+export function useTheme() {
+    const ctx = useContext(ThemeContext);
+    if (!ctx) throw new Error("ThemeProvider missing");
+    return ctx;
+}

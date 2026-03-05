@@ -7,7 +7,6 @@
     "icon": "./assets/images/ios-light.png",
     "scheme": "elysio",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -18,7 +17,8 @@
         "backgroundImage": "./assets/images/adaptive-icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.jamie123456789.elysio"
     },
     "web": {
       "output": "static",
@@ -41,7 +41,8 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

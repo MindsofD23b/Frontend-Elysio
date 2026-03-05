@@ -1,13 +1,26 @@
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import BaseTheme from "./baseTheme";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import SafeAreaWrapper from "@/components/SafeArea";
+
+const isLoggedIn = false;
 
 export default function RootLayout() {
-  return (
-    <BaseTheme>
-      <Stack >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-      </Stack>
-    </BaseTheme>
-  );
+    return (
+        <BaseTheme>
+            <SafeAreaProvider>
+                <SafeAreaWrapper>
+                    <Stack>
+                        <Stack.Screen
+                            name="(protected)"
+                            options={{ headerShown: false }}
+                        />
+                        <Stack.Screen name="auth" options={{ headerShown: false }} />
+                    </Stack>
+
+                    {!isLoggedIn && <Redirect href="/auth/login" />}
+                </SafeAreaWrapper>
+            </SafeAreaProvider>
+        </BaseTheme>
+    );
 }
