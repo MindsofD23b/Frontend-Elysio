@@ -23,6 +23,11 @@ expo-env.d.ts
 
 .gito
 
+coverage/
+__tests__/coverage/
+__tests__/coverage-*.json
+__tests__/__snapshots__/
+
 # debug
 npm-debug.*
 yarn-debug.*
