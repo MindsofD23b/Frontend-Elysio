@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useTheme } from "../theme/context";
 import { Theme } from "../theme/theme";
+import { preventAutoHideAsync } from "expo-router/build/utils/splash";
 
 const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
@@ -180,9 +181,10 @@ export default function Index() {
             driftR.stopAnimation();
         };
     }, []);
+    const [count, setCount] = useState(10);
 
     const onStart = () => {
-        console.log("START pressed");
+        setCount(prev => prev > 0 ? prev -1 : 0);
     };
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;
@@ -296,6 +298,7 @@ export default function Index() {
                 {/* Button */}
                 <Pressable onPress={onStart} style={styles.startBtn}>
                     <Text style={[gs.btnTextDefault,{fontSize: 22} ]}>START</Text>
+                    <Text style={[gs.btnTextDefault, { fontSize: 28, marginTop: 4 }]}>{count}</Text>
                 </Pressable>
             </View>
         </View>
