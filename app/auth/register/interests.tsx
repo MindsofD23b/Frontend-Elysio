@@ -2,260 +2,308 @@ import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
 import { useTheme } from "@/app/theme/context";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-
-import {
-    Camera,
-    ChefHat,
-    Coffee,
-    Dumbbell,
-    Film,
-    Music,
-    Pencil,
-    BookOpen,
-    Mountain,
-    Snowflake,
-    Waves,
-    ChessKnight,
-} from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Theme } from "@/app/theme/theme";
 
-type InterestItem = {
-    label: string;
-    icon: React.ComponentType<{ size?: number; color?: string }>;
-};
+type Activity = { id: string | number; name: string };
+type ActivitiesByTitle = Record<string, Activity[]>;
 
-const MIN = 6;
+const MIN = 3;
 const MAX = 12;
-
-const INTERESTS: InterestItem[] = [
-    { label: "Movie", icon: Film },
-    { label: "Swimming", icon: Waves },
-    { label: "Ski", icon: Snowflake },
-    { label: "Gym", icon: Dumbbell },
-    { label: "Reading", icon: BookOpen },
-    { label: "Cooking", icon: ChefHat },
-    { label: "Photography", icon: Camera },
-    { label: "Hiking", icon: Mountain },
-    { label: "Coffee", icon: Coffee },
-    { label: "Art", icon: Pencil },
-    { label: "Music", icon: Music },
-    { label: "Chess", icon: ChessKnight },
-];
 
 export default function Interests() {
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
 
-    const PINK = theme.primary;
-    const BORDER = theme.accent + "4D";
+    const primary = theme.primary;
 
-    const [selected, setSelected] = useState<string[]>([]);
-    const [customText, setCustomText] = useState("");
-    const [customInterests, setCustomInterests] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<ActivitiesByTitle>({});
+    const [selected, setSelected] = useState<(string | number)[]>([]);
     const [errorOpen, setErrorOpen] = useState(false);
 
     const canContinue = selected.length >= MIN && selected.length <= MAX;
 
-    const toggleInterest = (label: string) => {
+    const toggleId = (id: string | number) => {
         setSelected((prev) => {
-            const exists = prev.includes(label);
-            if (exists) return prev.filter((x) => x !== label);
+            const exists = prev.includes(id);
+            if (exists) return prev.filter((x) => x !== id);
+
             if (prev.length >= MAX) {
                 setErrorOpen(true);
                 return prev;
             }
-            return [...prev, label];
+            return [...prev, id];
         });
+    };
 
-        const removeCustom = (label: string) => {
-            setSelected((prev) => prev.filter((x) => x !== label));
-            setCustomInterests((prev) => prev.filter((x) => x !== label));
-        };
+    const onContinue = () => {
+        if (!canContinue) {
+            setErrorOpen(true);
+            return;
+        }
+        router.push("/auth/register/addProfile");
+    };
 
-        const addCustom = () => {
-            const raw = customText.trim();
-            if (!raw) return;
-            if (!/^[A-Za-z]{1,16}$/.test(raw)) return;
+    // Demo dataa, pls change
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setData({
+                Sports: [
+                    { id: 1, name: "Gym" },
+                    { id: 2, name: "Swimming" },
+                    { id: 3, name: "Ski" },
+                    { id: 4, name: "Hiking" },
+                    { id: 5, name: "Running" },
+                    { id: 6, name: "Cycling" },
+                ],
+                Arts: [
+                    { id: 10, name: "Music" },
+                    { id: 11, name: "Art" },
+                    { id: 12, name: "Photography" },
+                    { id: 13, name: "Film" },
+                    { id: 14, name: "Writing" },
+                ],
+                dumb: [
+                    { id: 15, name: "Gym" },
+                    { id: 21, name: "Swimming" },
+                    { id: 31, name: "Ski" },
+                    { id: 41, name: "Hiking" },
+                    { id: 51, name: "Running" },
+                    { id: 61, name: "Cycling" },
+                ],
+                grey: [
+                    { id: 22, name: "Music" },
+                    { id: 23, name: "Art" },
+                    { id: 24, name: "Photography" },
+                    { id: 25, name: "Film" },
+                    { id: 26, name: "Writing" },
+                ],
+                play: [
+                    { id: 14, name: "Gym" },
+                    { id: 27, name: "Swimming" },
+                    { id: 33, name: "Ski" },
+                    { id: 43, name: "Hiking" },
+                    { id: 53, name: "Running" },
+                    { id: 63, name: "Cycling" },
+                ],
+                game: [
+                    { id: 103, name: "Music" },
+                    { id: 112, name: "Art" },
+                    { id: 122, name: "Photography" },
+                    { id: 132, name: "Film" },
+                    { id: 142, name: "Writing" },
+                ],
+            });
+            setLoading(false);
+        }, 900);
 
-            const label = raw[0].toUpperCase() + raw.slice(1).toLowerCase();
+        return () => clearTimeout(t);
+    }, []);
 
-            const existsAnywhere =
-                INTERESTS.some((i) => i.label.toLowerCase() === label.toLowerCase()) ||
-                customInterests.some((x) => x.toLowerCase() === label.toLowerCase());
+    return (
+        <BackWrapper>
+            <View style={styles.page}>
+                <Text style={[gs.h1, { marginTop: 35 }]}>Select your Interests </Text>
 
-            if (!existsAnywhere) setCustomInterests((prev) => [label, ...prev]);
+                <Text style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}>
+                    Pick 6 interests to match with users who have similar things in common
+                </Text>
 
-            setCustomText("");
-            Keyboard.dismiss();
-            toggleInterest(label);
-        };
-
-        const gridItems = useMemo(() => {
-            return [
-                ...INTERESTS.map((i) => ({
-                    kind: "default" as const,
-                    label: i.label,
-                    icon: i.icon,
-                })),
-                ...customInterests.map((label) => ({ kind: "custom" as const, label })),
-            ];
-        }, [customInterests]);
-
-        const onContinue = () => {
-            if (!canContinue) {
-                setErrorOpen(true);
-                return;
-            }
-            router.push("/auth/register/password");
-        };
-
-        return (
-            <BackWrapper>
-                <View style={styles.page}>
-                    <Text style={[gs.h1, { marginTop: 10, color: theme.text }]}>
-                        Select your Interest
-                    </Text>
-
-                    <Text
-                        style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}
+                <View style={styles.scrollArea}>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
                     >
-                        Pick 6 interests to match with users who have similar things in
-                        common
-                    </Text>
-
-                    <View style={styles.grid}>
-                        <View
-                            style={[
-                                styles.chip,
-                                styles.addChip,
-                                {
-                                    borderColor: BORDER,
-                                    backgroundColor: theme.background,
-                                },
-                            ]}
-                        >
-                            <TextInput
-                                value={customText}
-                                onChangeText={(t) =>
-                                    setCustomText(
-                                        t.replace(/[^A-Za-z]/g, "").slice(0, 16),
-                                    )
-                                }
-                                placeholder="Add"
-                                placeholderTextColor={theme.text + "66"}
-                                style={[styles.addInput, { color: theme.text }]}
-                                maxLength={16}
-                                returnKeyType="done"
-                                onSubmitEditing={addCustom}
-                            />
-                            <Pressable
-                                onPress={addCustom}
-                                style={[styles.addBtn, { borderColor: BORDER }]}
-                            >
-                                <Text style={{ color: theme.text, fontWeight: "800" }}>
-                                    +
-                                </Text>
-                            </Pressable>
-                        </View>
-
-                        {gridItems.map((item) => {
-                            const active = selected.includes(item.label);
-
-                            if (item.kind === "default") {
-                                const Icon = item.icon;
-                                return (
-                                    <Pressable
-                                        key={item.label}
-                                        onPress={() => toggleInterest(item.label)}
+                        {loading ? (
+                            <>
+                                <View style={styles.section}>
+                                    <View
                                         style={[
-                                            styles.chip,
-                                            {
-                                                borderColor: active ? PINK : BORDER,
-                                                backgroundColor: active
-                                                    ? PINK
-                                                    : theme.background,
-                                            },
+                                            styles.skeletonTitle,
+                                            { backgroundColor: theme.text + "22" },
+                                        ]}
+                                    />
+                                    <View
+                                        style={[
+                                            styles.divider,
+                                            { backgroundColor: theme.text + "22" },
+                                        ]}
+                                    />
+                                    <View style={styles.wrap}>
+                                        {Array.from({ length: 10 }).map((_, i) => (
+                                            <View
+                                                key={`sk-a-${i}`}
+                                                style={[
+                                                    styles.skeletonChip,
+                                                    {
+                                                        backgroundColor:
+                                                            theme.text + "22",
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </View>
+                                </View>
+
+                                <View style={styles.section}>
+                                    <View
+                                        style={[
+                                            styles.skeletonTitle,
+                                            { backgroundColor: theme.text + "22" },
+                                        ]}
+                                    />
+                                    <View
+                                        style={[
+                                            styles.divider,
+                                            { backgroundColor: theme.text + "22" },
+                                        ]}
+                                    />
+                                    <View style={styles.wrap}>
+                                        {Array.from({ length: 8 }).map((_, i) => (
+                                            <View
+                                                key={`sk-b-${i}`}
+                                                style={[
+                                                    styles.skeletonChip,
+                                                    {
+                                                        backgroundColor:
+                                                            theme.text + "22",
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </View>
+                                </View>
+
+                                <View style={styles.section}>
+                                    <View
+                                        style={[
+                                            styles.skeletonTitle,
+                                            { backgroundColor: theme.text + "22" },
+                                        ]}
+                                    />
+                                    <View
+                                        style={[
+                                            styles.divider,
+                                            { backgroundColor: theme.text + "22" },
+                                        ]}
+                                    />
+                                    <View style={styles.wrap}>
+                                        {Array.from({ length: 12 }).map((_, i) => (
+                                            <View
+                                                key={`sk-c-${i}`}
+                                                style={[
+                                                    styles.skeletonChip,
+                                                    {
+                                                        backgroundColor:
+                                                            theme.text + "22",
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </View>
+                                </View>
+                            </>
+                        ) : (
+                            Object.entries(data).map(([title, items]) => (
+                                <View key={title} style={styles.section}>
+                                    <Text
+                                        style={[
+                                            styles.sectionTitle,
+                                            { color: theme.text },
                                         ]}
                                     >
-                                        <Icon
-                                            size={16}
-                                            color={active ? "#fff" : theme.text}
-                                        />
-                                        <Text
-                                            style={[
-                                                styles.chipText,
-                                                { color: active ? "#fff" : theme.text },
-                                            ]}
-                                        >
-                                            {item.label}
-                                        </Text>
-                                    </Pressable>
-                                );
-                            }
-
-                            return (
-                                <Pressable
-                                    key={`custom-${item.label}`}
-                                    onPress={() => removeCustom(item.label)}
-                                    style={[
-                                        styles.chip,
-                                        { borderColor: PINK, backgroundColor: PINK },
-                                    ]}
-                                >
-                                    <Text style={[styles.chipText, { color: "#fff" }]}>
-                                        {item.label}
+                                        {title}
                                     </Text>
-                                </Pressable>
-                            );
-                        })}
-                    </View>
 
-                    <Button
-                        style={{ marginTop: "auto", marginBottom: 30 }}
-                        disabled={!canContinue}
-                        onPress={onContinue}
-                    >
-                        <BtnText>Continue</BtnText>
-                    </Button>
+                                    <View
+                                        style={[
+                                            styles.divider,
+                                            { backgroundColor: theme.text + "22" },
+                                        ]}
+                                    />
 
-                    {errorOpen ? (
-                        <Pressable
-                            style={styles.errorWrap}
-                            onPress={() => setErrorOpen(false)}
-                        >
-                            <View
-                                style={[
-                                    styles.errorCard,
-                                    { backgroundColor: theme.background },
-                                ]}
-                            >
-                                <Text style={[styles.errorTitle, { color: theme.text }]}>
-                                    Selection limit
-                                </Text>
-                                <Text
-                                    style={[
-                                        styles.errorText,
-                                        { color: theme.text + "B3" },
-                                    ]}
-                                >
-                                    Please choose minimum {MIN} and maximum {MAX}{" "}
-                                    interests.
-                                </Text>
-                                <Pressable
-                                    style={[styles.errorOk, { backgroundColor: PINK }]}
-                                    onPress={() => setErrorOpen(false)}
-                                >
-                                    <Text style={styles.errorOkText}>OK</Text>
-                                </Pressable>
-                            </View>
-                        </Pressable>
-                    ) : null}
+                                    <View style={styles.wrap}>
+                                        {items.map((a) => {
+                                            const active = selected.includes(a.id);
+
+                                            return (
+                                                <Pressable
+                                                    key={String(a.id)}
+                                                    onPress={() => toggleId(a.id)}
+                                                    style={[
+                                                        styles.chip,
+                                                        {
+                                                            borderColor: active
+                                                                ? primary
+                                                                : theme.text + "22",
+                                                            backgroundColor: active
+                                                                ? primary
+                                                                : theme.background,
+                                                        },
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.chipText,
+                                                            {
+                                                                color: active
+                                                                    ? "#fff"
+                                                                    : theme.text,
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {a.name}
+                                                    </Text>
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+                            ))
+                        )}
+                    </ScrollView>
                 </View>
-            </BackWrapper>
-        );
-    };
+                <Button
+                    style={{ marginTop: "auto", width: "100%", alignSelf: "stretch" }}
+                    disabled={!canContinue}
+                    onPress={onContinue}
+                >
+                    <BtnText>Continue</BtnText>
+                </Button>
+
+                {errorOpen ? (
+                    <Pressable
+                        style={styles.errorWrap}
+                        onPress={() => setErrorOpen(false)}
+                    >
+                        <View
+                            style={[
+                                styles.errorCard,
+                                { backgroundColor: theme.background },
+                            ]}
+                        >
+                            <Text style={[styles.errorTitle, { color: theme.text }]}>
+                                Selection limit
+                            </Text>
+                            <Text
+                                style={[styles.errorText, { color: theme.text + "B3" }]}
+                            >
+                                Please choose minimum {MIN} and maximum {MAX} interests.
+                            </Text>
+                            <Pressable
+                                style={[styles.errorOk, { backgroundColor: primary }]}
+                                onPress={() => setErrorOpen(false)}
+                            >
+                                <Text style={styles.errorOkText}>OK</Text>
+                            </Pressable>
+                        </View>
+                    </Pressable>
+                ) : null}
+            </View>
+        </BackWrapper>
+    );
 }
 
 const makeStyles = (theme: Theme) =>
@@ -264,11 +312,35 @@ const makeStyles = (theme: Theme) =>
             flex: 1,
             width: "100%",
             height: "100%",
-            paddingHorizontal: 24,
         },
 
-        grid: {
-            marginTop: 22,
+        scrollArea: {
+            flex: 1,
+            marginTop: 18,
+        },
+
+        scrollContent: {
+            paddingBottom: 24,
+        },
+
+        section: {
+            marginBottom: 18,
+        },
+
+        sectionTitle: {
+            fontSize: 16,
+            fontWeight: "800",
+        },
+
+        divider: {
+            height: 1.5,
+            width: "100%",
+            marginTop: 8,
+            marginBottom: 12,
+            borderRadius: 999,
+        },
+
+        wrap: {
             flexDirection: "row",
             flexWrap: "wrap",
             gap: 10,
@@ -280,9 +352,7 @@ const makeStyles = (theme: Theme) =>
             paddingHorizontal: 10,
             paddingVertical: 8,
             minWidth: 78,
-            flexDirection: "row",
             alignItems: "center",
-            gap: 8,
             justifyContent: "center",
         },
 
@@ -291,25 +361,16 @@ const makeStyles = (theme: Theme) =>
             fontWeight: "600",
         },
 
-        addChip: {
-            minWidth: 150,
-            justifyContent: "space-between",
-            gap: 10,
+        skeletonTitle: {
+            width: 140,
+            height: 16,
+            borderRadius: 6,
         },
 
-        addInput: {
-            flex: 1,
-            fontSize: 14,
-            fontWeight: "600",
-        },
-
-        addBtn: {
-            width: 28,
-            height: 28,
-            borderRadius: 10,
-            borderWidth: 1.5,
-            alignItems: "center",
-            justifyContent: "center",
+        skeletonChip: {
+            width: 90,
+            height: 34,
+            borderRadius: 12,
         },
 
         errorWrap: {
