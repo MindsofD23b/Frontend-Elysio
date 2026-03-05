@@ -12,7 +12,6 @@ export default function Register() {
 
     useEffect(() => {
         router.prefetch("/auth/register/withEmail");
-        router.prefetch("/auth/register/withPhoneNumber");
     }, []);
 
     return (
@@ -28,15 +27,12 @@ export default function Register() {
             <Text style={[gs.bodyText, { color: theme.accent, marginBottom: 32 }]}>
                 Create a new Love
             </Text>
-            <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
-                <Button onPress={() => router.push("/auth/register/withEmail")}>
-                    <BtnText>Continue with Email</BtnText>
-                </Button>
+            <View style={{ width: "100%", marginVertical: 16, marginTop: 8 }}>
                 <Button
-                    variante="outline"
-                    onPress={() => router.push("/auth/register/withPhoneNumber")}
+                    style={{ marginVertical: 16 }}
+                    onPress={() => router.push("/auth/register/withEmail")}
                 >
-                    <BtnText>Continue with Phone Number</BtnText>
+                    <BtnText>Continue with Email</BtnText>
                 </Button>
             </View>
 

@@ -35,6 +35,7 @@ function Button({
     style,
 }: ButtonProps) {
     const { gs } = useTheme();
+
     return (
         <ButtonContext.Provider value={variante}>
             <Pressable

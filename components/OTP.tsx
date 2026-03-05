@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { View, TextInput, StyleProp, ViewStyle } from "react-native";
 import Input from "@/components/input";
+import { useStore } from "@/hooks/index.d";
 
 interface OTPInputsProps {
     onChange?: (code: string) => void;
@@ -10,6 +11,7 @@ interface OTPInputsProps {
 export default function OTPInputs({ onChange, style }: OTPInputsProps) {
     const [code, setCode] = useState(["", "", "", "", ""]);
     const inputs = useRef<TextInput[]>([]);
+    const [value, setValue] = useStore("token");
 
     const updateCode = (newCode: string[]) => {
         setCode(newCode);
