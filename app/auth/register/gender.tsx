@@ -2,7 +2,7 @@ import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/app/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mars, Venus } from "lucide-react-native";
 import { Theme } from "@/app/theme/theme";
@@ -31,13 +31,15 @@ export default function Gender() {
     const getLabelColor = (type: GenderType) => (selected === type ? primary : muted);
 
     return (
-        <BackWrapper>
-            <View style={styles.page}>
-                <Text style={[gs.h1, { marginTop: 10, color: theme.text }]}>
-                    Select your Gender
-                </Text>
-
-                <Text style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}>
+        <>
+            <BackWrapper>
+                <Text style={[gs.h1, { marginTop: 35 }]}>Select your Gender </Text>
+                <Text
+                    style={[
+                        gs.bodyText,
+                        { marginTop: 10, color: theme.base + "54", textAlign: "left" },
+                    ]}
+                >
                     Please select <Text style={{ fontWeight: "bold" }}>your Gender</Text>
                 </Text>
 
@@ -66,26 +68,18 @@ export default function Gender() {
                 </View>
 
                 <Button
-                    style={{ marginTop: "auto", marginBottom: 30 }}
+                    style={{ marginTop: "auto" }}
                     onPress={() => router.push("/auth/register/interests")}
                     disabled={!selected}
                 >
                     <BtnText>Continue</BtnText>
                 </Button>
-            </View>
-        </BackWrapper>
+            </BackWrapper>
+        </>
     );
 }
-
 const makeStyles = (theme: Theme) =>
     StyleSheet.create({
-        page: {
-            flex: 1,
-            width: "100%",
-            height: "100%",
-            paddingHorizontal: 24,
-        },
-
         cardsArea: {
             flex: 1,
             justifyContent: "center",

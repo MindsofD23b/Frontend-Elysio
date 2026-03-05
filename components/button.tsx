@@ -53,6 +53,7 @@ function Button({
                         flexDirection: "row",
                         alignItems: "center",
                         justifyContent: "center",
+                        alignSelf: "stretch",
                         gap: 8,
                     }}
                 >
