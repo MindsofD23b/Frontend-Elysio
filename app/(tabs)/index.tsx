@@ -1,67 +1,93 @@
 import { Image } from "expo-image";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Animated,
     Dimensions,
     Easing,
     Pressable,
-    SafeAreaView,
     StyleSheet,
     Text,
     View,
 } from "react-native";
-const { width } = Dimensions.get("window");
-const GAP = 12;
+import { useTheme } from "../theme/context";
+import { Theme } from "../theme/theme";
+
+const { width, height } = Dimensions.get("window");
+const H_SCALE = height / 800;
+const GAP = 28;
 const PAD = 16;
+
 const COL_W = (width - PAD * 2 - GAP) / 2;
 const images = [
     // left column
     {
+        id: "l1",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1520975958225-0f0b47b19904?auto=format&fit=crop&w=800&q=80",
+        uri: "https://images.unsplash.com/photo-1513682121497-80211f36a7d3?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         h: 150,
     },
     {
+        id: "l2",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
+        uri: "https://images.unsplash.com/photo-1604440401661-8f6f07c285a2?q=80&w=663&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         h: 220,
     },
     {
+        id: "l3",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80",
+        uri: "https://images.unsplash.com/photo-1601887389937-0b02c26b602c?q=80&w=627&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         h: 160,
     },
     {
+        id: "l4",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1520975682030-1fcb57c9a8b5?auto=format&fit=crop&w=800&q=80",
+        uri: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         h: 210,
     },
 
     // right column
     {
+        id: "r1",
         col: "right",
-        uri: "https://images.unsplash.com/photo-1520975682030-1fcb57c9a8b5?auto=format&fit=crop&w=800&q=80",
+        uri: "https://images.unsplash.com/photo-1494500764479-0c8f2919a3d8?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         h: 180,
     },
     {
+        id: "r2",
         col: "right",
         uri: "https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?auto=format&fit=crop&w=800&q=80",
         h: 140,
     },
     {
+        id: "r3",
         col: "right",
         uri: "https://images.unsplash.com/photo-1496307653780-42ee777d4833?auto=format&fit=crop&w=800&q=80",
         h: 240,
     },
     {
+        id: "r4",
         col: "right",
         uri: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
         h: 120,
     },
 ];
+function calcColHeight(imgs: typeof images) {
+    return imgs.reduce(
+        (sum, img) => sum + Math.round(img.h * H_SCALE) + GAP,
+        0,
+    );
+}
 function Tile({ uri, h }: { uri: string; h: number }) {
+    const { theme } = useTheme();
+    const styles = makeStyles(theme);
+
     return (
-        <View style={[styles.tile, { height: h, width: COL_W }]}>
+        <View
+            style={[
+                styles.tile,
+                { height: Math.round(h * H_SCALE), width: COL_W },
+            ]}
+        >
             <Image
                 source={{ uri }}
                 style={styles.tileImg}
@@ -75,40 +101,146 @@ function Tile({ uri, h }: { uri: string; h: number }) {
         </View>
     );
 }
+function InfiniteColumn({
+    imgs,
+    drift,
+    colHeight,
+}: {
+    imgs: typeof images;
+    drift: Animated.Value;
+    colHeight: number;
+}) {
+    const { theme } = useTheme();
+    const styles = makeStyles(theme);
+
+    const translateY = drift.interpolate({
+        inputRange: [0, colHeight],
+        outputRange: [0, -colHeight],
+    });
+    return (
+        <Animated.View style={[styles.col, { transform: [{ translateY }] }]}>
+            {[...imgs, ...imgs].map((img, idx) => (
+                <Tile key={`${img.id}-${idx}`} uri={img.uri} h={img.h} />
+            ))}
+        </Animated.View>
+    );
+}
 
 export default function Index() {
-    const left = images.filter((i) => i.col === "left");
-    const right = images.filter((i) => i.col === "right");
+    const { theme, gs } = useTheme();
+    const styles = makeStyles(theme);
 
+    const leftBase = images.filter((i) => i.col === "left");
+    const rightBase = images.filter((i) => i.col === "right");
+
+    const leftColHeight = calcColHeight(leftBase);
+    const rightColHeight = calcColHeight(rightBase);
+
+    const driftL = useRef(new Animated.Value(0)).current;
+    const driftR = useRef(new Animated.Value(0)).current;
+
+    const SPEED_L = 6000;
+    const SPEED_R = 8000;
+
+    useEffect(() => {
+        let cancelledL = false;
+        let cancelledR = false;
+
+        const runL = () => {
+            driftL.setValue(0);
+            Animated.timing(driftL, {
+                toValue: leftColHeight,
+                duration: SPEED_L,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            }).start(({ finished }) => {
+                if (finished && !cancelledL) runL();
+            });
+        };
+
+        const runR = () => {
+            driftR.setValue(0);
+            Animated.timing(driftR, {
+                toValue: rightColHeight,
+                duration: SPEED_R,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            }).start(({ finished }) => {
+                if (finished && !cancelledR) runR();
+            });
+        };
+
+        runL();
+        runR();
+
+        return () => {
+            cancelledL = true;
+            cancelledR = true;
+            driftL.stopAnimation();
+            driftR.stopAnimation();
+        };
+    }, []);
+
+    const onStart = () => {
+        console.log("START pressed");
+    };
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;
     const spin3 = useRef(new Animated.Value(0)).current;
     useEffect(() => {
-        Animated.loop(
+        let cancelled = false;
+
+        const runSpin1 = () => {
+            spin.setValue(0);
             Animated.timing(spin, {
                 toValue: 1,
-                duration: 2200,
+                duration: 2500,
                 easing: Easing.linear,
                 useNativeDriver: true,
-            }),
-        ).start();
-        Animated.loop(
+            }).start(({ finished }) => {
+                if (!finished || cancelled) return;
+                runSpin1();
+            });
+        };
+
+        const runSpin2 = () => {
+            spin2.setValue(0);
             Animated.timing(spin2, {
                 toValue: 1,
                 duration: 2200,
                 easing: Easing.linear,
                 useNativeDriver: true,
-            }),
-        ).start();
-        Animated.loop(
+            }).start(({ finished }) => {
+                if (!finished || cancelled) return;
+                runSpin2();
+            });
+        };
+
+        const runSpin3 = () => {
+            spin3.setValue(0);
             Animated.timing(spin3, {
                 toValue: 1,
-                duration: 2200,
+                duration: 2000,
                 easing: Easing.linear,
                 useNativeDriver: true,
-            }),
-        ).start();
+            }).start(({ finished }) => {
+                if (!finished || cancelled) return;
+                runSpin3();
+            });
+        };
+
+        runSpin1();
+        runSpin2();
+        runSpin3();
+
+        return () => {
+            cancelled = true;
+            spin.stopAnimation();
+            spin2.stopAnimation();
+            spin3.stopAnimation();
+        };
     }, []);
+    //SPIN
     const r1 = spin.interpolate({
         inputRange: [0, 1],
         outputRange: ["0deg", "360deg"],
@@ -116,143 +248,133 @@ export default function Index() {
     const r2 = spin2.interpolate({
         inputRange: [0, 1],
         outputRange: ["360deg", "0deg"],
-    }); // opposite
+    });
     const r3 = spin3.interpolate({
         inputRange: [0, 1],
         outputRange: ["0deg", "360deg"],
     });
-
-    const onStart = () => {
-        console.log("START pressed");
-    };
-
     return (
-        <SafeAreaView style={styles.safe}>
-            <View style={styles.container}>
-                {/* Grid */}
-                <View style={styles.grid}>
-                    <View style={styles.col}>
-                        {left.map((img, idx) => (
-                            <Tile key={`l-${idx}`} uri={img.uri} h={img.h} />
-                        ))}
-                    </View>
-
-                    <View style={styles.col}>
-                        {right.map((img, idx) => (
-                            <Tile key={`r-${idx}`} uri={img.uri} h={img.h} />
-                        ))}
-                    </View>
-                </View>
-
-                <View style={styles.centerWrap} pointerEvents="box-none">
-                    {/* Rings */}
-                    <Animated.View
-                        style={[
-                            styles.ring,
-                            styles.ring1,
-                            { transform: [{ rotate: r1 }] },
-                        ]}
-                    />
-                    <Animated.View
-                        style={[
-                            styles.ring,
-                            styles.ring2,
-                            { transform: [{ rotate: r2 }] },
-                        ]}
-                    />
-                    <Animated.View
-                        style={[
-                            styles.ring,
-                            styles.ring3,
-                            { transform: [{ rotate: r3 }] },
-                        ]}
-                    />
-
-                    {/* Button */}
-                    <Pressable onPress={onStart} style={styles.startBtn}>
-                        <Text style={styles.startText}>START</Text>
-                    </Pressable>
-                </View>
+        <View style={gs.container}>
+            {/* Grid */}
+            <View style={styles.grid}>
+                <InfiniteColumn
+                    imgs={leftBase}
+                    drift={driftL}
+                    colHeight={leftColHeight}
+                />
+                <InfiniteColumn
+                    imgs={rightBase}
+                    drift={driftR}
+                    colHeight={rightColHeight}
+                />
             </View>
-        </SafeAreaView>
+
+            <View style={styles.centerWrap} pointerEvents="box-none">
+                {/* Rings */}
+                <Animated.View
+                    style={[
+                        styles.ring,
+                        styles.ring1,
+                        { transform: [{ rotate: r1 }] },
+                    ]}
+                />
+                <Animated.View
+                    style={[
+                        styles.ring,
+                        styles.ring2,
+                        { transform: [{ rotate: r2 }] },
+                    ]}
+                />
+                <Animated.View
+                    style={[
+                        styles.ring,
+                        styles.ring3,
+                        { transform: [{ rotate: r3 }] },
+                    ]}
+                />
+
+                {/* Button */}
+                <Pressable onPress={onStart} style={styles.startBtn}>
+                    <Text style={[gs.btnTextDefault,{fontSize: 22} ]}>START</Text>
+                </Pressable>
+            </View>
+        </View>
     );
 }
-{
-    /* This Background is only Dark mode must be changed later for Light mode or use Variables*/
-}
-const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: "#0b0f14" },
-    container: { flex: 1, backgroundColor: "#0b0f14" },
 
-    grid: {
-        flexDirection: "row",
-        paddingHorizontal: PAD,
-        paddingTop: 14,
-        gap: GAP,
-    },
+const makeStyles = (theme: Theme) =>
+    StyleSheet.create({
+        grid: {
+            flexDirection: "row",
+            paddingHorizontal: PAD,
+            paddingTop: 20,
+            gap: GAP,
+            overflow: "hidden",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+        },
 
-    col: {
-        flex: 1,
-        gap: GAP,
-    },
+        col: {
+            flex: 1,
+            gap: GAP,
+        },
 
-    tile: {
-        borderRadius: 16,
-        overflow: "hidden",
-        backgroundColor: "#121a24",
-    },
-    tileImg: {
-        width: "100%",
-        height: "100%",
-    },
-    centerWrap: {
-        position: "absolute",
-        left: 0,
-        right: 0,
-        top: "42%",
-        alignItems: "center",
-        justifyContent: "center",
-    },
+        tile: {
+            borderRadius: 16,
+            overflow: "hidden",
+            backgroundColor: theme.base + "50",
+        },
+        tileImg: {
+            width: "100%",
+            height: "100%",
+        },
+        centerWrap: {
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: "38%",
+            alignItems: "center",
+            justifyContent: "center",
+        },
 
-    startBtn: {
-        width: 150,
-        height: 150,
-        borderRadius: 75,
-        backgroundColor: "#ff1f8f",
-        alignItems: "center",
-        justifyContent: "center",
-        elevation: 6,
-        shadowColor: "#000",
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 6 },
-    },
-    startText: {
-        fontSize: 26,
-        fontWeight: "800",
-        letterSpacing: 1,
-        color: "#111",
-        textAlign: "center",
-    },
+        startBtn: {
+            width: 150,
+            height: 150,
+            borderRadius: 75,
+            backgroundColor: theme.primary,
+            alignItems: "center",
+            justifyContent: "center",
+            elevation: 6,
+            shadowColor: theme.black,
+            shadowOpacity: 0.25,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 6 },
+        },
+        ring: {
+            position: "absolute",
+            borderColor: theme.primary,
+            borderRadius: 999,
+            borderTopColor: theme.primary,
+            borderRightColor: theme.primary,
+            borderBottomColor: "transparent",
+            borderLeftColor: "transparent",
+        },
+        ring1: { width: 210, height: 210, borderWidth: 10, opacity: 1 },
+        ring2: { width: 260, height: 260, borderWidth: 6, opacity: 0.9 },
+        ring3: { width: 320, height: 320, borderWidth: 4, opacity: 0.75 },
 
-    ring: {
-        position: "absolute",
-        borderColor: "#ff1f8f",
-        borderRadius: 999,
-        borderStyle: "dashed",
-    },
-    ring1: { width: 210, height: 210, borderWidth: 10, opacity: 1 },
-    ring2: { width: 260, height: 260, borderWidth: 6, opacity: 0.9 },
-    ring3: { width: 320, height: 320, borderWidth: 4, opacity: 0.75 },
-
-    bottomIndicator: {
-        position: "absolute",
-        bottom: 8,
-        left: "48%",
-        width: 6,
-        height: 18,
-        borderRadius: 99,
-        backgroundColor: "#ff1f8f",
-        opacity: 0.9,
-    },
-});
+        bottomIndicator: {
+            position: "absolute",
+            bottom: 8,
+            left: "48%",
+            width: 6,
+            height: 18,
+            borderRadius: 99,
+            backgroundColor: theme.primary,
+            opacity: 0.9,
+        },
+    });
+//inifinte loop cycle made with claude.ai
