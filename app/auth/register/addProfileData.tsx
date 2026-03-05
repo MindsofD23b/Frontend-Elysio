@@ -5,12 +5,17 @@ import Input from "@/components/input";
 import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { BtnText, Button } from "@/components/button";
 import DateInput from "@/components/dateInput";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { router } from "expo-router";
 
 export default function AddProfileDataPage() {
     const { gs, theme } = useTheme();
 
     const [dateSelect, setDateSelect] = useState(false);
+
+    useEffect(() => {
+        router.prefetch("/auth/register/sendVerificationEmail");
+    }, []);
 
     function handleTelefonData(
         tel: string,
@@ -37,7 +42,10 @@ export default function AddProfileDataPage() {
                 )}
                 {dateSelect && <DateInput />}
 
-                <Button onPress={() => console.log()} style={{ marginTop: "auto" }}>
+                <Button
+                    onPress={() => router.push("/auth/register/sendVerificationEmail")}
+                    style={{ marginTop: "auto" }}
+                >
                     <BtnText>Continue</BtnText>
                 </Button>
             </BackWrapper>
