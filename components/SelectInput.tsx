@@ -6,7 +6,7 @@ import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated"
 interface ISelectProps {
     activeColor?: string;
     color?: string;
-    label: string;
+    label?: string;
     checked: boolean;
     onChange?: (newVal: boolean) => void;
 }

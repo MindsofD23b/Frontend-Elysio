@@ -80,7 +80,6 @@ export default function Apperance() {
                             <Text style={{ color: theme.text }}>Ligth</Text>
                             <Select
                                 checked={mode === ThemeOptions.light}
-                                label=""
                                 onChange={() => setMode(ThemeOptions.light)}
                             />
                         </Pressable>
@@ -103,7 +102,6 @@ export default function Apperance() {
                             <Text style={{ color: theme.text }}>Dark</Text>
                             <Select
                                 checked={mode === ThemeOptions.dark}
-                                label=""
                                 onChange={() => setMode(ThemeOptions.dark)}
                             />
                         </Pressable>
