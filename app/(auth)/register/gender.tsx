@@ -14,7 +14,7 @@ export default function Gender() {
     const styles = makeStyles(theme);
 
     useEffect(() => {
-        router.prefetch("/auth/register/interests");
+        router.prefetch("/register/interests");
     }, []);
 
     const [selected, setSelected] = useState<GenderType | null>(null);
@@ -73,7 +73,7 @@ export default function Gender() {
 
                 <Button
                     style={{ marginTop: "auto" }}
-                    onPress={() => router.push("/auth/register/interests")}
+                    onPress={() => router.push("/register/interests")}
                     disabled={!selected}
                 >
                     <BtnText>Continue</BtnText>

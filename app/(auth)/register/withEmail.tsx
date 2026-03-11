@@ -12,7 +12,7 @@ type FormData = {
 
 export default function WithEmail() {
     useEffect(() => {
-        router.prefetch("/auth/register/password");
+        router.prefetch("/register/password");
     }, []);
 
     const { gs, theme } = useTheme();
@@ -39,7 +39,7 @@ export default function WithEmail() {
         setTimeout(() => {
             setLoading(false);
             router.push({
-                pathname: "/auth/register/password",
+                pathname: "/register/password",
                 params: { email: data.email },
             });
         }, 2000);

@@ -2,8 +2,6 @@ import { useTheme } from "@/app/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
-import Input from "@/components/input";
-import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { BtnText, Button } from "@/components/button";
 import { router } from "expo-router";
 import { useEffect } from "react";
@@ -12,7 +10,7 @@ export default function AddProfilePicturePage() {
     const { gs, theme } = useTheme();
 
     useEffect(() => {
-        router.prefetch("/auth/register/addProfileData");
+        router.prefetch("/register/addProfileData");
     }, []);
 
     return (
@@ -46,7 +44,7 @@ export default function AddProfilePicturePage() {
                 </Pressable>
 
                 <Button
-                    onPress={() => router.push("/auth/register/addProfileData")}
+                    onPress={() => router.push("/register/addProfileData")}
                     style={{ marginTop: "auto" }}
                 >
                     <BtnText>Continue</BtnText>

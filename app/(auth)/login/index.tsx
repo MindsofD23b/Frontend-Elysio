@@ -12,8 +12,9 @@ export default function Login() {
     const styles = makeStyles(theme);
 
     useEffect(() => {
-        router.prefetch("/auth/login/withEmail");
-        router.prefetch("/auth/login/withPhoneNumber");
+        router.prefetch("/login/withEmail");
+        router.prefetch("/login/withPhoneNumber");
+        router.prefetch("/register");
     }, []);
 
     return (
@@ -30,19 +31,19 @@ export default function Login() {
                 Welcome back! Please login to your account.
             </Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
-                <Button onPress={() => router.push("/auth/login/withEmail")}>
+                <Button onPress={() => router.push("/login/withEmail")}>
                     <BtnText>Continue with Email</BtnText>
                 </Button>
                 <Button
                     variante="outline"
-                    onPress={() => router.push("/auth/login/withPhoneNumber")}
+                    onPress={() => router.push("/login/withPhoneNumber")}
                 >
                     <BtnText>Continue with Phone Number</BtnText>
                 </Button>
             </View>
 
             <Link
-                href="/auth/register"
+                href="/register"
                 style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
             >
                 Don{"'"}t have an account?{" "}

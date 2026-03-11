@@ -132,8 +132,8 @@ export default function Index() {
     const driftL = useRef(new Animated.Value(0)).current;
     const driftR = useRef(new Animated.Value(0)).current;
 
-    const SPEED_L = 6000;
-    const SPEED_R = 8000;
+    const SPEED_L = 7000;
+    const SPEED_R = 9000;
 
     useEffect(() => {
         let cancelledL = false;
