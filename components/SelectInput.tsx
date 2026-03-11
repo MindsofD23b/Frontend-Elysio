@@ -22,7 +22,7 @@ export default function Select({
     const styles = makeStyles(theme);
 
     const boxStyle = useAnimatedStyle(() => ({
-        backgroundColor: withTiming(checked ? theme.primary : theme.background, {
+        backgroundColor: withTiming(checked ? theme.primary : theme.card + "FA", {
             duration: 250,
         }),
         borderColor: withTiming(checked ? theme.primary : theme.primary, {
@@ -33,7 +33,7 @@ export default function Select({
     const dotStyle = useAnimatedStyle(() => ({
         opacity: withTiming(checked ? 1 : 0, { duration: 250 }),
         transform: [{ scale: withTiming(checked ? 1 : 0.5, { duration: 150 }) }],
-        backgroundColor: withTiming(checked ? theme.white : theme.background, {
+        backgroundColor: withTiming(checked ? theme.white : theme.card + "FA", {
             duration: 250,
         }),
     }));

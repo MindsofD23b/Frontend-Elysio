@@ -77,7 +77,7 @@ export default function Apperance() {
                                 style={{ height: 150, width: 80 }}
                                 contentFit="fill"
                             />
-                            <Text style={{ color: theme.text }}>Ligth</Text>
+                            <Text style={{ color: theme.text }}>Light</Text>
                             <Select
                                 checked={mode === ThemeOptions.light}
                                 onChange={() => setMode(ThemeOptions.light)}
@@ -123,7 +123,7 @@ export default function Apperance() {
                             alignItems: "center",
                         }}
                     >
-                        <Text>System Theme</Text>
+                        <Text style={{ color: theme.text }}>System Theme</Text>
 
                         <Switch
                             value={mode === ThemeOptions.automatic}
