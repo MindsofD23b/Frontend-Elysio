@@ -9,27 +9,29 @@ import { Pressable, Switch, Text, useColorScheme, View } from "react-native";
 
 export default function Apperance() {
     const COLOR_SCHEME = useColorScheme();
-    const [mode, setModeRaw] = useState<ThemeOptions>(ThemeOptions.light);
+    const [mode, setModeRaw] = useState<ThemeOptions>();
+    const [loaded, setLoaded] = useState(false);
     const { theme, setTheme } = useTheme();
 
     useEffect(() => {
+        if (!loaded) return;
+
         const resolved =
             mode === ThemeOptions.automatic ? strToOption(COLOR_SCHEME ?? "light") : mode;
 
         setTheme(colors[resolved === ThemeOptions.dark ? "dark" : "light"]);
-    }, [mode]);
+    }, [mode, loaded]);
 
     useEffect(() => {
         get<ThemeOptions>("theme").then((val) => {
             setModeRaw(val || ThemeOptions.light);
+            setLoaded(true);
         });
     }, []);
 
     async function setMode(newVal: ThemeOptions) {
         setModeRaw(newVal);
         await store("theme", newVal);
-
-        console.log(newVal);
     }
 
     function setAutomatic() {
