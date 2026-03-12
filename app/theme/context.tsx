@@ -1,3 +1,4 @@
+// Made with ChatGPT
 import { createContext, useContext } from "react";
 import { makeGlobalStyles } from "@/app/theme/styles";
 import { Theme } from "@/app/theme/theme";

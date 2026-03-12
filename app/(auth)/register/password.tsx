@@ -20,7 +20,7 @@ export default function Password() {
     const { gs, theme } = useTheme();
 
     useEffect(() => {
-        router.prefetch("/auth/register/gender");
+        router.prefetch("/register/gender");
     }, []);
 
     const [password, setPassword] = useState("");
@@ -62,7 +62,7 @@ export default function Password() {
 
         setTimeout(() => {
             setLoading(false);
-            router.push("/auth/register/gender");
+            router.push("/register/gender");
         }, 2000);
     }
 
