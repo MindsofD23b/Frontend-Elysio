@@ -18,10 +18,10 @@ const schema = z.object({
 });
 
 interface IPhoneNumberInput {
-    onSubmit: () => void;
+    sendData: (tel: string, intTel: string, natTel: string | undefined) => void;
 }
 
-export default function PhoneNumberInput({ onSubmit }: IPhoneNumberInput) {
+export default function PhoneNumberInput({ sendData }: IPhoneNumberInput) {
     const { theme } = useTheme();
 
     const [countryCode, setCountryCode] = useState<CC>("CH");
@@ -31,10 +31,11 @@ export default function PhoneNumberInput({ onSubmit }: IPhoneNumberInput) {
         password?: { message: string };
     }>({});
 
-    onSubmit = () => {
-        console.log("Validating phone number:", tel);
+    const onInputExit = (text: string) => {
+        console.log("Validating phone number:", text);
 
-        const validation = schema.safeParse({ tel });
+        const validation = schema.safeParse({ tel: text });
+
         if (!validation.success) {
             console.log("Validation errors:", validation.error.format());
             setErrors((prev) => ({
@@ -48,33 +49,34 @@ export default function PhoneNumberInput({ onSubmit }: IPhoneNumberInput) {
             return;
         }
 
-        const telStriped = tel.startsWith("0")
-            ? tel.startsWith("00")
-                ? tel.substring(2, tel.length)
-                : tel.substring(1, tel.length)
-            : tel;
+        const telStriped = text.startsWith("0")
+            ? text.startsWith("00")
+                ? text.substring(2)
+                : text.substring(1)
+            : text;
 
         const parsedInternational = parsePhoneNumberFromString(
             telStriped,
             countryCode as CountryCode,
         )?.formatInternational();
+
         const parsedNational = parsePhoneNumberFromString(
             telStriped,
             countryCode as CountryCode,
         )?.formatNational();
 
-        console.log("Internatnional Parsed phone number:", parsedInternational);
-        console.log("Natnional Parsed phone number:", parsedNational);
-        if (!parsedInternational || parsedInternational.toString().length < 5) {
-            setErrors((prev) => ({ ...prev, tel: { message: "Invalid phone number" } }));
+        console.log("International Parsed phone number:", parsedInternational);
+        console.log("National Parsed phone number:", parsedNational);
+
+        if (!parsedInternational || parsedInternational.length < 5) {
+            setErrors((prev) => ({
+                ...prev,
+                tel: { message: "Invalid phone number" },
+            }));
             return;
         }
 
-        console.log({ tel });
-        router.push({
-            pathname: "/auth/register/sendVerificationPhone",
-            params: { tel: parsedInternational.toString() },
-        });
+        sendData(text, parsedInternational, parsedNational);
     };
 
     return (
@@ -82,9 +84,9 @@ export default function PhoneNumberInput({ onSubmit }: IPhoneNumberInput) {
             <View
                 style={{
                     width: "100%",
-                    marginTop: 30,
                     flexDirection: "row",
                     alignItems: "center",
+                    marginVertical: 16,
                     gap: 20,
                     borderColor: theme.primary,
                     borderWidth: 1,
@@ -122,6 +124,7 @@ export default function PhoneNumberInput({ onSubmit }: IPhoneNumberInput) {
                     autoComplete="tel"
                     style={{ color: theme.text }}
                     onChangeText={(text) => setTel(text)}
+                    onBlur={() => onInputExit(tel)}
                     value={tel}
                 />
                 {errors.tel && (

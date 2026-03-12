@@ -4,7 +4,6 @@ import { BtnText, Button } from "@/components/button";
 import { router } from "expo-router";
 import { useSearchParams } from "expo-router/build/hooks";
 import { LucideMailbox } from "lucide-react-native";
-import { useEffect } from "react";
 import { Text, View } from "react-native";
 
 export default function SendVerificationEmail() {
@@ -12,10 +11,6 @@ export default function SendVerificationEmail() {
 
     const searchParams = useSearchParams();
     const email = searchParams.get("email") || "error";
-
-    useEffect(() => {
-        router.prefetch("/auth/register/password");
-    }, []);
 
     return (
         <>

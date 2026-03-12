@@ -7,6 +7,7 @@ import { Theme } from "@/app/theme/theme";
 type TThemeContext = {
     theme: Theme;
     gs: ReturnType<typeof makeGlobalStyles>;
+    // with ChatGPT
     setTheme: (t: Theme) => void;
 };
 
