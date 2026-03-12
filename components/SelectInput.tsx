@@ -1,41 +1,39 @@
 import { useTheme } from "@/app/theme/context";
 import { Theme } from "@/app/theme/theme";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated";
+import { useEffect } from "react";
+import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import Animated, {
+    interpolateColor,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
+} from "react-native-reanimated";
 
 interface ISelectProps {
-    activeColor?: string;
-    color?: string;
     label?: string;
     checked: boolean;
     onChange?: (newVal: boolean) => void;
 }
 
-export default function Select({
-    color,
-    activeColor,
-    label,
-    checked,
-    onChange,
-}: ISelectProps) {
+export default function Select({ label, checked, onChange }: ISelectProps) {
     const { theme } = useTheme();
     const styles = makeStyles(theme);
 
+    const progress = useSharedValue(checked ? 1 : 0);
+
+    useEffect(() => {
+        progress.value = withTiming(checked ? 1 : 0, { duration: 250 });
+    }, [checked]);
+
     const boxStyle = useAnimatedStyle(() => ({
-        backgroundColor: withTiming(checked ? theme.primary : theme.card + "FA", {
-            duration: 250,
-        }),
-        borderColor: withTiming(checked ? theme.primary : theme.primary, {
-            duration: 250,
-        }),
+        backgroundColor: checked ? theme.primary : theme.card + "FA",
+        borderColor: theme.primary,
     }));
 
     const dotStyle = useAnimatedStyle(() => ({
         opacity: withTiming(checked ? 1 : 0, { duration: 250 }),
         transform: [{ scale: withTiming(checked ? 1 : 0.5, { duration: 150 }) }],
-        backgroundColor: withTiming(checked ? theme.white : theme.card + "FA", {
-            duration: 250,
-        }),
+        backgroundColor: theme.white ?? theme.card + "FA",
     }));
 
     return (
@@ -67,15 +65,8 @@ const makeStyles = (theme: Theme) =>
             borderColor: theme.primary,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "#fff",
-        },
-        boxChecked: {
-            backgroundColor: theme.primary,
-            borderColor: theme.primary,
         },
         checkmark: {
-            color: "#fff",
-            fontSize: 14,
             width: 12,
             height: 12,
             borderRadius: 100,
@@ -83,6 +74,6 @@ const makeStyles = (theme: Theme) =>
         label: {
             marginLeft: 12,
             fontSize: 16,
-            color: "#333",
+            color: theme.primary,
         },
     });

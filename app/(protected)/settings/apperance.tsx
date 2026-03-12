@@ -9,7 +9,7 @@ import { Pressable, Switch, Text, useColorScheme, View } from "react-native";
 
 export default function Apperance() {
     const COLOR_SCHEME = useColorScheme();
-    const [mode, setModeRaw] = useState<ThemeOptions>();
+    const [mode, setModeRaw] = useState<ThemeOptions>(ThemeOptions.light);
     const { theme, setTheme } = useTheme();
 
     useEffect(() => {
@@ -19,20 +19,17 @@ export default function Apperance() {
         setTheme(colors[resolved === ThemeOptions.dark ? "dark" : "light"]);
     }, [mode]);
 
-    get<ThemeOptions>("theme").then((val) => {
-        setModeRaw(val || ThemeOptions.light);
-    });
+    useEffect(() => {
+        get<ThemeOptions>("theme").then((val) => {
+            setModeRaw(val || ThemeOptions.light);
+        });
+    }, []);
 
     async function setMode(newVal: ThemeOptions) {
         setModeRaw(newVal);
         await store("theme", newVal);
 
-        // const resolved =
-        //     newVal === ThemeOptions.automatic
-        //         ? strToOption(COLOR_SCHEME ?? "light")
-        //         : newVal;
-
-        // setTheme(colors[resolved === ThemeOptions.dark ? "dark" : "light"]);
+        console.log(newVal);
     }
 
     function setAutomatic() {
@@ -81,6 +78,7 @@ export default function Apperance() {
                             <Select
                                 checked={mode === ThemeOptions.light}
                                 onChange={() => setMode(ThemeOptions.light)}
+                                label=""
                             />
                         </Pressable>
                         <Pressable
@@ -102,6 +100,7 @@ export default function Apperance() {
                             <Text style={{ color: theme.text }}>Dark</Text>
                             <Select
                                 checked={mode === ThemeOptions.dark}
+                                label=""
                                 onChange={() => setMode(ThemeOptions.dark)}
                             />
                         </Pressable>
