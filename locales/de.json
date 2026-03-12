@@ -15,6 +15,101 @@
       "termsOfService": "Nutzungsbedingungen",
       "and": "und",
       "privacyPolicy": "Datenschutzrichtlinie"
+    },
+    "register": {
+      "title": "Elysio",
+      "subtitle": "Registrieren um fortzufahren",
+      "body": "Neue Liebe entdecken",
+      "continueWithEmail": "Mit E-Mail fortfahren",
+      "alreadyHaveAccount": "Bereits ein",
+      "account": "Konto?",
+      "orLoginWith": "Oder anmelden mit",
+      "google": "Google",
+      "apple": "Apple",
+      "terms": "Durch die Fortsetzung stimmst du unseren",
+      "termsOfService": "Nutzungsbedingungen",
+      "and": "und",
+      "privacyPolicy": "Datenschutzrichtlinie",
+      "profilePicture": {
+        "title": "Profilbild hinzufügen",
+        "makeAttractive": "Mach dein",
+        "makeAttractiveBold": "Profil",
+        "makeAttractiveSuffix": "attraktiv",
+        "continue": "Weiter"
+      },
+      "profileData": {
+        "title": "Profil vervollständigen",
+        "makeAttractive": "Mach dein",
+        "makeAttractiveBold": "Profil",
+        "makeAttractiveSuffix": "attraktiv",
+        "fullName": "Vollständiger Name",
+        "jobTitle": "Berufsbezeichnung",
+        "selectBirthday": "Geburtstag auswählen",
+        "continue": "Weiter"
+      },
+      "password": {
+        "title": "Passwort festlegen",
+        "body": "Dein Passwort schützt dein Konto.",
+        "bodyBold": "Wähle es weise",
+        "enterPassword": "Passwort eingeben",
+        "confirmPassword": "Passwort bestätigen",
+        "continue": "Weiter",
+        "errors": {
+          "mustBeSet": "Passwort muss gesetzt werden",
+          "minLength": "Passwort muss mindestens 6 Zeichen lang sein",
+          "uppercase": "Passwort muss mindestens 1 Großbuchstaben enthalten",
+          "lowercase": "Passwort muss mindestens 1 Kleinbuchstaben enthalten",
+          "number": "Passwort muss mindestens 1 Zahl enthalten",
+          "noMatch": "Passwörter stimmen nicht überein"
+        }
+      },
+      "gender": {
+        "title": "Geschlecht auswählen",
+        "body": "Bitte wähle",
+        "bodyBold": "dein Geschlecht",
+        "male": "Männlich",
+        "female": "Weiblich",
+        "continue": "Weiter"
+      },
+      "interests": {
+        "title": "Interessen auswählen",
+        "body": "Wähle 6 Interessen, um Nutzer mit ähnlichen Dingen kennenzulernen",
+        "continue": "Weiter",
+        "errorTitle": "Auswahlgrenze",
+        "errorBody": "Bitte wähle mindestens {{min}} und maximal {{max}} Interessen."
+      },
+      "verifyEmail": {
+        "title": "E-Mail bestätigen",
+        "sent": "Wir haben dir eine Bestätigungs-E-Mail gesendet",
+        "verify": "Um dich einzuloggen, bestätige deine E-Mail:",
+        "noEmail": "Keine E-Mail erhalten? Überprüfe deinen Spam-Ordner oder",
+        "resend": "Hier klicken zum erneuten Senden.",
+        "continue": "Weiter"
+      },
+      "withEmail": {
+        "title": "E-Mail eingeben",
+        "body": "Bitte gib deine",
+        "bodyBold": "E-Mail-Adresse ein",
+        "placeholder": "E-Mail",
+        "continue": "Weiter",
+        "errors": {
+          "invalidEmail": "Ungültige E-Mail-Adresse"
+        }
+      }
     }
+  },
+  "home": {
+    "start": "START"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "personalDetails": "Persönliche Daten",
+    "interests": "Interessen",
+    "termsAndConditions": "Allgemeine Geschäftsbedingungen",
+    "privacyPolicy": "Datenschutz & Richtlinien",
+    "aboutUs": "Über uns",
+    "lightmode": "Hellmodus",
+    "darkmode": "Dunkelmodus",
+    "logOut": "Abmelden"
   }
 }

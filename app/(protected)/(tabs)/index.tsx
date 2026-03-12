@@ -11,12 +11,12 @@ import {
 } from "react-native";
 import { useTheme } from "@/app/theme/context";
 import { Theme } from "@/app/theme/theme";
-
+import i18n from "@/i18n";
 const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
 const GAP = 28;
 const PAD = 16;
-
+const t = (key: string) => i18n.t(`home.${key}`);
 const COL_W = (width - PAD * 2 - GAP) / 2;
 const images = [
     // left column
@@ -276,7 +276,9 @@ export default function Index() {
 
                 {/* Button */}
                 <Pressable onPress={onStart} style={styles.startBtn}>
-                    <Text style={[gs.btnTextDefault, { fontSize: 22 }]}>START</Text>
+                    <Text style={[gs.btnTextDefault, { fontSize: 22 }]}>
+                        {t("start")}
+                    </Text>
                     <Text style={[gs.btnTextDefault, { fontSize: 28, marginTop: 4 }]}>
                         {count}
                     </Text>

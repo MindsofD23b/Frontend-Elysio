@@ -1,0 +1,115 @@
+{
+  "auth": {
+    "login": {
+      "title": "Elysio",
+      "subtitle": "Inicia sesión para continuar",
+      "body": "¡Bienvenido de nuevo! Por favor inicia sesión en tu cuenta.",
+      "continueWithEmail": "Continuar con correo electrónico",
+      "continueWithPhone": "Continuar con número de teléfono",
+      "noAccount": "¿No tienes una cuenta?",
+      "register": "Registrarse",
+      "orLoginWith": "O iniciar sesión con",
+      "google": "Google",
+      "apple": "Apple",
+      "terms": "Al continuar, aceptas nuestros",
+      "termsOfService": "Términos de servicio",
+      "and": "y",
+      "privacyPolicy": "Política de privacidad"
+    },
+    "register": {
+      "title": "Elysio",
+      "subtitle": "Regístrate para continuar",
+      "body": "Descubre un nuevo amor",
+      "continueWithEmail": "Continuar con correo electrónico",
+      "alreadyHaveAccount": "¿Ya tienes una",
+      "account": "cuenta?",
+      "orLoginWith": "O iniciar sesión con",
+      "google": "Google",
+      "apple": "Apple",
+      "terms": "Al continuar, aceptas nuestros",
+      "termsOfService": "Términos de servicio",
+      "and": "y",
+      "privacyPolicy": "Política de privacidad",
+      "profilePicture": {
+        "title": "Añade tu foto de perfil",
+        "makeAttractive": "Haz tu",
+        "makeAttractiveBold": "perfil",
+        "makeAttractiveSuffix": "atractivo",
+        "continue": "Continuar"
+      },
+      "profileData": {
+        "title": "Completa tu perfil",
+        "makeAttractive": "Haz tu",
+        "makeAttractiveBold": "perfil",
+        "makeAttractiveSuffix": "atractivo",
+        "fullName": "Nombre completo",
+        "jobTitle": "Título del puesto",
+        "selectBirthday": "Selecciona tu cumpleaños",
+        "continue": "Continuar"
+      },
+      "password": {
+        "title": "Establece tu contraseña",
+        "body": "Tu contraseña mantiene tu cuenta segura.",
+        "bodyBold": "Elige sabiamente",
+        "enterPassword": "Introduce la contraseña",
+        "confirmPassword": "Confirmar contraseña",
+        "continue": "Continuar",
+        "errors": {
+          "mustBeSet": "La contraseña debe establecerse",
+          "minLength": "La contraseña debe tener al menos 6 caracteres",
+          "uppercase": "La contraseña debe contener al menos 1 mayúscula",
+          "lowercase": "La contraseña debe contener al menos 1 minúscula",
+          "number": "La contraseña debe contener al menos 1 número",
+          "noMatch": "Las contraseñas no coinciden"
+        }
+      },
+      "gender": {
+        "title": "Selecciona tu género",
+        "body": "Por favor selecciona",
+        "bodyBold": "tu género",
+        "male": "Masculino",
+        "female": "Femenino",
+        "continue": "Continuar"
+      },
+      "interests": {
+        "title": "Selecciona tus intereses",
+        "body": "Elige 6 intereses para conectar con usuarios similares",
+        "continue": "Continuar",
+        "errorTitle": "Límite de selección",
+        "errorBody": "Por favor elige mínimo {{min}} y máximo {{max}} intereses."
+      },
+      "verifyEmail": {
+        "title": "Confirmar correo electrónico",
+        "sent": "Te hemos enviado un correo de confirmación",
+        "verify": "Para iniciar sesión, verifica tu correo:",
+        "noEmail": "¿No recibiste el correo? Revisa tu carpeta de spam o",
+        "resend": "Haz clic aquí para reenviar.",
+        "continue": "Continuar"
+      },
+      "withEmail": {
+        "title": "Introduce tu correo electrónico",
+        "body": "Por favor introduce tu",
+        "bodyBold": "dirección de correo electrónico",
+        "placeholder": "Correo electrónico",
+        "continue": "Continuar",
+        "errors": {
+          "invalidEmail": "Dirección de correo electrónico inválida"
+        }
+      }
+    }
+  },
+  "home": {
+    "start": "INICIAR"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "personalDetails": "Datos personales",
+    "interests": "Intereses",
+    "termsAndConditions": "Términos y condiciones",
+    "privacyPolicy": "Privacidad y política",
+    "aboutUs": "Sobre nosotros",
+    "lightmode": "Modo claro",
+    "darkmode": "Modo oscuro",
+    "logOut": "Cerrar sesión"
+  }
+}

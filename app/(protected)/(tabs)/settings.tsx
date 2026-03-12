@@ -4,10 +4,10 @@ import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-na
 
 import { useTheme } from "@/app/theme/context";
 import { colors } from "@/app/theme/theme";
-
+import i18n from "@/i18n";
 export default function SettingsScreen() {
     const { theme, setTheme } = useTheme();
-
+    const t = (key: string) => i18n.t(`settings.${key}`);
     const mutedText = withAlpha(theme.text, 0.55);
     const divider = withAlpha(theme.text, 0.15);
     const iconColor = withAlpha(theme.text, 0.9);
@@ -18,7 +18,7 @@ export default function SettingsScreen() {
         <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
             <View style={styles.container}>
                 <Text style={[styles.title, { marginTop: 20, color: theme.text }]}>
-                    Settings
+                    {t("title")}
                 </Text>
 
                 <View style={styles.profileWrap}>
@@ -37,35 +37,35 @@ export default function SettingsScreen() {
                 <View style={styles.list}>
                     <MenuRow
                         icon="person-outline"
-                        label="Personal Details"
+                        label={t("personalDetails")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
                     />
                     <MenuRow
                         icon="heart-outline"
-                        label="Interests"
+                        label={t("interests")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
                     />
                     <MenuRow
                         icon="globe-outline"
-                        label="Terms and Conditions"
+                        label={t("termsAndConditions")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
                     />
                     <MenuRow
                         icon="notifications-outline"
-                        label="Privacy & Policy"
+                        label={t("privacyPolicy")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
                     />
                     <MenuRow
                         icon="eye-outline"
-                        label="About us"
+                        label={t("aboutUs")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
@@ -83,7 +83,7 @@ export default function SettingsScreen() {
                             color={isLight ? theme.primary : mutedText}
                         />
                         <Text style={{ color: isLight ? theme.primary : mutedText }}>
-                            Lightmode
+                            {t("lightmode")}
                         </Text>
                     </Pressable>
 
@@ -97,7 +97,7 @@ export default function SettingsScreen() {
                             color={!isLight ? theme.primary : mutedText}
                         />
                         <Text style={{ color: !isLight ? theme.primary : mutedText }}>
-                            Darkmode
+                            {t("darkmode")}
                         </Text>
                     </Pressable>
                 </View>
@@ -106,7 +106,7 @@ export default function SettingsScreen() {
                     style={{ marginTop: "auto", marginBottom: 30 }}
                     onPress={() => {}}
                 >
-                    <BtnText>Log Out</BtnText>
+                    <BtnText>{t("logOut")}</BtnText>
                 </Button>
             </View>
         </SafeAreaView>

@@ -1,5 +1,4 @@
 {
-    // Made with Claud ai
     "auth": {
         "login": {
             "title": "Elysio",
@@ -15,7 +14,7 @@
             "terms": "By continuing, you agree to our",
             "termsOfService": "Terms of Service",
             "and": "and",
-            "privacyPolicy": "Privacy Policy",
+            "privacyPolicy": "Privacy Policy"
         },
         "register": {
             "title": "Elysio",
@@ -36,7 +35,7 @@
                 "makeAttractive": "Make your",
                 "makeAttractiveBold": "Profile",
                 "makeAttractiveSuffix": "attractive",
-                "continue": "Continue",
+                "continue": "Continue"
             },
             "profileData": {
                 "title": "Finish your Profile",
@@ -46,7 +45,7 @@
                 "fullName": "Full name",
                 "jobTitle": "Job Title",
                 "selectBirthday": "Select your birthday",
-                "continue": "Continue",
+                "continue": "Continue"
             },
             "password": {
                 "title": "Set Your Password",
@@ -61,8 +60,8 @@
                     "uppercase": "Password must contain at least 1 uppercase letter",
                     "lowercase": "Password must contain at least 1 lowercase letter",
                     "number": "Password must contain at least 1 number",
-                    "noMatch": "Passwords don't match",
-                },
+                    "noMatch": "Passwords don't match"
+                }
             },
             "gender": {
                 "title": "Select your Gender",
@@ -70,14 +69,14 @@
                 "bodyBold": "your Gender",
                 "male": "Male",
                 "female": "Female",
-                "continue": "Continue",
+                "continue": "Continue"
             },
             "interests": {
                 "title": "Select your Interests",
                 "body": "Pick 6 interests to match with users who have similar things in common",
                 "continue": "Continue",
                 "errorTitle": "Selection limit",
-                "errorBody": "Please choose minimum {{min}} and maximum {{max}} interests.",
+                "errorBody": "Please choose minimum {{min}} and maximum {{max}} interests."
             },
             "verifyEmail": {
                 "title": "Confirm Email",
@@ -85,7 +84,7 @@
                 "verify": "To log in to your account verify your email:",
                 "noEmail": "Didn't receive the email? Check your spam folder or",
                 "resend": "Click here to resend.",
-                "continue": "Continue",
+                "continue": "Continue"
             },
             "withEmail": {
                 "title": "Enter your Email",
@@ -94,9 +93,23 @@
                 "placeholder": "Email",
                 "continue": "Continue",
                 "errors": {
-                    "invalidEmail": "Invalid email address",
-                },
-            },
+                    "invalidEmail": "Invalid email address"
+                }
+            }
         },
-    },
+        "home": {
+            "start": "START"
+        },
+        "settings": {
+            "title": "Settings",
+            "personalDetails": "Personal Details",
+            "interests": "Interests",
+            "termsAndConditions": "Terms and Conditions",
+            "privacyPolicy": "Privacy & Policy",
+            "aboutUs": "About us",
+            "lightmode": "Lightmode",
+            "darkmode": "Darkmode",
+            "logOut": "Log Out"
+        }
+    }
 }
