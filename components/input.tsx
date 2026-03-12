@@ -11,7 +11,7 @@ interface InputProps {
         | "oneTimeCode"
         | "none"
         | "newPassword";
-    keyboardType?: "default" | "email-address" | "numeric" | "phone-pad";
+    keyboardType?: "default" | "email-address" | "numeric" | "phone-pad" | "number-pad";
     autoComplete?:
         | "off"
         | "username"

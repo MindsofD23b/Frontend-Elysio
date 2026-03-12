@@ -3,7 +3,7 @@ import BaseTheme from "./baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
 
-const isLoggedIn = false;
+const isLoggedIn = true;
 
 export default function RootLayout() {
     return (

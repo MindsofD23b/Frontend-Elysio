@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { BtnText, Button } from "@/components/button";
 import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
+import { router } from "expo-router";
+
 import { useTheme } from "@/app/theme/context";
 import { colors } from "@/app/theme/theme";
 
@@ -41,6 +43,7 @@ export default function SettingsScreen() {
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        onPress={() => router.push("/settings/personaldetails")}
                     />
                     <MenuRow
                         icon="heart-outline"
@@ -48,6 +51,7 @@ export default function SettingsScreen() {
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        onPress={() => router.push("/settings/interests")}
                     />
                     <MenuRow
                         icon="globe-outline"
@@ -112,27 +116,28 @@ export default function SettingsScreen() {
         </SafeAreaView>
     );
 }
-
 function MenuRow({
     icon,
     label,
     divider,
     iconColor,
     textColor,
+    onPress,
 }: {
     icon: any;
     label: string;
     divider: string;
     iconColor: string;
     textColor: string;
+    onPress?: () => void;
 }) {
     return (
-        <View style={[styles.row, { borderBottomColor: divider }]}>
+        <Pressable onPress={onPress} style={[styles.row, { borderBottomColor: divider }]}>
             <View style={styles.rowLeft}>
                 <Ionicons name={icon} size={20} color={iconColor} />
                 <Text style={[styles.rowLabel, { color: textColor }]}>{label}</Text>
             </View>
-        </View>
+        </Pressable>
     );
 }
 
@@ -155,6 +160,7 @@ const styles = StyleSheet.create({
     },
 
     title: {
+        paddingTop: 20,
         fontSize: 26,
         fontWeight: "800",
         textAlign: "center",
