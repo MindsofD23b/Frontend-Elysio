@@ -5,6 +5,7 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
+import i18n from "@/i18n";
 
 type FormData = {
     email: string;
@@ -14,7 +15,7 @@ export default function WithEmail() {
     useEffect(() => {
         router.prefetch("/auth/register/password");
     }, []);
-
+    const t = (key: string) => i18n.t(`auth.register.withEmail.${key}`);
     const { gs, theme } = useTheme();
 
     const [email, setEmail] = useState("");
@@ -56,16 +57,16 @@ export default function WithEmail() {
                         height: "100%",
                     }}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>Enter your Email</Text>
+                    <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
                     <Text
                         style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}
                     >
-                        Please enter your{" "}
-                        <Text style={{ fontWeight: "bold" }}>Email Address</Text>
+                        {t("body")}
+                        <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
                     </Text>
                     <View style={{ width: "100%", marginTop: 30 }}>
                         <Input
-                            placeholder="Email"
+                            placeholder={t("placeholder")}
                             keyboardType="email-address"
                             onChangeText={(text) => setEmail(text)}
                             value={email}
@@ -82,7 +83,7 @@ export default function WithEmail() {
                         onPress={() => onSubmit({ email })}
                         disabled={loading}
                     >
-                        {loading ? <Loader /> : <BtnText>Continue</BtnText>}
+                        {loading ? <Loader /> : <BtnText>{t("continue")}</BtnText>}
                     </Button>
                 </View>
             </BackWrapper>

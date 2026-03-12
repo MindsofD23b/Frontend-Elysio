@@ -7,12 +7,13 @@ import { BtnText, Button } from "@/components/button";
 import DateInput from "@/components/dateInput";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
-
+import i18n from "@/i18n";
 export default function AddProfileDataPage() {
     const { gs, theme } = useTheme();
 
     const [dateSelect, setDateSelect] = useState(false);
 
+    const t = (key: string) => i18n.t(`auth.register.${key}`);
     useEffect(() => {
         router.prefetch("/auth/register/sendVerificationEmail");
     }, []);

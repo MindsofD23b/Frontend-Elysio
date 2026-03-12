@@ -6,11 +6,13 @@ import { StyleSheet, Text, View, useColorScheme } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/app/theme/theme";
 import { useEffect } from "react";
+import i18n from "@/i18n";
+import { keyof } from "zod";
 
 export default function Login() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
-
+    const t = (key: string) => i18n.t("auth.login.${key}");
     useEffect(() => {
         router.prefetch("/auth/login/withEmail");
         router.prefetch("/auth/login/withPhoneNumber");
@@ -20,24 +22,22 @@ export default function Login() {
         <View style={gs.container}>
             <HomeIcon size={48} color={theme.primary} />
             <Text style={[styles.Title, { marginBottom: 64, color: theme.primary }]}>
-                Elysio
+                {t("title")}
             </Text>
 
-            <Text style={[styles.Subtitle, { color: theme.text }]}>
-                Login to continue
-            </Text>
+            <Text style={[styles.Subtitle, { color: theme.text }]}>{t("subtitle")}</Text>
             <Text style={[gs.bodyText, { color: theme.accent, marginBottom: 32 }]}>
-                Welcome back! Please login to your account.
+                {t("body")}
             </Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
                 <Button onPress={() => router.push("/auth/login/withEmail")}>
-                    <BtnText>Continue with Email</BtnText>
+                    <BtnText> {t("continueWithEmail")}</BtnText>
                 </Button>
                 <Button
                     variante="outline"
                     onPress={() => router.push("/auth/login/withPhoneNumber")}
                 >
-                    <BtnText>Continue with Phone Number</BtnText>
+                    <BtnText>{t("continueWithPhone")}</BtnText>
                 </Button>
             </View>
 
@@ -45,8 +45,8 @@ export default function Login() {
                 href="/auth/register"
                 style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
             >
-                Don{"'"}t have an account?{" "}
-                <Text style={{ color: theme.primary }}>Register</Text>
+                {t("noAccount")}{" "}
+                <Text style={{ color: theme.primary }}>{t("register")}</Text>
             </Link>
 
             <View
@@ -67,7 +67,7 @@ export default function Login() {
                     }}
                 />
                 <Text style={{ fontSize: 12, textAlign: "center", color: theme.accent }}>
-                    Or Login with
+                    {t("orLoginWith")}
                 </Text>
                 <View
                     style={{
@@ -134,21 +134,21 @@ export default function Login() {
 
             <View>
                 <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
-                    By continuing, you agree to our{" "}
+                    {t("terms")}{" "}
                     <Link
                         href={"/legal/termsOfService"}
                         style={{ color: theme.primary }}
                         onPress={() => alert("Terms of Service")}
                     >
-                        Terms of Service
-                    </Link>
-                    {" and "}
+                        {t("termsOfService")}
+                    </Link>{" "}
+                    {t("and")}{" "}
                     <Link
                         href={"/legal/privacyPolicy"}
                         style={{ color: theme.primary }}
                         onPress={() => alert("Privacy Policy")}
                     >
-                        Privacy Policy
+                        {t("privacyPolicy")}
                     </Link>
                     .
                 </Text>

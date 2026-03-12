@@ -13,10 +13,10 @@ import {
 } from "react-native";
 import { Theme } from "@/app/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
-
+import i18n from "@/i18n";
 type Activity = { id: string | number; name: string };
 type ActivitiesByTitle = Record<string, Activity[]>;
-
+const t = (key: string, opts?: object) => i18n.t(`auth.register.interests.${key}`, opts);
 const MIN = 3;
 const MAX = 12;
 
@@ -119,13 +119,12 @@ export default function Interests() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>Select your Interests </Text>
+                    <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
 
                     <Text
                         style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}
                     >
-                        Pick 6 interests to match with users who have similar things in
-                        common
+                        {t("body")}
                     </Text>
 
                     <View style={styles.scrollArea}>
@@ -283,7 +282,7 @@ export default function Interests() {
                     disabled={!canContinue}
                     onPress={onContinue}
                 >
-                    <BtnText>Continue</BtnText>
+                    <BtnText>{t("continue")}</BtnText>
                 </Button>
 
                 {errorOpen ? (
@@ -297,12 +296,12 @@ export default function Interests() {
                             style={[styles.errorCard]}
                         >
                             <Text style={[styles.errorTitle, { color: theme.text }]}>
-                                Selection limit
+                                {t("errorTitle")}
                             </Text>
                             <Text
                                 style={[styles.errorText, { color: theme.text + "B3" }]}
                             >
-                                Please choose minimum {MIN} and maximum {MAX} interests.
+                                {t("errorBody", { min: MIN, max: MAX })}
                             </Text>
                             <Pressable
                                 style={[

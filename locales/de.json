@@ -1,0 +1,20 @@
+{
+  "auth": {
+    "login": {
+      "title": "Elysio",
+      "subtitle": "Anmelden um fortzufahren",
+      "body": "Willkommen zurück! Bitte melde dich in deinem Konto an.",
+      "continueWithEmail": "Mit E-Mail fortfahren",
+      "continueWithPhone": "Mit Telefonnummer fortfahren",
+      "noAccount": "Noch kein Konto?",
+      "register": "Registrieren",
+      "orLoginWith": "Oder anmelden mit",
+      "google": "Google",
+      "apple": "Apple",
+      "terms": "Durch die Fortsetzung stimmst du unseren",
+      "termsOfService": "Nutzungsbedingungen",
+      "and": "und",
+      "privacyPolicy": "Datenschutzrichtlinie"
+    }
+  }
+}
