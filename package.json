@@ -60,7 +60,6 @@
   "devDependencies": {
     "@react-native-community/cli": "^20.1.2",
     "@types/react": "~19.1.10",
-    "@types/react-native": "^0.72.8",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "prettier": "^3.8.1",
@@ -69,5 +68,6 @@
   "private": true,
   "overrides": {
     "react-async-hook": "4.0.0"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
