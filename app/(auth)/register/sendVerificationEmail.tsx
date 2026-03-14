@@ -10,12 +10,12 @@ import { Text, View } from "react-native";
 export default function SendVerificationEmail() {
     const { gs, theme } = useTheme();
 
+    useEffect(() => {
+        router.prefetch("/register/password");
+    }, []);
+
     const searchParams = useSearchParams();
     const email = searchParams.get("email") || "error";
-
-    useEffect(() => {
-        router.prefetch("/auth/register/password");
-    }, []);
 
     return (
         <>
@@ -85,7 +85,7 @@ export default function SendVerificationEmail() {
 
                     <Button
                         style={{ marginTop: "auto", marginBottom: 0 }}
-                        onPress={() => router.push("/auth/register/password")}
+                        onPress={() => router.push("/register/password")}
                     >
                         <BtnText>Continue</BtnText>
                     </Button>
