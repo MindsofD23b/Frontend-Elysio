@@ -91,7 +91,7 @@ export default function Interests() {
                     { id: 26, name: "Writing" },
                 ],
                 play: [
-                    { id: 14, name: "Gym" },
+                    { id: 66, name: "Gym" },
                     { id: 27, name: "Swimming" },
                     { id: 33, name: "Ski" },
                     { id: 43, name: "Hiking" },
