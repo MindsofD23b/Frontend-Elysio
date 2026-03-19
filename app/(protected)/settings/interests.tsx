@@ -1,7 +1,7 @@
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
 import { useTheme } from "@/app/theme/context";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     Pressable,
@@ -113,211 +113,224 @@ export default function Interests() {
     }, []);
 
     return (
-        <BackWrapper>
-            <View style={styles.page}>
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>Select your Interests </Text>
-
-                    <Text
-                        style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}
+        <>
+            {" "}
+            <Stack.Screen options={{ headerShown: false }} />
+            <BackWrapper>
+                <View style={styles.page}>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
                     >
-                        Pick 6 interests to match with users who have similar things in
-                        common
-                    </Text>
+                        <Text style={[gs.h1, { marginTop: 35 }]}>
+                            Select your Interests{" "}
+                        </Text>
 
-                    <View style={styles.scrollArea}>
-                        {loading ? (
-                            <>
-                                <View style={styles.section}>
-                                    <View
-                                        style={[
-                                            styles.skeletonTitle,
-                                            { backgroundColor: theme.text + "22" },
-                                        ]}
-                                    />
-                                    <View
-                                        style={[
-                                            styles.divider,
-                                            { backgroundColor: theme.text + "22" },
-                                        ]}
-                                    />
-                                    <View style={styles.wrap}>
-                                        {Array.from({ length: 10 }).map((_, i) => (
-                                            <View
-                                                key={`sk-a-${i}`}
-                                                style={[
-                                                    styles.skeletonChip,
-                                                    {
-                                                        backgroundColor:
-                                                            theme.text + "22",
-                                                    },
-                                                ]}
-                                            />
-                                        ))}
-                                    </View>
-                                </View>
+                        <Text
+                            style={[
+                                gs.bodyText,
+                                { marginTop: 10, color: theme.text + "54" },
+                            ]}
+                        >
+                            Pick 6 interests to match with users who have similar things
+                            in common
+                        </Text>
 
-                                <View style={styles.section}>
-                                    <View
-                                        style={[
-                                            styles.skeletonTitle,
-                                            { backgroundColor: theme.text + "22" },
-                                        ]}
-                                    />
-                                    <View
-                                        style={[
-                                            styles.divider,
-                                            { backgroundColor: theme.text + "22" },
-                                        ]}
-                                    />
-                                    <View style={styles.wrap}>
-                                        {Array.from({ length: 8 }).map((_, i) => (
-                                            <View
-                                                key={`sk-b-${i}`}
-                                                style={[
-                                                    styles.skeletonChip,
-                                                    {
-                                                        backgroundColor:
-                                                            theme.text + "22",
-                                                    },
-                                                ]}
-                                            />
-                                        ))}
-                                    </View>
-                                </View>
-
-                                <View style={styles.section}>
-                                    <View
-                                        style={[
-                                            styles.skeletonTitle,
-                                            { backgroundColor: theme.text + "22" },
-                                        ]}
-                                    />
-                                    <View
-                                        style={[
-                                            styles.divider,
-                                            { backgroundColor: theme.text + "22" },
-                                        ]}
-                                    />
-                                    <View style={styles.wrap}>
-                                        {Array.from({ length: 12 }).map((_, i) => (
-                                            <View
-                                                key={`sk-c-${i}`}
-                                                style={[
-                                                    styles.skeletonChip,
-                                                    {
-                                                        backgroundColor:
-                                                            theme.text + "22",
-                                                    },
-                                                ]}
-                                            />
-                                        ))}
-                                    </View>
-                                </View>
-                            </>
-                        ) : (
-                            Object.entries(data).map(([title, items]) => (
-                                <View key={title} style={styles.section}>
-                                    <Text
-                                        style={[
-                                            styles.sectionTitle,
-                                            { color: theme.text },
-                                        ]}
-                                    >
-                                        {title}
-                                    </Text>
-
-                                    <View
-                                        style={[
-                                            styles.divider,
-                                            { backgroundColor: theme.text + "22" },
-                                        ]}
-                                    />
-
-                                    <View style={styles.wrap}>
-                                        {items.map((a) => {
-                                            const active = selected.includes(a.id);
-
-                                            return (
-                                                <Pressable
-                                                    key={String(a.id)}
-                                                    onPress={() => toggleId(a.id)}
+                        <View style={styles.scrollArea}>
+                            {loading ? (
+                                <>
+                                    <View style={styles.section}>
+                                        <View
+                                            style={[
+                                                styles.skeletonTitle,
+                                                { backgroundColor: theme.text + "22" },
+                                            ]}
+                                        />
+                                        <View
+                                            style={[
+                                                styles.divider,
+                                                { backgroundColor: theme.text + "22" },
+                                            ]}
+                                        />
+                                        <View style={styles.wrap}>
+                                            {Array.from({ length: 10 }).map((_, i) => (
+                                                <View
+                                                    key={`sk-a-${i}`}
                                                     style={[
-                                                        styles.chip,
+                                                        styles.skeletonChip,
                                                         {
-                                                            borderColor: active
-                                                                ? theme.primary
-                                                                : theme.text + "22",
-                                                            backgroundColor: active
-                                                                ? theme.primary
-                                                                : theme.background,
+                                                            backgroundColor:
+                                                                theme.text + "22",
                                                         },
                                                     ]}
-                                                >
-                                                    <Text
+                                                />
+                                            ))}
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.section}>
+                                        <View
+                                            style={[
+                                                styles.skeletonTitle,
+                                                { backgroundColor: theme.text + "22" },
+                                            ]}
+                                        />
+                                        <View
+                                            style={[
+                                                styles.divider,
+                                                { backgroundColor: theme.text + "22" },
+                                            ]}
+                                        />
+                                        <View style={styles.wrap}>
+                                            {Array.from({ length: 8 }).map((_, i) => (
+                                                <View
+                                                    key={`sk-b-${i}`}
+                                                    style={[
+                                                        styles.skeletonChip,
+                                                        {
+                                                            backgroundColor:
+                                                                theme.text + "22",
+                                                        },
+                                                    ]}
+                                                />
+                                            ))}
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.section}>
+                                        <View
+                                            style={[
+                                                styles.skeletonTitle,
+                                                { backgroundColor: theme.text + "22" },
+                                            ]}
+                                        />
+                                        <View
+                                            style={[
+                                                styles.divider,
+                                                { backgroundColor: theme.text + "22" },
+                                            ]}
+                                        />
+                                        <View style={styles.wrap}>
+                                            {Array.from({ length: 12 }).map((_, i) => (
+                                                <View
+                                                    key={`sk-c-${i}`}
+                                                    style={[
+                                                        styles.skeletonChip,
+                                                        {
+                                                            backgroundColor:
+                                                                theme.text + "22",
+                                                        },
+                                                    ]}
+                                                />
+                                            ))}
+                                        </View>
+                                    </View>
+                                </>
+                            ) : (
+                                Object.entries(data).map(([title, items]) => (
+                                    <View key={title} style={styles.section}>
+                                        <Text
+                                            style={[
+                                                styles.sectionTitle,
+                                                { color: theme.text },
+                                            ]}
+                                        >
+                                            {title}
+                                        </Text>
+
+                                        <View
+                                            style={[
+                                                styles.divider,
+                                                { backgroundColor: theme.text + "22" },
+                                            ]}
+                                        />
+
+                                        <View style={styles.wrap}>
+                                            {items.map((a) => {
+                                                const active = selected.includes(a.id);
+
+                                                return (
+                                                    <Pressable
+                                                        key={String(a.id)}
+                                                        onPress={() => toggleId(a.id)}
                                                         style={[
-                                                            styles.chipText,
+                                                            styles.chip,
                                                             {
-                                                                color: active
-                                                                    ? "#fff"
-                                                                    : theme.text,
+                                                                borderColor: active
+                                                                    ? theme.primary
+                                                                    : theme.text + "22",
+                                                                backgroundColor: active
+                                                                    ? theme.primary
+                                                                    : theme.background,
                                                             },
                                                         ]}
                                                     >
-                                                        {a.name}
-                                                    </Text>
-                                                </Pressable>
-                                            );
-                                        })}
+                                                        <Text
+                                                            style={[
+                                                                styles.chipText,
+                                                                {
+                                                                    color: active
+                                                                        ? "#fff"
+                                                                        : theme.text,
+                                                                },
+                                                            ]}
+                                                        >
+                                                            {a.name}
+                                                        </Text>
+                                                    </Pressable>
+                                                );
+                                            })}
+                                        </View>
                                     </View>
-                                </View>
-                            ))
-                        )}
-                    </View>
-                </ScrollView>
-                <Button
-                    style={{ marginTop: "auto", width: "100%", alignSelf: "stretch" }}
-                    disabled={!canContinue}
-                    onPress={onContinue}
-                >
-                    <BtnText>Continue</BtnText>
-                </Button>
-
-                {errorOpen ? (
-                    <Pressable
-                        style={styles.errorWrap}
-                        onPress={() => setErrorOpen(false)}
+                                ))
+                            )}
+                        </View>
+                    </ScrollView>
+                    <Button
+                        style={{ marginTop: "auto", width: "100%", alignSelf: "stretch" }}
+                        disabled={!canContinue}
+                        onPress={onContinue}
                     >
-                        <BlurView
-                            intensity={50}
-                            tint={(tintColor as BlurTint) || "dark"}
-                            style={[styles.errorCard]}
+                        <BtnText>Continue</BtnText>
+                    </Button>
+
+                    {errorOpen ? (
+                        <Pressable
+                            style={styles.errorWrap}
+                            onPress={() => setErrorOpen(false)}
                         >
-                            <Text style={[styles.errorTitle, { color: theme.text }]}>
-                                Selection limit
-                            </Text>
-                            <Text
-                                style={[styles.errorText, { color: theme.text + "B3" }]}
+                            <BlurView
+                                intensity={50}
+                                tint={(tintColor as BlurTint) || "dark"}
+                                style={[styles.errorCard]}
                             >
-                                Please choose minimum {MIN} and maximum {MAX} interests.
-                            </Text>
-                            <Pressable
-                                style={[
-                                    styles.errorOk,
-                                    { backgroundColor: theme.primary },
-                                ]}
-                                onPress={() => setErrorOpen(false)}
-                            >
-                                <Text style={styles.errorOkText}>OK</Text>
-                            </Pressable>
-                        </BlurView>
-                    </Pressable>
-                ) : null}
-            </View>
-        </BackWrapper>
+                                <Text style={[styles.errorTitle, { color: theme.text }]}>
+                                    Selection limit
+                                </Text>
+                                <Text
+                                    style={[
+                                        styles.errorText,
+                                        { color: theme.text + "B3" },
+                                    ]}
+                                >
+                                    Please choose minimum {MIN} and maximum {MAX}{" "}
+                                    interests.
+                                </Text>
+                                <Pressable
+                                    style={[
+                                        styles.errorOk,
+                                        { backgroundColor: theme.primary },
+                                    ]}
+                                    onPress={() => setErrorOpen(false)}
+                                >
+                                    <Text style={styles.errorOkText}>OK</Text>
+                                </Pressable>
+                            </BlurView>
+                        </Pressable>
+                    ) : null}
+                </View>
+            </BackWrapper>
+        </>
     );
 }
 
