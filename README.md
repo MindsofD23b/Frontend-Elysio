@@ -21,6 +21,16 @@ The project simulates startup conditions, focusing on product planning, prioriti
 
 ---
 
+## Project Start up
+
+```bash
+npm install
+```
+
+```bash
+npx expo start
+```
+
 ## Project Background
 
 ### Why this project exists
