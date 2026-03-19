@@ -39,7 +39,7 @@ export default function SettingsScreen() {
                     iconColor={iconColor}
                     textColor={theme.text}
                     href="/settings/apperance"
-                />
+                />s
                 <MenuRow
                     icon={Heart}
                     label="Interests"

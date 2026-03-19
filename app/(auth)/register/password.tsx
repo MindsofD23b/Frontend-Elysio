@@ -81,7 +81,7 @@ export default function Password() {
                 </Text>
 
                 <View style={{ marginTop: 15 }}>
-                    <Input
+                    <Input  
                         placeholder="Enter Password"
                         textContentType="newPassword"
                         passwordRules="minlength: 8;"

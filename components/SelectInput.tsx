@@ -3,7 +3,7 @@ import { Theme } from "@/app/theme/theme";
 import { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import Animated, {
-    interpolateColor,
+    interpolateColor, 
     useAnimatedStyle,
     useSharedValue,
     withTiming,
