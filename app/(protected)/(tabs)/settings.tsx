@@ -1,7 +1,7 @@
 import { BtnText, Button } from "@/components/button";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { Eye, Globe, Heart, MessageCircle, Sun, User } from "lucide-react-native";
 import { Href, router } from "expo-router";
 

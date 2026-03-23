@@ -1,4 +1,4 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { Loader2 as Load } from "lucide-react-native";
 import { createContext, useContext, useEffect, useRef } from "react";
 import {

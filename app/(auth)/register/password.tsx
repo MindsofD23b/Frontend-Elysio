@@ -1,9 +1,9 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { z } from "zod";
 
@@ -17,6 +17,10 @@ const schema = z.object({
 });
 
 export default function Password() {
+    const renderCount = useRef(0);
+    renderCount.current++;
+    console.log(`password rendered: ${renderCount.current} times`);
+
     const { gs, theme } = useTheme();
 
     useEffect(() => {

@@ -1,12 +1,16 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { BtnText, Button } from "@/components/button";
 import { router } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function AddProfilePicturePage() {
+    const renderCount = useRef(0);
+    renderCount.current++;
+    console.log(`addProfilePicture rendered: ${renderCount.current} times`);
+
     const { gs, theme } = useTheme();
 
     useEffect(() => {

@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 
 export default function Index() {
     const { gs } = useTheme();

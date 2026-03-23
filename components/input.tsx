@@ -1,4 +1,4 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { StyleProp, TextInput, TextInputKeyPressEvent, TextStyle } from "react-native";
 
 interface InputProps {

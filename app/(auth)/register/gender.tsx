@@ -1,15 +1,19 @@
 import BackWrapper from "@/components/backwrapper";
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mars, Venus } from "lucide-react-native";
-import { Theme } from "@/app/theme/theme";
+import { Theme } from "@/lib/theme/theme";
 
 type GenderType = "male" | "female";
 
 export default function Gender() {
+    const renderCount = useRef(0);
+    renderCount.current++;
+    console.log(`gender rendered: ${renderCount.current} times`);
+
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
 

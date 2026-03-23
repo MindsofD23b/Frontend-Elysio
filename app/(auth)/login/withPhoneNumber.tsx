@@ -1,9 +1,9 @@
 import BackWrapper from "@/components/backwrapper";
-import { useTheme } from "../../theme/context";
+import { useTheme } from "../../../lib/theme/context";
 import { Text, View } from "react-native";
 import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseIncompletePhoneNumber } from "libphonenumber-js";
 import { router } from "expo-router";
 
@@ -13,6 +13,10 @@ type FormData = {
 };
 
 export default function WithPhoneNumber() {
+    const renderCount = useRef(0);
+    renderCount.current++;
+    console.log(`WithPhoneNumber rendered: ${renderCount.current} times`);
+
     useEffect(() => {
         router.prefetch("/(protected)/(tabs)");
     }, []);

@@ -1,8 +1,8 @@
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Pressable,
     ScrollView,
@@ -11,7 +11,7 @@ import {
     useColorScheme,
     View,
 } from "react-native";
-import { Theme } from "@/app/theme/theme";
+import { Theme } from "@/lib/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
 
 type Activity = { id: string | number; name: string };
@@ -21,6 +21,10 @@ const MIN = 3;
 const MAX = 12;
 
 export default function Interests() {
+    const renderCount = useRef(0);
+    renderCount.current++;
+    console.log(`interests rendered: ${renderCount.current} times`);
+
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
 
@@ -91,7 +95,7 @@ export default function Interests() {
                     { id: 26, name: "Writing" },
                 ],
                 play: [
-                    { id: 14, name: "Gym" },
+                    { id: 80, name: "Gym" },
                     { id: 27, name: "Swimming" },
                     { id: 33, name: "Ski" },
                     { id: 43, name: "Hiking" },

@@ -1,14 +1,18 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { Text } from "react-native";
 import Input from "@/components/input";
 import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { BtnText, Button } from "@/components/button";
 import DateInput from "@/components/dateInput";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 
 export default function AddProfileDataPage() {
+    const renderCount = useRef(0);
+    renderCount.current++;
+    console.log(`addProfileData rendered: ${renderCount.current} times`);
+
     const { gs, theme } = useTheme();
 
     const [dateSelect, setDateSelect] = useState(false);

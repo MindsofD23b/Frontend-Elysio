@@ -1,9 +1,9 @@
 import BackWrapper from "@/components/backwrapper";
-import { useTheme } from "../../theme/context";
+import { useTheme } from "../../../lib/theme/context";
 import { Text, View } from "react-native";
 import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 
 type FormData = {
@@ -12,6 +12,10 @@ type FormData = {
 };
 
 export default function WithEmail() {
+    const renderCount = useRef(0);
+    renderCount.current++;
+    console.log(`withEmail rendered: ${renderCount.current} times`);
+
     useEffect(() => {
         router.prefetch("/(protected)/(tabs)");
     }, []);

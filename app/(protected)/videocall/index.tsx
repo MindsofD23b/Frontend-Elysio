@@ -63,6 +63,7 @@ export default function VideoCall() {
                 pc2.current.addIceCandidate(e.candidate);
             }
         });
+
         pc2.current.addEventListener("icecandidate", (e: any) => {
             if (e.candidate) {
                 console.log("pc2 ICE candidate");

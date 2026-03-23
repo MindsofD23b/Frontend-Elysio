@@ -9,8 +9,8 @@ import {
     Text,
     View,
 } from "react-native";
-import { useTheme } from "@/app/theme/context";
-import { Theme } from "@/app/theme/theme";
+import { useTheme } from "@/lib/theme/context";
+import { Theme } from "@/lib/theme/theme";
 import { Heart } from "lucide-react-native";
 import { router } from "expo-router";
 
