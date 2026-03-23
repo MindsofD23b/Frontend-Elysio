@@ -3,14 +3,10 @@ import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
 import { router, useLocalSearchParams } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Text, View } from "react-native";
 
 export default function SendVerificationEmail() {
-    const renderCount = useRef(0);
-    renderCount.current++;
-    console.log(`sendVerificationEmail rendered: ${renderCount.current} times`);
-
     const { gs, theme } = useTheme();
 
     useEffect(() => {}, []);

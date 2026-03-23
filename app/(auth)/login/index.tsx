@@ -5,13 +5,9 @@ import { HomeIcon } from "lucide-react-native";
 import { StyleSheet, Text, View, useColorScheme } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 export default function Login() {
-    const renderCount = useRef(0);
-    renderCount.current++;
-    console.log(`Login rendered: ${renderCount.current} times`);
-
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();

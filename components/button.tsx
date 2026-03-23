@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef } from "react";
 import {
     Animated,
     Pressable,
+    PressableProps,
     StyleProp,
     Text,
     TextStyle,
@@ -14,7 +15,7 @@ import {
 
 const ButtonContext = createContext<"default" | "outline">("default");
 
-interface ButtonProps {
+interface IButtonProps extends PressableProps {
     children: React.ReactNode;
     disabled?: boolean;
     onPress: () => void;
@@ -33,12 +34,14 @@ function Button({
     disabled,
     variante = "default",
     style,
-}: ButtonProps) {
+    ...other
+}: IButtonProps) {
     const { gs } = useTheme();
 
     return (
         <ButtonContext.Provider value={variante}>
             <Pressable
+                {...other}
                 onPress={onPress}
                 disabled={disabled}
                 style={[

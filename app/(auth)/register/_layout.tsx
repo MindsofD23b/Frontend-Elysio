@@ -1,13 +1,8 @@
 import { Stack } from "expo-router";
-import { useRef } from "react";
 
 const screenOptions = { headerShown: false };
 
 export default function RegisterLayout() {
-    const renderCount = useRef(0);
-    renderCount.current++;
-    console.log(`Register layout rendered: ${renderCount.current} times`);
-
     return (
         <Stack screenOptions={screenOptions}>
             <Stack.Screen name="index" />

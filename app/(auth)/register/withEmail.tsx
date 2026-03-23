@@ -1,9 +1,9 @@
 import BackWrapper from "@/components/backwrapper";
-import { useTheme } from "../../../lib/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { Text, View } from "react-native";
 import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { router } from "expo-router";
 
 type FormData = {
@@ -11,10 +11,6 @@ type FormData = {
 };
 
 export default function WithEmail() {
-    const renderCount = useRef(0);
-    renderCount.current++;
-    console.log(`withEmail Register rendered: ${renderCount.current} times`);
-
     useEffect(() => {
         router.prefetch("/register/password");
     }, []);

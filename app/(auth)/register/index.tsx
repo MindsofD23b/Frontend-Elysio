@@ -2,16 +2,12 @@ import { Link, router } from "expo-router";
 import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { HomeIcon } from "lucide-react-native";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { StyleSheet, Text, useColorScheme, View } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
 
 export default function Register() {
-    const renderCount = useRef(0);
-    renderCount.current++;
-    console.log(`Register rendered: ${renderCount.current} times`);
-
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();

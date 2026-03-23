@@ -1,16 +1,24 @@
-import { SplashScreen, Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
 import { useState, useEffect, useCallback } from "react";
 import { View } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 
 const isLoggedIn = false;
 const screenOptions = { headerShown: false };
 
+SplashScreen.preventAutoHideAsync();
+
+SplashScreen.setOptions({
+    duration: 500,
+    fade: true,
+});
+
 export default function RootLayout() {
     const [appIsReady, setAppIsReady] = useState<boolean>(false);
-    const segments = useSegments();
+    const [navigationReady, setNavigationReady] = useState<boolean>(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -29,9 +37,10 @@ export default function RootLayout() {
     useEffect(() => {
         if (!appIsReady) return;
         if (!isLoggedIn) {
-            router.push("/(auth)/login");
+            router.replace("/(auth)/login");
         }
-    }, [appIsReady, isLoggedIn]);
+        setNavigationReady(true);
+    }, [appIsReady]);
 
     const onLayoutRootView = useCallback(() => {
         if (appIsReady) {
@@ -39,7 +48,7 @@ export default function RootLayout() {
         }
     }, [appIsReady]);
 
-    if (!appIsReady) {
+    if (!appIsReady || !navigationReady) {
         return null;
     }
 

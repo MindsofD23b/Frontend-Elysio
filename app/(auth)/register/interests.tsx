@@ -2,7 +2,7 @@ import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Pressable,
     ScrollView,
@@ -21,10 +21,6 @@ const MIN = 3;
 const MAX = 12;
 
 export default function Interests() {
-    const renderCount = useRef(0);
-    renderCount.current++;
-    console.log(`interests rendered: ${renderCount.current} times`);
-
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
 
