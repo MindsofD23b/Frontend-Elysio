@@ -1,8 +1,7 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
-import { router } from "expo-router";
-import { useSearchParams } from "expo-router/build/hooks";
+import { router, useLocalSearchParams } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
@@ -10,12 +9,9 @@ import { Text, View } from "react-native";
 export default function SendVerificationEmail() {
     const { gs, theme } = useTheme();
 
-    useEffect(() => {
-        router.prefetch("/register/password");
-    }, []);
+    useEffect(() => {}, []);
 
-    const searchParams = useSearchParams();
-    const email = searchParams.get("email") || "error";
+    const { email } = useLocalSearchParams<{ email: string }>();
 
     return (
         <>

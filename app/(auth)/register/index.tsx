@@ -1,15 +1,16 @@
 import { Link, router } from "expo-router";
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { HomeIcon } from "lucide-react-native";
 import { useEffect } from "react";
 import { StyleSheet, Text, useColorScheme, View } from "react-native";
 import { Image } from "expo-image";
-import { Theme } from "@/app/theme/theme";
+import { Theme } from "@/lib/theme/theme";
 
 export default function Register() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
+    const colorScheme = useColorScheme();
 
     useEffect(() => {
         router.prefetch("/register/withEmail");
@@ -105,7 +106,7 @@ export default function Register() {
                     style={{ flex: 1, width: "100%", borderColor: theme.base + "4D" }}
                     onPress={() => alert("Login button pressed")}
                 >
-                    {useColorScheme() === "light" ? (
+                    {colorScheme === "light" ? (
                         <Image
                             source={require("@/assets/apple_dark.png")}
                             style={{ width: 20, height: 20, marginRight: 8 }}
@@ -129,7 +130,7 @@ export default function Register() {
             </View>
 
             <View>
-                <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
+                {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
                     By continuing, you agree to our{" "}
                     <Link
                         href={"/legal/termsOfService"}
@@ -147,7 +148,7 @@ export default function Register() {
                         Privacy Policy
                     </Link>
                     .
-                </Text>
+                </Text> */}
             </View>
         </View>
     );

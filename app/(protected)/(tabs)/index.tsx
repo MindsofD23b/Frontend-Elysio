@@ -9,9 +9,10 @@ import {
     Text,
     View,
 } from "react-native";
-import { useTheme } from "@/app/theme/context";
-import { Theme } from "@/app/theme/theme";
+import { useTheme } from "@/lib/theme/context";
+import { Theme } from "@/lib/theme/theme";
 import { Heart } from "lucide-react-native";
+import { router } from "expo-router";
 
 const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
@@ -178,7 +179,7 @@ export default function Index() {
 
     const onStart = () => {
         setCount((prev) => (prev > 0 ? prev - 1 : 0));
-        // router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
+        router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
     };
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;

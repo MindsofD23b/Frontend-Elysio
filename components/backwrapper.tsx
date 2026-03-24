@@ -1,4 +1,4 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { Pressable, View } from "react-native";
