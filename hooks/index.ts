@@ -52,6 +52,8 @@ export function useFetch<S>(route: string, obj: RequestInit) {
         created_at: number;
     } | null>(route, null);
 
+    const base = 'https://elysio.jamiepoeffel.ch'
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
     const [cached, setCached] = useState(false);
@@ -75,7 +77,7 @@ export function useFetch<S>(route: string, obj: RequestInit) {
                     ...obj.headers,
                 };
 
-                const req = await fetch(route, obj);
+                const req = await fetch(base + route, obj);
 
                 if (!req.ok) {
                     const err = (await req.json()) as ErrResp;
