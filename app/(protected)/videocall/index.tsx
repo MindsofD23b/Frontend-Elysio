@@ -8,7 +8,7 @@ import { io, Socket } from "socket.io-client";
 registerGlobals();
 
 const BASE_URL = "https://elysio.jamiepoeffel.ch";
-const ROOM_ID = "test-room";
+const ROOM_ID = "test-room-fresh-1";
 
 export default function VideoCall() {
     const [started, setStarted] = useState(false);
@@ -24,12 +24,16 @@ export default function VideoCall() {
     const localStreamRef = useRef<any>(null);
     const remoteStreamRef = useRef<any>(new MediaStream());
 
+    const consumedProducerIdsRef = useRef<Set<string>>(new Set());
+    const consumingProducerIdsRef = useRef<Set<string>>(new Set());
+
     async function api(path: string, options?: RequestInit) {
         const url = `${BASE_URL}${path}`;
         const res = await fetch(url, {
             headers: { "Content-Type": "application/json" },
             ...options,
         });
+
         const text = await res.text();
         if (!res.ok) throw new Error(`${res.status} ${text}`);
         return text ? JSON.parse(text) : {};
@@ -40,6 +44,10 @@ export default function VideoCall() {
         const device = deviceRef.current;
 
         if (!recvTransport || !device) return;
+        if (consumedProducerIdsRef.current.has(producerId)) return;
+        if (consumingProducerIdsRef.current.has(producerId)) return;
+
+        consumingProducerIdsRef.current.add(producerId);
 
         try {
             const consumerData = await api(
@@ -61,11 +69,10 @@ export default function VideoCall() {
                 rtpParameters: consumerData.rtpParameters,
             });
 
-            // Add track to existing stream
-            remoteStreamRef.current.addTrack(consumer.track);
+            consumedProducerIdsRef.current.add(producerId);
 
-            // Create a NEW MediaStream from all current tracks to force re-render
-            const newStream = new MediaStream(remoteStreamRef.current.getTracks());
+            const currentTracks = remoteStreamRef.current.getTracks();
+            const newStream = new MediaStream([...currentTracks, consumer.track]);
             remoteStreamRef.current = newStream;
             setRemoteUrl(newStream.toURL());
 
@@ -75,45 +82,49 @@ export default function VideoCall() {
             });
         } catch (err) {
             console.error("consumeProducer error", err);
+        } finally {
+            consumingProducerIdsRef.current.delete(producerId);
         }
     }
 
-    async function startCall() {
-        try {
-            const localStream = await mediaDevices.getUserMedia({
-                audio: true,
-                video: { frameRate: 30, facingMode: "user" },
-            });
+    async function createRecvTransportAndConsume(device: any) {
+        const transportInfo = await api(`/video/room/${ROOM_ID}/transport`, {
+            method: "POST",
+            body: JSON.stringify({ peerId: peerIdRef.current }),
+        });
 
-            localStreamRef.current = localStream;
-            setLocalUrl(localStream.toURL());
+        const recvTransport = device.createRecvTransport(transportInfo);
+        recvTransportRef.current = recvTransport;
 
-            const joinData = await api(`/video/room/${ROOM_ID}/join`, {
-                method: "POST",
-                body: JSON.stringify({ peerId: peerIdRef.current }),
-            });
+        recvTransport.on(
+            "connect",
+            async ({ dtlsParameters }: any, callback: any, errback: any) => {
+                try {
+                    await api(
+                        `/video/room/${ROOM_ID}/transport/${recvTransport.id}/connect`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({
+                                peerId: peerIdRef.current,
+                                dtlsParameters,
+                            }),
+                        },
+                    );
+                    callback();
+                } catch (err) {
+                    errback(err);
+                }
+            },
+        );
 
-            const device = new mediasoupClient.Device();
-            await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
-            deviceRef.current = device;
+        const producers = await api(
+            `/video/room/${ROOM_ID}/producers?peerId=${peerIdRef.current}`,
+            { method: "GET" },
+        );
 
-            // Connect WebSocket and listen for new producers
-            const socket: Socket = io(BASE_URL, {
-                query: { peerId: peerIdRef.current, roomId: ROOM_ID },
-            });
-            socketRef.current = socket;
-
-            socket.on("new-producer", async ({ producerId }: { producerId: string }) => {
-                console.log("new-producer event", producerId);
-                await consumeProducer(producerId);
-            });
-
-            await createSendTransportAndProduce(device, localStream);
-            await createRecvTransportAndConsume(device);
-
-            setStarted(true);
-        } catch (error) {
-            console.error("startCall error", error);
+        for (const producer of producers) {
+            if (producer.peerId === peerIdRef.current) continue;
+            await consumeProducer(producer.producerId);
         }
     }
 
@@ -171,48 +182,49 @@ export default function VideoCall() {
 
         const audioTrack = localStream.getAudioTracks()[0];
         const videoTrack = localStream.getVideoTracks()[0];
+
         if (audioTrack) await sendTransport.produce({ track: audioTrack });
         if (videoTrack) await sendTransport.produce({ track: videoTrack });
     }
 
-    async function createRecvTransportAndConsume(device: any) {
-        const transportInfo = await api(`/video/room/${ROOM_ID}/transport`, {
-            method: "POST",
-            body: JSON.stringify({ peerId: peerIdRef.current }),
-        });
+    async function startCall() {
+        try {
+            const localStream = await mediaDevices.getUserMedia({
+                audio: true,
+                video: { frameRate: 30, facingMode: "user" },
+            });
 
-        const recvTransport = device.createRecvTransport(transportInfo);
-        recvTransportRef.current = recvTransport;
+            localStreamRef.current = localStream;
+            setLocalUrl(localStream.toURL());
 
-        recvTransport.on(
-            "connect",
-            async ({ dtlsParameters }: any, callback: any, errback: any) => {
-                try {
-                    await api(
-                        `/video/room/${ROOM_ID}/transport/${recvTransport.id}/connect`,
-                        {
-                            method: "POST",
-                            body: JSON.stringify({
-                                peerId: peerIdRef.current,
-                                dtlsParameters,
-                            }),
-                        },
-                    );
-                    callback();
-                } catch (err) {
-                    errback(err);
-                }
-            },
-        );
+            const joinData = await api(`/video/room/${ROOM_ID}/join`, {
+                method: "POST",
+                body: JSON.stringify({ peerId: peerIdRef.current }),
+            });
 
-        // Consume any producers that already exist in the room
-        const producers = await api(
-            `/video/room/${ROOM_ID}/producers?peerId=${peerIdRef.current}`,
-            { method: "GET" },
-        );
+            const device = new mediasoupClient.Device();
+            await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
+            deviceRef.current = device;
 
-        for (const producer of producers) {
-            await consumeProducer(producer.producerId);
+            const socket: Socket = io(BASE_URL, {
+                query: { peerId: peerIdRef.current, roomId: ROOM_ID },
+                transports: ["websocket"],
+                forceNew: true,
+            });
+
+            socketRef.current = socket;
+
+            socket.on("new-producer", async ({ producerId, peerId }: { producerId: string; peerId: string }) => {
+                if (peerId === peerIdRef.current) return;
+                await consumeProducer(producerId);
+            });
+
+            await createRecvTransportAndConsume(device);
+            await createSendTransportAndProduce(device, localStream);
+
+            setStarted(true);
+        } catch (error) {
+            console.error("startCall error", error);
         }
     }
 
@@ -239,10 +251,19 @@ export default function VideoCall() {
         localStreamRef.current = null;
         remoteStreamRef.current = new MediaStream();
 
+        consumedProducerIdsRef.current.clear();
+        consumingProducerIdsRef.current.clear();
+
         setLocalUrl(null);
         setRemoteUrl(null);
         setStarted(false);
     }
+
+    useEffect(() => {
+        return () => {
+            stopCall().catch(() => undefined);
+        };
+    }, []);
 
     if (!started) {
         return (
@@ -265,6 +286,7 @@ export default function VideoCall() {
                     mirror={true}
                 />
             )}
+
             {remoteUrl && (
                 <RTCView
                     streamURL={remoteUrl}
@@ -273,6 +295,7 @@ export default function VideoCall() {
                     mirror={false}
                 />
             )}
+
             <Button onPress={stopCall}>
                 <BtnText>Stop</BtnText>
             </Button>
