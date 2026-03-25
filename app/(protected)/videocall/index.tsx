@@ -214,10 +214,19 @@ export default function VideoCall() {
 
             socketRef.current = socket;
 
-            socket.on("new-producer", async ({ producerId, peerId }: { producerId: string; peerId: string }) => {
-                if (peerId === peerIdRef.current) return;
-                await consumeProducer(producerId);
-            });
+            socket.on(
+                "new-producer",
+                async ({
+                    producerId,
+                    peerId,
+                }: {
+                    producerId: string;
+                    peerId: string;
+                }) => {
+                    if (peerId === peerIdRef.current) return;
+                    await consumeProducer(producerId);
+                },
+            );
 
             await createRecvTransportAndConsume(device);
             await createSendTransportAndProduce(device, localStream);
