@@ -94,7 +94,7 @@ function Loader({ style }: { style?: StyleProp<ViewProps> }) {
                 useNativeDriver: true,
             }),
         ).start();
-    }, []);
+    });
 
     const rotate = spin.interpolate({
         inputRange: [0, 1],
