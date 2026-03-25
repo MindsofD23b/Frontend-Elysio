@@ -97,7 +97,7 @@ export default function VideoCall() {
                 remoteVideoStreamRef.current = videoStream;
 
                 const url = videoStream.toURL();
-                console.log("setting remoteUrl to:", url); 
+                console.log("setting remoteUrl to:", url);
 
                 setTimeout(() => {
                     setRemoteUrl(url);
