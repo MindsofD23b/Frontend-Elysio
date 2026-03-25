@@ -5,11 +5,16 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
+import { useFetch, useStore } from "@/hooks"
 
 type FormData = {
     email: string;
     password: string;
 };
+
+type LoginResponse = {
+    token: string;
+}
 
 export default function WithEmail() {
     useEffect(() => {
@@ -18,29 +23,69 @@ export default function WithEmail() {
 
     const { gs, theme } = useTheme();
 
+    const [, setStoredToken] = useStore<string | null>("token", null)
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<{
         email?: { message: string };
         password?: { message: string };
+        general?: { message: string };
     }>({});
 
-    const onSubmit = (data: FormData) => {
+
+    const [, loading, fetchError, login] = useFetch<LoginResponse>(
+        "/auth/login",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+        },
+        {
+            manual: true,
+            useCache: false,
+        },
+
+    );
+    const onSubmit = async (data: FormData) => {
+        const nextErrors: {
+            email?: { message: string };
+            password?: { message: string };
+            general?: { message: string };
+        } = { };
+
         if (!/^\S+@\S+\.\S+$/.test(data.email)) {
-            setErrors((prev) => ({
-                ...prev,
-                email: { message: "Invalid email address" },
-            }));
+            nextErrors.email = { message: "Invalid email address"};
+        }
+
+        if (!data.password.trim()) {
+            nextErrors.password = { message: "Password is required"};
+        }
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).length > 0) {
             return;
         }
 
-        setLoading(true);
-        console.log(data);
-        setTimeout(() => {
-            setLoading(false);
-            router.push("/(protected)/(tabs)");
-        }, 2000);
+        try {
+            const response = await login({
+                body: JSON.stringify({
+                    email: data.email,
+                    password: data.password,
+                }),
+            });
+            await setStoredToken(response.token);
+            router.replace("/(protected)/(tabs)");
+        } catch (err){
+            setErrors((prev => ({
+                ...prev,
+                general: {
+                    message:
+                    err instanceof Error ? err.message : "Login failed",
+                },
+            })));
+        };
     };
 
     return (
@@ -84,6 +129,18 @@ export default function WithEmail() {
                         {errors.password && (
                             <Text style={{ color: "red", fontSize: 12 }}>
                                 {errors.password.message}
+                            </Text>
+                        )}
+
+                        {errors.general && (
+                            <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
+                                {errors.general.message}
+                            </Text>
+                        )}
+
+                        {!errors.general && fetchError && (
+                            <Text style={{ color: "red", fontSize: 12, marginTop: 8}}>
+                                {fetchError.message}
                             </Text>
                         )}
                     </View>
