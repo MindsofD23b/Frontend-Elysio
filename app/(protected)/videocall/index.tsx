@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
 import { Text, View } from "react-native";
 import { BtnText, Button } from "@/components/button";
 import * as mediasoupClient from "mediasoup-client";
+import { io, Socket } from "socket.io-client";
 
 registerGlobals();
 
@@ -18,76 +19,92 @@ export default function VideoCall() {
     const deviceRef = useRef<any>(null);
     const sendTransportRef = useRef<any>(null);
     const recvTransportRef = useRef<any>(null);
+    const socketRef = useRef<Socket | null>(null);
 
     const localStreamRef = useRef<any>(null);
     const remoteStreamRef = useRef<any>(new MediaStream());
 
     async function api(path: string, options?: RequestInit) {
         const url = `${BASE_URL}${path}`;
-
-        console.log("API request:", url, options?.method ?? "GET");
-
         const res = await fetch(url, {
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             ...options,
         });
-
         const text = await res.text();
-
-        console.log("API response:", url, res.status, text);
-
-        if (!res.ok) {
-            throw new Error(`${res.status} ${text}`);
-        }
-
+        if (!res.ok) throw new Error(`${res.status} ${text}`);
         return text ? JSON.parse(text) : {};
+    }
+
+    async function consumeProducer(producerId: string) {
+        const recvTransport = recvTransportRef.current;
+        const device = deviceRef.current;
+
+        if (!recvTransport || !device) return;
+
+        try {
+            const consumerData = await api(
+                `/video/room/${ROOM_ID}/transport/${recvTransport.id}/consume`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        peerId: peerIdRef.current,
+                        producerId,
+                        rtpCapabilities: device.rtpCapabilities,
+                    }),
+                },
+            );
+
+            const consumer = await recvTransport.consume({
+                id: consumerData.id,
+                producerId: consumerData.producerId,
+                kind: consumerData.kind,
+                rtpParameters: consumerData.rtpParameters,
+            });
+
+            remoteStreamRef.current.addTrack(consumer.track);
+            setRemoteUrl(remoteStreamRef.current.toURL());
+
+            await api(`/video/room/${ROOM_ID}/consumer/${consumer.id}/resume`, {
+                method: "POST",
+                body: JSON.stringify({ peerId: peerIdRef.current }),
+            });
+        } catch (err) {
+            console.error("consumeProducer error", err);
+        }
     }
 
     async function startCall() {
         try {
-            console.log("before getUserMedia");
-
             const localStream = await mediaDevices.getUserMedia({
                 audio: true,
-                video: {
-                    frameRate: 30,
-                    facingMode: "user",
-                },
+                video: { frameRate: 30, facingMode: "user" },
             });
-
-            console.log("after getUserMedia");
 
             localStreamRef.current = localStream;
             setLocalUrl(localStream.toURL());
 
-            console.log("before join");
-
             const joinData = await api(`/video/room/${ROOM_ID}/join`, {
                 method: "POST",
-                body: JSON.stringify({
-                    peerId: peerIdRef.current,
-                }),
+                body: JSON.stringify({ peerId: peerIdRef.current }),
             });
-
-            console.log("after join", joinData);
 
             const device = new mediasoupClient.Device();
-
-            await device.load({
-                routerRtpCapabilities: joinData.rtpCapabilities,
-            });
-
+            await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
             deviceRef.current = device;
 
-            console.log("before create send transport");
-            await createSendTransportAndProduce(device, localStream);
-            console.log("after create send transport");
+            // Connect WebSocket and listen for new producers
+            const socket: Socket = io(BASE_URL, {
+                query: { peerId: peerIdRef.current, roomId: ROOM_ID },
+            });
+            socketRef.current = socket;
 
-            console.log("before create recv transport");
+            socket.on("new-producer", async ({ producerId }: { producerId: string }) => {
+                console.log("new-producer event", producerId);
+                await consumeProducer(producerId);
+            });
+
+            await createSendTransportAndProduce(device, localStream);
             await createRecvTransportAndConsume(device);
-            console.log("after create recv transport");
 
             setStarted(true);
         } catch (error) {
@@ -98,9 +115,7 @@ export default function VideoCall() {
     async function createSendTransportAndProduce(device: any, localStream: any) {
         const transportInfo = await api(`/video/room/${ROOM_ID}/transport`, {
             method: "POST",
-            body: JSON.stringify({
-                peerId: peerIdRef.current,
-            }),
+            body: JSON.stringify({ peerId: peerIdRef.current }),
         });
 
         const sendTransport = device.createSendTransport(transportInfo);
@@ -142,7 +157,6 @@ export default function VideoCall() {
                             }),
                         },
                     );
-
                     callback({ id: data.id });
                 } catch (err) {
                     errback(err);
@@ -152,22 +166,14 @@ export default function VideoCall() {
 
         const audioTrack = localStream.getAudioTracks()[0];
         const videoTrack = localStream.getVideoTracks()[0];
-
-        if (audioTrack) {
-            await sendTransport.produce({ track: audioTrack });
-        }
-
-        if (videoTrack) {
-            await sendTransport.produce({ track: videoTrack });
-        }
+        if (audioTrack) await sendTransport.produce({ track: audioTrack });
+        if (videoTrack) await sendTransport.produce({ track: videoTrack });
     }
 
     async function createRecvTransportAndConsume(device: any) {
         const transportInfo = await api(`/video/room/${ROOM_ID}/transport`, {
             method: "POST",
-            body: JSON.stringify({
-                peerId: peerIdRef.current,
-            }),
+            body: JSON.stringify({ peerId: peerIdRef.current }),
         });
 
         const recvTransport = device.createRecvTransport(transportInfo);
@@ -187,7 +193,6 @@ export default function VideoCall() {
                             }),
                         },
                     );
-
                     callback();
                 } catch (err) {
                     errback(err);
@@ -195,61 +200,26 @@ export default function VideoCall() {
             },
         );
 
+        // Consume any producers that already exist in the room
         const producers = await api(
             `/video/room/${ROOM_ID}/producers?peerId=${peerIdRef.current}`,
             { method: "GET" },
         );
 
-        console.log("producers from backend", producers);
-        console.log("recvRtpCapabilities", device.recvRtpCapabilities);
-
         for (const producer of producers) {
-            const payload = {
-                peerId: peerIdRef.current,
-                producerId: producer.producerId,
-                rtpCapabilities: device.recvRtpCapabilities,
-            };
-
-            console.log("consume payload", payload);
-
-            const consumerData = await api(
-                `/video/room/${ROOM_ID}/transport/${recvTransport.id}/consume`,
-                {
-                    method: "POST",
-                    body: JSON.stringify(payload),
-                },
-            );
-
-            const consumer = await recvTransport.consume({
-                id: consumerData.id,
-                producerId: consumerData.producerId,
-                kind: consumerData.kind,
-                rtpParameters: consumerData.rtpParameters,
-            });
-
-            remoteStreamRef.current.addTrack(consumer.track);
-
-            await api(`/video/room/${ROOM_ID}/consumer/${consumer.id}/resume`, {
-                method: "POST",
-                body: JSON.stringify({
-                    peerId: peerIdRef.current,
-                }),
-            });
+            await consumeProducer(producer.producerId);
         }
-
-        setRemoteUrl(remoteStreamRef.current.toURL());
     }
 
     async function stopCall() {
+        socketRef.current?.disconnect();
+        socketRef.current = null;
+
         try {
             await fetch(`${BASE_URL}/video/room/${ROOM_ID}/leave`, {
                 method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    peerId: peerIdRef.current,
-                }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ peerId: peerIdRef.current }),
             });
         } catch (err) {
             console.error("leave error", err);
@@ -257,7 +227,6 @@ export default function VideoCall() {
 
         sendTransportRef.current?.close();
         recvTransportRef.current?.close();
-
         localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
 
         sendTransportRef.current = null;
@@ -291,7 +260,6 @@ export default function VideoCall() {
                     mirror={true}
                 />
             )}
-
             {remoteUrl && (
                 <RTCView
                     streamURL={remoteUrl}
@@ -300,7 +268,6 @@ export default function VideoCall() {
                     mirror={false}
                 />
             )}
-
             <Button onPress={stopCall}>
                 <BtnText>Stop</BtnText>
             </Button>
