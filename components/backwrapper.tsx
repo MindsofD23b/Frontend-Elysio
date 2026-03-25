@@ -1,10 +1,10 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 
 interface BackWrapperProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
 }
 
 export default function BackWrapper({ children }: BackWrapperProps) {

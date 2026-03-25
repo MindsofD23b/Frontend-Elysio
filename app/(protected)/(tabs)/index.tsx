@@ -9,8 +9,10 @@ import {
     Text,
     View,
 } from "react-native";
-import { useTheme } from "@/app/theme/context";
-import { Theme } from "@/app/theme/theme";
+import { useTheme } from "@/lib/theme/context";
+import { Theme } from "@/lib/theme/theme";
+import { Heart } from "lucide-react-native";
+import { router } from "expo-router";
 import i18n from "@/i18n";
 const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
@@ -131,8 +133,8 @@ export default function Index() {
     const driftL = useRef(new Animated.Value(0)).current;
     const driftR = useRef(new Animated.Value(0)).current;
 
-    const SPEED_L = 6000;
-    const SPEED_R = 8000;
+    const SPEED_L = 7000;
+    const SPEED_R = 9000;
 
     useEffect(() => {
         let cancelledL = false;
@@ -173,13 +175,18 @@ export default function Index() {
         };
     }, []);
     const [count, setCount] = useState(10);
+    const maxCount = 10;
 
     const onStart = () => {
         setCount((prev) => (prev > 0 ? prev - 1 : 0));
+        router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
     };
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;
     const spin3 = useRef(new Animated.Value(0)).current;
+
+    const zoom = useRef(new Animated.Value(1)).current;
+
     useEffect(() => {
         let cancelled = false;
 
@@ -221,6 +228,23 @@ export default function Index() {
                 runSpin3();
             });
         };
+
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(zoom, {
+                    toValue: 1.3,
+                    duration: 800,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(zoom, {
+                    toValue: 1,
+                    duration: 800,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ]),
+        ).start();
 
         runSpin1();
         runSpin2();
@@ -276,12 +300,9 @@ export default function Index() {
 
                 {/* Button */}
                 <Pressable onPress={onStart} style={styles.startBtn}>
-                    <Text style={[gs.btnTextDefault, { fontSize: 22 }]}>
-                        {t("start")}
-                    </Text>
-                    <Text style={[gs.btnTextDefault, { fontSize: 28, marginTop: 4 }]}>
-                        {count}
-                    </Text>
+                    <Animated.View style={{ transform: [{ scale: zoom }] }}>
+                        <Heart size={50} color={theme.white} />
+                    </Animated.View>
                 </Pressable>
             </View>
         </View>
