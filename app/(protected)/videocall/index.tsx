@@ -93,12 +93,14 @@ export default function VideoCall() {
             });
 
             if (consumer.kind === "video") {
-                const videoStream = new MediaStream();
-                videoStream.addTrack(consumer.track);
+                const videoStream = new MediaStream([consumer.track]);
                 remoteVideoStreamRef.current = videoStream;
 
+                const url = videoStream.toURL();
+                console.log("setting remoteUrl to:", url); 
+
                 setTimeout(() => {
-                    setRemoteUrl(videoStream.toURL());
+                    setRemoteUrl(url);
                 }, 300);
             }
         } catch (err) {
@@ -114,7 +116,17 @@ export default function VideoCall() {
             body: JSON.stringify({ peerId: peerIdRef.current }),
         });
 
-        const recvTransport = device.createRecvTransport(transportInfo);
+        const recvTransport = device.createRecvTransport({
+            ...transportInfo,
+            iceServers: [
+                {
+                    urls: "turn:elysio.jamiepoeffel.ch:3478",
+                    username: "yourusername",
+                    credential: "yourpassword",
+                },
+            ],
+        });
+
         recvTransportRef.current = recvTransport;
 
         recvTransport.on(
@@ -155,7 +167,16 @@ export default function VideoCall() {
             body: JSON.stringify({ peerId: peerIdRef.current }),
         });
 
-        const sendTransport = device.createSendTransport(transportInfo);
+        const sendTransport = device.createSendTransport({
+            ...transportInfo,
+            iceServers: [
+                {
+                    urls: "turn:elysio.jamiepoeffel.ch:3478",
+                    username: "yourusername",
+                    credential: "yourpassword",
+                },
+            ],
+        });
         sendTransportRef.current = sendTransport;
 
         sendTransport.on(
