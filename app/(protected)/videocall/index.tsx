@@ -1,10 +1,5 @@
 import { useRef, useState } from "react";
-import {
-    registerGlobals,
-    mediaDevices,
-    RTCView,
-    MediaStream,
-} from "react-native-webrtc";
+import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
 import { Text, View } from "react-native";
 import { BtnText, Button } from "@/components/button";
 import * as mediasoupClient from "mediasoup-client";
@@ -115,27 +110,26 @@ export default function VideoCall() {
             "connect",
             async ({ dtlsParameters }: any, callback: any, errback: any) => {
                 try {
-                    await api(`/video/room/${ROOM_ID}/transport/${sendTransport.id}/connect`, {
-                        method: "POST",
-                        body: JSON.stringify({
-                            peerId: peerIdRef.current,
-                            dtlsParameters,
-                        }),
-                    });
+                    await api(
+                        `/video/room/${ROOM_ID}/transport/${sendTransport.id}/connect`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({
+                                peerId: peerIdRef.current,
+                                dtlsParameters,
+                            }),
+                        },
+                    );
                     callback();
                 } catch (err) {
                     errback(err);
                 }
-            }
+            },
         );
 
         sendTransport.on(
             "produce",
-            async (
-                { kind, rtpParameters }: any,
-                callback: any,
-                errback: any
-            ) => {
+            async ({ kind, rtpParameters }: any, callback: any, errback: any) => {
                 try {
                     const data = await api(
                         `/video/room/${ROOM_ID}/transport/${sendTransport.id}/produce`,
@@ -146,14 +140,14 @@ export default function VideoCall() {
                                 kind,
                                 rtpParameters,
                             }),
-                        }
+                        },
                     );
 
                     callback({ id: data.id });
                 } catch (err) {
                     errback(err);
                 }
-            }
+            },
         );
 
         const audioTrack = localStream.getAudioTracks()[0];
@@ -183,24 +177,27 @@ export default function VideoCall() {
             "connect",
             async ({ dtlsParameters }: any, callback: any, errback: any) => {
                 try {
-                    await api(`/video/room/${ROOM_ID}/transport/${recvTransport.id}/connect`, {
-                        method: "POST",
-                        body: JSON.stringify({
-                            peerId: peerIdRef.current,
-                            dtlsParameters,
-                        }),
-                    });
+                    await api(
+                        `/video/room/${ROOM_ID}/transport/${recvTransport.id}/connect`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({
+                                peerId: peerIdRef.current,
+                                dtlsParameters,
+                            }),
+                        },
+                    );
 
                     callback();
                 } catch (err) {
                     errback(err);
                 }
-            }
+            },
         );
 
         const producers = await api(
             `/video/room/${ROOM_ID}/producers?peerId=${peerIdRef.current}`,
-            { method: "GET" }
+            { method: "GET" },
         );
 
         console.log("producers from backend", producers);
@@ -220,7 +217,7 @@ export default function VideoCall() {
                 {
                     method: "POST",
                     body: JSON.stringify(payload),
-                }
+                },
             );
 
             const consumer = await recvTransport.consume({
