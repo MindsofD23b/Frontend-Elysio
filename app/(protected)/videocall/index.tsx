@@ -8,7 +8,7 @@ import { io, Socket } from "socket.io-client";
 registerGlobals();
 
 const BASE_URL = "https://elysio.jamiepoeffel.ch";
-const ROOM_ID = "test-room-fresh-1";
+const ROOM_ID = "test-room-fresh-2";
 
 export default function VideoCall() {
     const [started, setStarted] = useState(false);
@@ -25,6 +25,7 @@ export default function VideoCall() {
     const remoteStreamRef = useRef<any>(new MediaStream());
 
     const consumedProducerIdsRef = useRef<Set<string>>(new Set());
+    const startingRef = useRef(false);
     const consumingProducerIdsRef = useRef<Set<string>>(new Set());
     const consumersRef = useRef<Map<string, any>>(new Map());
     const remoteVideoStreamRef = useRef<any>(null);
@@ -46,7 +47,12 @@ export default function VideoCall() {
         const device = deviceRef.current;
 
         if (!recvTransport || !device) return;
+        // Check both sets: already done, and currently in-flight
         if (consumedProducerIdsRef.current.has(producerId)) return;
+        if (consumingProducerIdsRef.current.has(producerId)) return;
+
+        // Mark as in-flight BEFORE any await
+        consumingProducerIdsRef.current.add(producerId);
 
         try {
             const consumerData = await api(
@@ -96,6 +102,8 @@ export default function VideoCall() {
                 }, 300);
             }
         } catch (err) {
+            // Remove from in-flight on error so it can be retried
+            consumingProducerIdsRef.current.delete(producerId);
             console.error("consumeProducer error", err);
         }
     }
@@ -201,6 +209,10 @@ export default function VideoCall() {
     }
 
     async function startCall() {
+        // Guard against concurrent/duplicate calls
+        if (startingRef.current || started) return;
+        startingRef.current = true;
+
         try {
             const localStream = await mediaDevices.getUserMedia({
                 audio: true,
@@ -218,6 +230,10 @@ export default function VideoCall() {
             const device = new mediasoupClient.Device();
             await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
             deviceRef.current = device;
+
+            // Create recv transport FIRST so new-producer events don't arrive
+            // before recvTransportRef is set
+            await createRecvTransportAndConsume(device);
 
             const socket: Socket = io(BASE_URL, {
                 query: { peerId: peerIdRef.current, roomId: ROOM_ID },
@@ -237,23 +253,22 @@ export default function VideoCall() {
                     peerId: string;
                 }) => {
                     if (peerId === peerIdRef.current) return;
-                    if (consumedProducerIdsRef.current.has(producerId)) return;
-
                     console.log("new-producer event", { producerId, peerId });
                     await consumeProducer(producerId);
                 },
             );
 
-            await createRecvTransportAndConsume(device);
             await createSendTransportAndProduce(device, localStream);
 
             setStarted(true);
         } catch (error) {
             console.error("startCall error", error);
+            startingRef.current = false;
         }
     }
 
     async function stopCall() {
+        startingRef.current = false;
         socketRef.current?.disconnect();
         socketRef.current = null;
 
@@ -283,6 +298,7 @@ export default function VideoCall() {
         });
         consumersRef.current.clear();
         consumedProducerIdsRef.current.clear();
+        consumingProducerIdsRef.current.clear();
         remoteVideoStreamRef.current = null;
 
         setLocalUrl(null);
