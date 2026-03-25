@@ -229,7 +229,13 @@ export default function VideoCall() {
 
             socket.on(
                 "new-producer",
-                async ({ producerId, peerId }: { producerId: string; peerId: string }) => {
+                async ({
+                    producerId,
+                    peerId,
+                }: {
+                    producerId: string;
+                    peerId: string;
+                }) => {
                     if (peerId === peerIdRef.current) return;
                     if (consumedProducerIdsRef.current.has(producerId)) return;
 
@@ -273,7 +279,7 @@ export default function VideoCall() {
         consumersRef.current.forEach((consumer) => {
             try {
                 consumer.close();
-            } catch { }
+            } catch {}
         });
         consumersRef.current.clear();
         consumedProducerIdsRef.current.clear();
