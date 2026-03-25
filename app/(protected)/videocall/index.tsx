@@ -26,6 +26,8 @@ export default function VideoCall() {
 
     const consumedProducerIdsRef = useRef<Set<string>>(new Set());
     const consumingProducerIdsRef = useRef<Set<string>>(new Set());
+    const consumersRef = useRef<Map<string, any>>(new Map());
+    const remoteVideoStreamRef = useRef<any>(null);
 
     async function api(path: string, options?: RequestInit) {
         const url = `${BASE_URL}${path}`;
@@ -45,9 +47,6 @@ export default function VideoCall() {
 
         if (!recvTransport || !device) return;
         if (consumedProducerIdsRef.current.has(producerId)) return;
-        if (consumingProducerIdsRef.current.has(producerId)) return;
-
-        consumingProducerIdsRef.current.add(producerId);
 
         try {
             const consumerData = await api(
@@ -69,21 +68,35 @@ export default function VideoCall() {
                 rtpParameters: consumerData.rtpParameters,
             });
 
+            consumersRef.current.set(consumer.id, consumer);
             consumedProducerIdsRef.current.add(producerId);
-
-            const currentTracks = remoteStreamRef.current.getTracks();
-            const newStream = new MediaStream([...currentTracks, consumer.track]);
-            remoteStreamRef.current = newStream;
-            setRemoteUrl(newStream.toURL());
 
             await api(`/video/room/${ROOM_ID}/consumer/${consumer.id}/resume`, {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
             });
+
+            consumer.track.enabled = true;
+
+            console.log("consumer created", {
+                kind: consumer.kind,
+                producerId,
+                trackReadyState: consumer.track.readyState,
+                trackMuted: consumer.track.muted,
+                trackEnabled: consumer.track.enabled,
+            });
+
+            if (consumer.kind === "video") {
+                const videoStream = new MediaStream();
+                videoStream.addTrack(consumer.track);
+                remoteVideoStreamRef.current = videoStream;
+
+                setTimeout(() => {
+                    setRemoteUrl(videoStream.toURL());
+                }, 300);
+            }
         } catch (err) {
             console.error("consumeProducer error", err);
-        } finally {
-            consumingProducerIdsRef.current.delete(producerId);
         }
     }
 
@@ -216,14 +229,11 @@ export default function VideoCall() {
 
             socket.on(
                 "new-producer",
-                async ({
-                    producerId,
-                    peerId,
-                }: {
-                    producerId: string;
-                    peerId: string;
-                }) => {
+                async ({ producerId, peerId }: { producerId: string; peerId: string }) => {
                     if (peerId === peerIdRef.current) return;
+                    if (consumedProducerIdsRef.current.has(producerId)) return;
+
+                    console.log("new-producer event", { producerId, peerId });
                     await consumeProducer(producerId);
                 },
             );
@@ -260,8 +270,14 @@ export default function VideoCall() {
         localStreamRef.current = null;
         remoteStreamRef.current = new MediaStream();
 
+        consumersRef.current.forEach((consumer) => {
+            try {
+                consumer.close();
+            } catch { }
+        });
+        consumersRef.current.clear();
         consumedProducerIdsRef.current.clear();
-        consumingProducerIdsRef.current.clear();
+        remoteVideoStreamRef.current = null;
 
         setLocalUrl(null);
         setRemoteUrl(null);
@@ -298,6 +314,7 @@ export default function VideoCall() {
 
             {remoteUrl && (
                 <RTCView
+                    key={remoteUrl}
                     streamURL={remoteUrl}
                     style={{ flex: 1, backgroundColor: "black" }}
                     objectFit="cover"
