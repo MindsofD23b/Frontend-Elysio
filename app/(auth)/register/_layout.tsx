@@ -1,17 +1,18 @@
 import { Stack } from "expo-router";
 
+const screenOptions = { headerShown: false };
+
 export default function RegisterLayout() {
     return (
-        <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="withEmail" options={{ headerShown: false }} />
-            <Stack.Screen name="sendVerificationEmail" options={{ headerShown: false }} />
-            <Stack.Screen name="sendVerificationPhone" options={{ headerShown: false }} />
-            <Stack.Screen name="gender" options={{ headerShown: false }} />
-            <Stack.Screen name="addProfilePicture" options={{ headerShown: false }} />
-            <Stack.Screen name="addProfileData" options={{ headerShown: false }} />
-            <Stack.Screen name="interests" options={{ headerShown: false }} />
-            <Stack.Screen name="password" options={{ headerShown: false }} />
+        <Stack screenOptions={screenOptions}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="withEmail" />
+            <Stack.Screen name="sendVerificationEmail" />
+            <Stack.Screen name="gender" />
+            <Stack.Screen name="addProfilePicture" />
+            <Stack.Screen name="addProfileData" />
+            <Stack.Screen name="interests" />
+            <Stack.Screen name="password" />
         </Stack>
     );
 }

@@ -1,4 +1,4 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { Text } from "react-native";
 import Input from "@/components/input";

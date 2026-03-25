@@ -1,5 +1,5 @@
 import BackWrapper from "@/components/backwrapper";
-import { useTheme } from "../../theme/context";
+import { useTheme } from "../../../lib/theme/context";
 import { Text, View } from "react-native";
 import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
