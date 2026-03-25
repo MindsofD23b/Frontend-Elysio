@@ -40,7 +40,7 @@ export default function RootLayout() {
             router.replace("/(auth)/login");
         }
         setNavigationReady(true);
-    }, [appIsReady]);
+    }, [appIsReady, router]);
 
     const onLayoutRootView = useCallback(() => {
         if (appIsReady) {
