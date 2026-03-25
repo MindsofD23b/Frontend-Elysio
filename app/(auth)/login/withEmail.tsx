@@ -5,7 +5,7 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
-import { useFetch, useStore } from "@/hooks"
+import { useFetch, useStore } from "@/hooks";
 
 type FormData = {
     email: string;
@@ -14,7 +14,7 @@ type FormData = {
 
 type LoginResponse = {
     token: string;
-}
+};
 
 export default function WithEmail() {
     useEffect(() => {
@@ -23,7 +23,7 @@ export default function WithEmail() {
 
     const { gs, theme } = useTheme();
 
-    const [, setStoredToken] = useStore<string | null>("token", null)
+    const [, setStoredToken] = useStore<string | null>("token", null);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -33,34 +33,32 @@ export default function WithEmail() {
         general?: { message: string };
     }>({});
 
-
     const [, loading, fetchError, login] = useFetch<LoginResponse>(
         "/auth/login",
         {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
         },
         {
             manual: true,
             useCache: false,
         },
-
     );
     const onSubmit = async (data: FormData) => {
         const nextErrors: {
             email?: { message: string };
             password?: { message: string };
             general?: { message: string };
-        } = { };
+        } = {};
 
         if (!/^\S+@\S+\.\S+$/.test(data.email)) {
-            nextErrors.email = { message: "Invalid email address"};
+            nextErrors.email = { message: "Invalid email address" };
         }
 
         if (!data.password.trim()) {
-            nextErrors.password = { message: "Password is required"};
+            nextErrors.password = { message: "Password is required" };
         }
         setErrors(nextErrors);
 
@@ -77,15 +75,14 @@ export default function WithEmail() {
             });
             await setStoredToken(response.token);
             router.replace("/(protected)/(tabs)");
-        } catch (err){
-            setErrors((prev => ({
+        } catch (err) {
+            setErrors((prev) => ({
                 ...prev,
                 general: {
-                    message:
-                    err instanceof Error ? err.message : "Login failed",
+                    message: err instanceof Error ? err.message : "Login failed",
                 },
-            })));
-        };
+            }));
+        }
     };
 
     return (
@@ -139,7 +136,7 @@ export default function WithEmail() {
                         )}
 
                         {!errors.general && fetchError && (
-                            <Text style={{ color: "red", fontSize: 12, marginTop: 8}}>
+                            <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
                                 {fetchError.message}
                             </Text>
                         )}
