@@ -61,8 +61,13 @@ export default function VideoCall() {
                 rtpParameters: consumerData.rtpParameters,
             });
 
+            // Add track to existing stream
             remoteStreamRef.current.addTrack(consumer.track);
-            setRemoteUrl(remoteStreamRef.current.toURL());
+
+            // Create a NEW MediaStream from all current tracks to force re-render
+            const newStream = new MediaStream(remoteStreamRef.current.getTracks());
+            remoteStreamRef.current = newStream;
+            setRemoteUrl(newStream.toURL());
 
             await api(`/video/room/${ROOM_ID}/consumer/${consumer.id}/resume`, {
                 method: "POST",
