@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mars, Venus } from "lucide-react-native";
+import i18n from "@/i18n";
 import { Theme } from "@/lib/theme/theme";
 import { useRegisterStore } from "@/utils/registerStore";
 

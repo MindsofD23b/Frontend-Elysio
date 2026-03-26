@@ -1,13 +1,14 @@
 import { BtnText, Button } from "@/components/button";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-
+import { Image, Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme/context";
 import { Eye, Globe, Heart, MessageCircle, Sun, User } from "lucide-react-native";
 import { Href, router } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 export default function SettingsScreen() {
-    const { gs, theme } = useTheme();
+    const { theme } = useTheme();
+    const t = (key: string) => i18n.t(`settings.${key}`);
 
     const { logout } = useAuth();
 
@@ -21,28 +22,105 @@ export default function SettingsScreen() {
     };
 
     return (
-        <View style={gs.container}>
-            <Text style={[styles.title, { marginTop: 20, color: theme.text }]}>
-                Settings
-            </Text>
-
-            <View style={styles.profileWrap}>
-                <Image
-                    source={{
-                        uri: "https://images.unsplash.com/photo-1517849845537-4d257902454a",
-                    }}
-                    style={styles.avatar}
-                />
-                <Text style={[styles.name, { color: theme.text }]}>Lara Gut</Text>
-                <Text style={[styles.email, { color: mutedText }]}>
-                    Lara.gut@example.com
+        <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+            <View style={styles.container}>
+                <Text style={[styles.title, { marginTop: 20, color: theme.text }]}>
+                    {t("title")}
                 </Text>
+
+                <View style={styles.profileWrap}>
+                    <Image
+                        source={{
+                            uri: "https://images.unsplash.com/photo-1517849845537-4d257902454a",
+                        }}
+                        style={styles.avatar}
+                    />
+                    <Text style={[styles.name, { color: theme.text }]}>Lara Gut</Text>
+                    <Text style={[styles.email, { color: mutedText }]}>
+                        Lara.gut@example.com
+                    </Text>
+                </View>
+
+                <View style={styles.list}>
+                    <MenuRow
+                        icon="person-outline"
+                        label={t("personalDetails")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                    />
+                    <MenuRow
+                        icon="heart-outline"
+                        label={t("interests")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                    />
+                    <MenuRow
+                        icon="globe-outline"
+                        label={t("termsAndConditions")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                    />
+                    <MenuRow
+                        icon="notifications-outline"
+                        label={t("privacyPolicy")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                    />
+                    <MenuRow
+                        icon="eye-outline"
+                        label={t("aboutUs")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                    />
+                </View>
+
+                <View style={styles.modeRow}>
+                    <Pressable
+                        style={styles.modeItem}
+                        onPress={() => setTheme(colors.light)}
+                    >
+                        <Ionicons
+                            name="sunny-outline"
+                            size={20}
+                            color={isLight ? theme.primary : mutedText}
+                        />
+                        <Text style={{ color: isLight ? theme.primary : mutedText }}>
+                            {t("lightmode")}
+                        </Text>
+                    </Pressable>
+
+                    <Pressable
+                        style={styles.modeItem}
+                        onPress={() => setTheme(colors.dark)}
+                    >
+                        <Ionicons
+                            name="moon-outline"
+                            size={20}
+                            color={!isLight ? theme.primary : mutedText}
+                        />
+                        <Text style={{ color: !isLight ? theme.primary : mutedText }}>
+                            {t("darkmode")}
+                        </Text>
+                    </Pressable>
+                </View>
+
+                <Button
+                    style={{ marginTop: "auto", marginBottom: 30 }}
+                    onPress={() => {}}
+                >
+                    <BtnText>{t("logOut")}</BtnText>
+                </Button>
             </View>
 
             <View style={styles.list}>
                 <MenuRow
                     icon={User}
-                    label="Personal Details"
+                    label={t("personalDetails")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -50,7 +128,7 @@ export default function SettingsScreen() {
                 />
                 <MenuRow
                     icon={Heart}
-                    label="Interests"
+                    label={t("interests")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -58,7 +136,7 @@ export default function SettingsScreen() {
                 />
                 <MenuRow
                     icon={Globe}
-                    label="Terms and Conditions"
+                    label={t("termsAndConditions")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -66,7 +144,7 @@ export default function SettingsScreen() {
                 />
                 <MenuRow
                     icon={MessageCircle}
-                    label="Privacy & Policy"
+                    label={t("privacyPolicy")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -74,7 +152,7 @@ export default function SettingsScreen() {
                 />
                 <MenuRow
                     icon={Eye}
-                    label="About us"
+                    label={t("aboutUs")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -144,6 +222,10 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16,
     },
+    safe: {
+    flex: 1,
+},
+
     title: {
         fontSize: 26,
         fontWeight: "800",

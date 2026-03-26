@@ -4,6 +4,7 @@ import { BtnText, Button } from "@/components/button";
 import { router, useLocalSearchParams } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
 import { Text, View } from "react-native";
+import i18n from "@/i18n";
 
 export default function SendVerificationEmail() {
     const { gs, theme } = useTheme();

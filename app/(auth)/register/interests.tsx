@@ -263,12 +263,12 @@ export default function Interests() {
                             style={styles.errorCard}
                         >
                             <Text style={[styles.errorTitle, { color: theme.text }]}>
-                                Selection limit
+                                {t("errorTitle")}
                             </Text>
                             <Text
                                 style={[styles.errorText, { color: theme.text + "B3" }]}
                             >
-                                Please choose minimum {MIN} and maximum {MAX} interests.
+                                {t("errorBody", { min: MIN, max: MAX })}
                             </Text>
                             <Pressable
                                 style={[

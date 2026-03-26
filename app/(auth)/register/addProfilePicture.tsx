@@ -7,6 +7,7 @@ import { router } from "expo-router";
 
 export default function AddProfilePicturePage() {
     const { gs, theme } = useTheme();
+    const t = (key: string) => i18n.t(`auth.register.profilePicture.${key}`);
 
     return (
         <BackWrapper>
