@@ -1,11 +1,11 @@
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
+
+const isLoggedIn = false;
 
 export default function ProtectedLayout() {
-    return (
-        <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="videocall" options={{ headerShown: true }} />
-            <Stack.Screen name="settings" options={{ headerShown: false }} />
-        </Stack>
-    );
+    if (!isLoggedIn) {
+        return <Redirect href="/login" />;
+    }
+
+    return <Stack screenOptions={{ headerShown: false }} />;
 }

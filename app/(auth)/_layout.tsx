@@ -1,12 +1,11 @@
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 
-const screenOptions = { headerShown: false };
+const isLoggedIn = false;
 
-export default function RootLayout() {
-    return (
-        <Stack screenOptions={screenOptions}>
-            <Stack.Screen name="login" />
-            <Stack.Screen name="register" />
-        </Stack>
-    );
+export default function AuthLayout() {
+    if (isLoggedIn) {
+        return <Redirect href="/" />;
+    }
+
+    return <Stack screenOptions={{ headerShown: false }} />;
 }

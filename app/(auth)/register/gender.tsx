@@ -2,22 +2,22 @@ import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mars, Venus } from "lucide-react-native";
 import { Theme } from "@/lib/theme/theme";
+import { useRegisterStore } from "@/utils/registerStore";
 
 type GenderType = "male" | "female";
 
 export default function Gender() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
+    const { data, setGender } = useRegisterStore();
 
-    useEffect(() => {
-        router.prefetch("/register/interests");
-    }, []);
-
-    const [selected, setSelected] = useState<GenderType | null>(null);
+    const [selected, setSelected] = useState<GenderType | null>(
+        data.gender ? (data.gender as GenderType) : null
+    );
 
     const muted = theme.base + "B3";
     const mutedSoft = theme.base + "0D";
@@ -25,6 +25,7 @@ export default function Gender() {
 
     const getCardStyle = (type: GenderType) => {
         const active = selected === type;
+
         return {
             borderColor: active ? theme.primary : muted,
             backgroundColor: active ? primarySoft : mutedSoft,
@@ -34,54 +35,59 @@ export default function Gender() {
     const getLabelColor = (type: GenderType) =>
         selected === type ? theme.primary : theme.base;
 
+    const onSubmit = () => {
+        if (!selected) return;
+
+        setGender(selected);
+        router.push("/register/interests");
+    };
+
     return (
-        <>
-            <BackWrapper>
-                <Text style={[gs.h1, { marginTop: 35 }]}>Select your Gender </Text>
-                <Text
-                    style={[
-                        gs.bodyText,
-                        { marginTop: 10, color: theme.base + "54", textAlign: "left" },
-                    ]}
+        <BackWrapper>
+            <Text style={[gs.h1, { marginTop: 35 }]}>Select your Gender</Text>
+
+            <Text
+                style={[
+                    gs.bodyText,
+                    { marginTop: 10, color: theme.base + "54", textAlign: "left" },
+                ]}
+            >
+                Please select <Text style={{ fontWeight: "bold" }}>your Gender</Text>
+            </Text>
+
+            <View style={styles.cardsArea}>
+                <Pressable
+                    style={[styles.card, getCardStyle("male")]}
+                    onPress={() => setSelected("male")}
                 >
-                    Please select <Text style={{ fontWeight: "bold" }}>your Gender</Text>
-                </Text>
+                    <Mars size={36} color={getLabelColor("male")} />
+                    <Text style={[styles.cardText, { color: getLabelColor("male") }]}>
+                        Male
+                    </Text>
+                </Pressable>
 
-                <View style={styles.cardsArea}>
-                    <Pressable
-                        style={[styles.card, getCardStyle("male")]}
-                        onPress={() => setSelected("male")}
-                    >
-                        <Mars size={36} color={getLabelColor("male")} />
-                        <Text style={[styles.cardText, { color: getLabelColor("male") }]}>
-                            Male
-                        </Text>
-                    </Pressable>
-
-                    <Pressable
-                        style={[styles.card, getCardStyle("female")]}
-                        onPress={() => setSelected("female")}
-                    >
-                        <Venus size={36} color={getLabelColor("female")} />
-                        <Text
-                            style={[styles.cardText, { color: getLabelColor("female") }]}
-                        >
-                            Female
-                        </Text>
-                    </Pressable>
-                </View>
-
-                <Button
-                    style={{ marginTop: "auto" }}
-                    onPress={() => router.push("/register/interests")}
-                    disabled={!selected}
+                <Pressable
+                    style={[styles.card, getCardStyle("female")]}
+                    onPress={() => setSelected("female")}
                 >
-                    <BtnText>Continue</BtnText>
-                </Button>
-            </BackWrapper>
-        </>
+                    <Venus size={36} color={getLabelColor("female")} />
+                    <Text style={[styles.cardText, { color: getLabelColor("female") }]}>
+                        Female
+                    </Text>
+                </Pressable>
+            </View>
+
+            <Button
+                style={{ marginTop: "auto" }}
+                onPress={onSubmit}
+                disabled={!selected}
+            >
+                <BtnText>Continue</BtnText>
+            </Button>
+        </BackWrapper>
     );
 }
+
 const makeStyles = (theme: Theme) =>
     StyleSheet.create({
         cardsArea: {

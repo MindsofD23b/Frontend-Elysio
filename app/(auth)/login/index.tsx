@@ -12,11 +12,11 @@ export default function Login() {
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();
 
-    useEffect(() => {
-        router.prefetch("/login/withEmail");
-        router.prefetch("/login/withPhoneNumber");
-        router.prefetch("/register");
-    }, []);
+    // useEffect(() => {
+    //     router.prefetch("/login/withEmail");
+    //     router.prefetch("/login/withPhoneNumber");
+    //     router.prefetch("/register");
+    // }, []);
 
     return (
         <View style={gs.container}>
@@ -32,21 +32,15 @@ export default function Login() {
                 Welcome back! Please login to your account.
             </Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
-                <Button onPress={() => router.push("/login/withEmail")}>
+                <Button onPress={() => router.push("/(auth)/login/withEmail")}>
                     <BtnText>Continue with Email</BtnText>
                 </Button>
-                <Button
-                    variante="outline"
-                    onPress={() => router.push("/login/withPhoneNumber")}
-                >
+                <Button variante="outline" onPress={() => router.push("/(auth)/login/withPhoneNumber")}>
                     <BtnText>Continue with Phone Number</BtnText>
                 </Button>
             </View>
 
-            <Link
-                href="/register"
-                style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
-            >
+            <Link href="/(auth)/register" style={{ color: theme.text, fontSize: 14, textAlign: "center" }}>
                 Don{"'"}t have an account?{" "}
                 <Text style={{ color: theme.primary }}>Register</Text>
             </Link>

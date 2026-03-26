@@ -12,10 +12,10 @@ export default function Register() {
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();
 
-    useEffect(() => {
-        router.prefetch("/register/withEmail");
-        router.prefetch("/login");
-    }, []);
+    // useEffect(() => {
+    //     router.prefetch("/(auth)/register/withEmail");
+    //     router.prefetch("/(auth)/login");
+    // }, []);
 
     return (
         <View style={gs.container}>
@@ -33,14 +33,14 @@ export default function Register() {
             <View style={{ width: "100%", marginVertical: 16, marginTop: 8 }}>
                 <Button
                     style={{ marginVertical: 16 }}
-                    onPress={() => router.push("/register/withEmail")}
+                    onPress={() => router.push("/(auth)/register/withEmail")}
                 >
                     <BtnText>Continue with Email</BtnText>
                 </Button>
             </View>
 
             <Link
-                href="/login"
+                href="/(auth)/login"
                 style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
             >
                 Already have an <Text style={{ color: theme.primary }}>Account</Text>
