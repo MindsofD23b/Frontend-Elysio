@@ -107,7 +107,10 @@ export default function Interests() {
                                                 key={`sk-a-${i}`}
                                                 style={[
                                                     styles.skeletonChip,
-                                                    { backgroundColor: theme.text + "22" },
+                                                    {
+                                                        backgroundColor:
+                                                            theme.text + "22",
+                                                    },
                                                 ]}
                                             />
                                         ))}
@@ -133,7 +136,10 @@ export default function Interests() {
                                                 key={`sk-b-${i}`}
                                                 style={[
                                                     styles.skeletonChip,
-                                                    { backgroundColor: theme.text + "22" },
+                                                    {
+                                                        backgroundColor:
+                                                            theme.text + "22",
+                                                    },
                                                 ]}
                                             />
                                         ))}
@@ -159,7 +165,10 @@ export default function Interests() {
                                                 key={`sk-c-${i}`}
                                                 style={[
                                                     styles.skeletonChip,
-                                                    { backgroundColor: theme.text + "22" },
+                                                    {
+                                                        backgroundColor:
+                                                            theme.text + "22",
+                                                    },
                                                 ]}
                                             />
                                         ))}
@@ -178,7 +187,10 @@ export default function Interests() {
                             Object.entries(data || {}).map(([title, items]) => (
                                 <View key={title} style={styles.section}>
                                     <Text
-                                        style={[styles.sectionTitle, { color: theme.text }]}
+                                        style={[
+                                            styles.sectionTitle,
+                                            { color: theme.text },
+                                        ]}
                                     >
                                         {title}
                                     </Text>
@@ -259,7 +271,10 @@ export default function Interests() {
                                 Please choose minimum {MIN} and maximum {MAX} interests.
                             </Text>
                             <Pressable
-                                style={[styles.errorOk, { backgroundColor: theme.primary }]}
+                                style={[
+                                    styles.errorOk,
+                                    { backgroundColor: theme.primary },
+                                ]}
                                 onPress={() => setErrorOpen(false)}
                             >
                                 <Text style={styles.errorOkText}>OK</Text>

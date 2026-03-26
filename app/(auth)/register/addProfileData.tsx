@@ -1,12 +1,6 @@
 import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
-import {
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Input from "@/components/input";
 import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { BtnText, Button, Loader } from "@/components/button";
@@ -48,11 +42,9 @@ export default function AddProfileDataPage() {
     const [language, setLanguage] = useState(data.language || "de");
     const [jobTitle, setJobTitle] = useState(data.jobTitle || "");
     const [aboutMe, setAboutMe] = useState(data.aboutMe || "");
-    const [acceptedTerms, setAcceptedTerms] = useState(
-        data.acceptedTerms || false
-    );
+    const [acceptedTerms, setAcceptedTerms] = useState(data.acceptedTerms || false);
     const [acceptedPrivacyPolicy, setAcceptedPrivacyPolicy] = useState(
-        data.acceptedPrivacyPolicy || false
+        data.acceptedPrivacyPolicy || false,
     );
 
     const [errors, setErrors] = useState<FormErrors>({});
@@ -68,18 +60,16 @@ export default function AddProfileDataPage() {
         {
             manual: true,
             useCache: false,
-        }
+        },
     );
 
     function handleTelefonData(
         tel: string,
         internationalTel: string,
-        nationalTel: string | undefined
+        nationalTel: string | undefined,
     ) {
         const normalizedPrefix =
-            internationalTel && tel
-                ? internationalTel.replace(tel, "").trim()
-                : "";
+            internationalTel && tel ? internationalTel.replace(tel, "").trim() : "";
 
         setPhonePrefix(normalizedPrefix);
         setPhoneNumber((nationalTel || tel || "").replace(/\s+/g, ""));
@@ -226,10 +216,7 @@ export default function AddProfileDataPage() {
         } catch (err) {
             setErrors({
                 general: {
-                    message:
-                        err instanceof Error
-                            ? err.message
-                            : "Registration failed",
+                    message: err instanceof Error ? err.message : "Registration failed",
                 },
             });
         }
@@ -245,18 +232,14 @@ export default function AddProfileDataPage() {
             >
                 <Text style={[gs.h1, { marginTop: 35 }]}>Finish your Profile</Text>
 
-                <Text
-                    style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}
-                >
+                <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
                     Complete your profile details to create your account
                 </Text>
 
                 <View style={styles.form}>
                     <PhoneNumberInput sendData={handleTelefonData} />
                     {errors.phoneNumber && (
-                        <Text style={styles.errorText}>
-                            {errors.phoneNumber.message}
-                        </Text>
+                        <Text style={styles.errorText}>{errors.phoneNumber.message}</Text>
                     )}
 
                     <Input
@@ -443,11 +426,7 @@ export default function AddProfileDataPage() {
                     )}
                 </View>
 
-                <Button
-                    onPress={onSubmit}
-                    style={styles.submitButton}
-                    disabled={loading}
-                >
+                <Button onPress={onSubmit} style={styles.submitButton} disabled={loading}>
                     {loading ? <Loader /> : <BtnText>Create account</BtnText>}
                 </Button>
             </ScrollView>

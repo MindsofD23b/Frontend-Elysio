@@ -16,7 +16,7 @@ export default function Gender() {
     const { data, setGender } = useRegisterStore();
 
     const [selected, setSelected] = useState<GenderType | null>(
-        data.gender ? (data.gender as GenderType) : null
+        data.gender ? (data.gender as GenderType) : null,
     );
 
     const muted = theme.base + "B3";
@@ -77,11 +77,7 @@ export default function Gender() {
                 </Pressable>
             </View>
 
-            <Button
-                style={{ marginTop: "auto" }}
-                onPress={onSubmit}
-                disabled={!selected}
-            >
+            <Button style={{ marginTop: "auto" }} onPress={onSubmit} disabled={!selected}>
                 <BtnText>Continue</BtnText>
             </Button>
         </BackWrapper>

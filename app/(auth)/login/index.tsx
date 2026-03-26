@@ -35,12 +35,18 @@ export default function Login() {
                 <Button onPress={() => router.push("/(auth)/login/withEmail")}>
                     <BtnText>Continue with Email</BtnText>
                 </Button>
-                <Button variante="outline" onPress={() => router.push("/(auth)/login/withPhoneNumber")}>
+                <Button
+                    variante="outline"
+                    onPress={() => router.push("/(auth)/login/withPhoneNumber")}
+                >
                     <BtnText>Continue with Phone Number</BtnText>
                 </Button>
             </View>
 
-            <Link href="/(auth)/register" style={{ color: theme.text, fontSize: 14, textAlign: "center" }}>
+            <Link
+                href="/(auth)/register"
+                style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
+            >
                 Don{"'"}t have an account?{" "}
                 <Text style={{ color: theme.primary }}>Register</Text>
             </Link>

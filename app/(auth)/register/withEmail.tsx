@@ -37,7 +37,7 @@ export default function WithEmail() {
         {
             manual: true,
             useCache: false,
-        }
+        },
     );
 
     const onSubmit = async () => {
@@ -89,7 +89,8 @@ export default function WithEmail() {
             <View style={{ flex: 1, width: "100%" }}>
                 <Text style={[gs.h1, { marginTop: 35 }]}>Enter your Email</Text>
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
-                    Please enter your <Text style={{ fontWeight: "bold" }}>Email Address</Text>
+                    Please enter your{" "}
+                    <Text style={{ fontWeight: "bold" }}>Email Address</Text>
                 </Text>
 
                 <View style={{ width: "100%", marginTop: 30 }}>
@@ -120,12 +121,18 @@ export default function WithEmail() {
 
                     {!errors.email && !errors.general && fetchError && (
                         <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
-                            {fetchError instanceof Error ? fetchError.message : "Something went wrong"}
+                            {fetchError instanceof Error
+                                ? fetchError.message
+                                : "Something went wrong"}
                         </Text>
                     )}
                 </View>
 
-                <Button style={{ marginTop: "auto" }} onPress={onSubmit} disabled={loading}>
+                <Button
+                    style={{ marginTop: "auto" }}
+                    onPress={onSubmit}
+                    disabled={loading}
+                >
                     {loading ? <Loader /> : <BtnText>Continue</BtnText>}
                 </Button>
             </View>
