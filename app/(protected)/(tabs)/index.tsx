@@ -1,18 +1,17 @@
 import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
-import {
-    Animated,
-    Dimensions,
-    Easing,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-} from "react-native";
+import { Animated, Dimensions, Easing, Pressable, StyleSheet, View } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { Heart } from "lucide-react-native";
 import { router } from "expo-router";
+import { canCall } from "@/lib/premium/canCall";
+import { PlanType } from "@/lib/constants";
+
+// TODO: Implement plan based constants
+const user = {
+    plan: PlanType.FREE,
+};
 
 const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
@@ -173,14 +172,22 @@ export default function Index() {
             driftL.stopAnimation();
             driftR.stopAnimation();
         };
-    }, []);
-    const [count, setCount] = useState(10);
-    const maxCount = 10;
+    });
+
+    const [count, setCount] = useState(0);
 
     const onStart = () => {
-        setCount((prev) => (prev > 0 ? prev - 1 : 0));
+        // TODO: Implement i18n here
+        if (!canCall(user.plan, count)) {
+            return user.plan === PlanType.FREE
+                ? alert("Upgrade to Paid plan!")
+                : alert("You have no more Calls to day");
+        }
+
+        setCount((prev) => prev + 1);
         router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
     };
+
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;
     const spin3 = useRef(new Animated.Value(0)).current;
@@ -256,7 +263,7 @@ export default function Index() {
             spin2.stopAnimation();
             spin3.stopAnimation();
         };
-    }, []);
+    });
     //SPIN
     const r1 = spin.interpolate({
         inputRange: [0, 1],

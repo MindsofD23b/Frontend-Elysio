@@ -20,7 +20,7 @@ export default function Apperance() {
             mode === ThemeOptions.automatic ? strToOption(COLOR_SCHEME ?? "light") : mode;
 
         setTheme(colors[resolved === ThemeOptions.dark ? "dark" : "light"]);
-    }, [mode, loaded]);
+    }, [mode, loaded, COLOR_SCHEME, setTheme]);
 
     useEffect(() => {
         get<ThemeOptions>("theme").then((val) => {
