@@ -7,7 +7,7 @@ type AuthContextType = {
     isLoading: boolean;
     login: (token: string) => Promise<void>;
     logout: () => Promise<void>;
-}
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         hydrateAuth();
-    }, [])
+    }, []);
 
     const login = async (nextToken: string) => {
         setToken(nextToken);
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             login,
             logout,
         }),
-        [token, isLoading]
+        [token, isLoading],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

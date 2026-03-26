@@ -42,7 +42,7 @@ export default function WithEmail() {
         {
             manual: true,
             useCache: false,
-        }
+        },
     );
 
     const onSubmit = async (data: FormData) => {
@@ -101,7 +101,8 @@ export default function WithEmail() {
                 <Text style={[gs.h1, { marginTop: 35 }]}>Login with Email</Text>
 
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
-                    Please enter your <Text style={{ fontWeight: "bold" }}>Credentials</Text>
+                    Please enter your{" "}
+                    <Text style={{ fontWeight: "bold" }}>Credentials</Text>
                 </Text>
 
                 <View style={{ width: "100%", marginTop: 30 }}>
