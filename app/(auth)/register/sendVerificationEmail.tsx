@@ -71,7 +71,7 @@ export default function SendVerificationEmail() {
                             },
                         ]}
                     >
-                        {t("noEmail")}{" "}
+                        {t("noEmail")}{" "} 
                         <Text
                             style={{ fontWeight: "bold", color: theme.primary }}
                             onPress={() => alert("Resend")}

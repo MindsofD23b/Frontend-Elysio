@@ -15,8 +15,8 @@ export default function Gender() {
     const styles = makeStyles(theme);
     const t = (key: string) => i18n.t(`auth.register.gender.${key}`);
     useEffect(() => {
-        router.prefetch("/register/interests");
-    }, []);
+        router.prefetch("/auth/register/interests");
+    }, []); 
 
     const [selected, setSelected] = useState<GenderType | null>(null);
 
@@ -45,8 +45,7 @@ export default function Gender() {
                         { marginTop: 10, color: theme.base + "54", textAlign: "left" },
                     ]}
                 >
-                    {t("body")}
-                    <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}a</Text>
+                    {t("body")}<Text style={{ fontWeight: "bold" }}>{t("bodyBold")}a</Text>
                 </Text>
 
                 <View style={styles.cardsArea}>

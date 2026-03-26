@@ -5,14 +5,13 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
-import i18n from "@/i18n";
+
 type FormData = {
     email: string;
     password: string;
 };
 
 export default function WithEmail() {
-    const t = (key: string) => i18n.t(`auth.login.withEmail.${key}`);
     useEffect(() => {
         router.prefetch("/(protected)/(tabs)");
     }, []);
@@ -55,16 +54,16 @@ export default function WithEmail() {
                         height: "100%",
                     }}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
+                    <Text style={[gs.h1, { marginTop: 35 }]}>Login with Email</Text>
                     <Text
                         style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}
                     >
-                        {t("body")}{" "}
-                        <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
+                        Please enter your{" "}
+                        <Text style={{ fontWeight: "bold" }}>Credentials</Text>
                     </Text>
                     <View style={{ width: "100%", marginTop: 30 }}>
                         <Input
-                            placeholder={t("emailPlaceholder")}
+                            placeholder="Email"
                             keyboardType="email-address"
                             onChangeText={(text) => setEmail(text)}
                             value={email}
@@ -76,7 +75,7 @@ export default function WithEmail() {
                             </Text>
                         )}
                         <Input
-                            placeholder={t("passwordPlaceholder")}
+                            placeholder="Password"
                             secureTextEntry
                             onChangeText={(text) => setPassword(text)}
                             value={password}
@@ -93,7 +92,7 @@ export default function WithEmail() {
                         onPress={() => onSubmit({ email, password })}
                         disabled={loading}
                     >
-                        {loading ? <Loader /> : <BtnText>{t("login")}</BtnText>}
+                        {loading ? <Loader /> : <BtnText>Login</BtnText>}
                     </Button>
                 </View>
             </BackWrapper>

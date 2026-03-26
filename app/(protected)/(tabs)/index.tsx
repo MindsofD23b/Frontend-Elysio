@@ -1,20 +1,13 @@
 import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
-import {
-    Animated,
-    Dimensions,
-    Easing,
-    Pressable,
-    StyleSheet,
-    View,
-    Text,
-} from "react-native";
+import { Animated, Dimensions, Easing, Pressable, StyleSheet, View } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
+import { Heart } from "lucide-react-native";
 import { router } from "expo-router";
 import { canCall } from "@/lib/premium/canCall";
 import { PlanType } from "@/lib/constants";
-import i18n from "@/i18n";
+
 // TODO: Implement plan based constants
 const user = {
     plan: PlanType.FREE,

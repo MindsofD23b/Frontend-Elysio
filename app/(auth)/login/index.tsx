@@ -12,7 +12,7 @@ export default function Login() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();
-    const t = (key: string) => i18n.t(`auth.login.${key}`);
+    const t = (key: string) => i18n.t("auth.login.${key}");
 
     useEffect(() => {
         router.prefetch("/login/withEmail");
@@ -32,7 +32,7 @@ export default function Login() {
                 {t("body")}
             </Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
-                <Button onPress={() => router.push("/login/withEmail")}>
+                <Button onPress={() => router.push("/auth/login/withEmail")}>
                     <BtnText> {t("continueWithEmail")}</BtnText>
                 </Button>
                 <Button
@@ -135,7 +135,7 @@ export default function Login() {
             </View>
 
             <View>
-                {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
+               {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
                     By continuing, you agree to our{" "}
                     <Link
                         href={"/legal/termsOfService"}
