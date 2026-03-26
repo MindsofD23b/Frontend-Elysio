@@ -32,14 +32,23 @@ export default function VideoCall() {
 
     async function api(path: string, options?: RequestInit) {
         const url = `${BASE_URL}${path}`;
-        const res = await fetch(url, {
-            headers: { "Content-Type": "application/json" },
-            ...options,
-        });
+        console.log("API REQUEST:", url, options?.method ?? "GET");
 
-        const text = await res.text();
-        if (!res.ok) throw new Error(`${res.status} ${text}`);
-        return text ? JSON.parse(text) : {};
+        try {
+            const res = await fetch(url, {
+                headers: { "Content-Type": "application/json" },
+                ...options,
+            });
+
+            const text = await res.text();
+            console.log("API RESPONSE:", res.status, text);
+
+            if (!res.ok) throw new Error(`${res.status} ${text}`);
+            return text ? JSON.parse(text) : {};
+        } catch (error) {
+            console.log("API FETCH FAILED:", url, error);
+            throw error;
+        }
     }
 
     async function consumeProducer(producerId: string) {
@@ -81,6 +90,16 @@ export default function VideoCall() {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
             });
+            setTimeout(async () => {
+                try {
+                    console.log(
+                        `consumer ${consumer.id} stats`,
+                        await consumer.getStats()
+                    );
+                } catch (e) {
+                    console.error('consumer stats error', e);
+                }
+            }, 3000);
 
             consumer.track.enabled = true;
 
@@ -120,11 +139,23 @@ export default function VideoCall() {
             ...transportInfo,
             iceServers: [
                 {
-                    urls: "turn:elysio.jamiepoeffel.ch:3478",
-                    username: "yourusername",
-                    credential: "yourpassword",
+                    urls: [
+                        'turn:elysioturn.jamiepoeffel.ch:3478?transport=udp',
+                        'turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp',
+                        'turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp',
+                    ],
+                    username: 'elysioturn',
+                    credential: 'q9E811BDjLsK',
                 },
             ],
+        });
+
+        recvTransport.on('connectionstatechange', (state: string) => {
+            console.log('[recvTransport] connectionstatechange', state);
+        });
+
+        recvTransport.on('icegatheringstatechange', (state: string) => {
+            console.log('[recvTransport] icegatheringstatechange', state);
         });
 
         recvTransportRef.current = recvTransport;
@@ -171,12 +202,25 @@ export default function VideoCall() {
             ...transportInfo,
             iceServers: [
                 {
-                    urls: "turn:elysio.jamiepoeffel.ch:3478",
-                    username: "yourusername",
-                    credential: "yourpassword",
+                    urls: [
+                        'turn:elysioturn.jamiepoeffel.ch:3478?transport=udp',
+                        'turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp',
+                        'turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp',
+                    ],
+                    username: 'elysioturn',
+                    credential: 'q9E811BDjLsK',
                 },
             ],
         });
+
+        sendTransport.on('connectionstatechange', (state: string) => {
+            console.log('[sendTransport] connectionstatechange', state);
+        });
+
+        sendTransport.on('icegatheringstatechange', (state: string) => {
+            console.log('[sendTransport] icegatheringstatechange', state);
+        });
+
         sendTransportRef.current = sendTransport;
 
         sendTransport.on(
@@ -281,6 +325,7 @@ export default function VideoCall() {
 
             await createSendTransportAndProduce(device, localStream);
 
+
             setStarted(true);
         } catch (error) {
             console.error("startCall error", error);
@@ -315,7 +360,7 @@ export default function VideoCall() {
         consumersRef.current.forEach((consumer) => {
             try {
                 consumer.close();
-            } catch {}
+            } catch { }
         });
         consumersRef.current.clear();
         consumedProducerIdsRef.current.clear();
