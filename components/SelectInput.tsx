@@ -3,7 +3,6 @@ import { Theme } from "@/lib/theme/theme";
 import { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import Animated, {
-    interpolateColor,
     useAnimatedStyle,
     useSharedValue,
     withTiming,
@@ -23,7 +22,7 @@ export default function Select({ label, checked, onChange }: ISelectProps) {
 
     useEffect(() => {
         progress.value = withTiming(checked ? 1 : 0, { duration: 250 });
-    }, [checked]);
+    });
 
     const boxStyle = useAnimatedStyle(() => ({
         backgroundColor: checked ? theme.primary : theme.card + "FA",

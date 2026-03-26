@@ -83,7 +83,7 @@ export default function Gender() {
         </>
     );
 }
-const makeStyles = (theme: Theme) =>
+const makeStyles = (_theme: Theme) =>
     StyleSheet.create({
         cardsArea: {
             flex: 1,
