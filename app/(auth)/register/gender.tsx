@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mars, Venus } from "lucide-react-native";
+import i18n from "@/i18n";
 import { Theme } from "@/lib/theme/theme";
 
 type GenderType = "male" | "female";
@@ -12,10 +13,10 @@ type GenderType = "male" | "female";
 export default function Gender() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
-
+    const t = (key: string) => i18n.t(`auth.register.gender.${key}`);
     useEffect(() => {
         router.prefetch("/register/interests");
-    }, []);
+    }, []); 
 
     const [selected, setSelected] = useState<GenderType | null>(null);
 
@@ -37,14 +38,14 @@ export default function Gender() {
     return (
         <>
             <BackWrapper>
-                <Text style={[gs.h1, { marginTop: 35 }]}>Select your Gender </Text>
+                <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
                 <Text
                     style={[
                         gs.bodyText,
                         { marginTop: 10, color: theme.base + "54", textAlign: "left" },
                     ]}
                 >
-                    Please select <Text style={{ fontWeight: "bold" }}>your Gender</Text>
+                    {t("body")}<Text style={{ fontWeight: "bold" }}>{t("bodyBold")}a</Text>
                 </Text>
 
                 <View style={styles.cardsArea}>
@@ -54,7 +55,7 @@ export default function Gender() {
                     >
                         <Mars size={36} color={getLabelColor("male")} />
                         <Text style={[styles.cardText, { color: getLabelColor("male") }]}>
-                            Male
+                            {t("male")}
                         </Text>
                     </Pressable>
 
@@ -66,7 +67,7 @@ export default function Gender() {
                         <Text
                             style={[styles.cardText, { color: getLabelColor("female") }]}
                         >
-                            Female
+                            {t("female")}
                         </Text>
                     </Pressable>
                 </View>
@@ -76,7 +77,7 @@ export default function Gender() {
                     onPress={() => router.push("/register/interests")}
                     disabled={!selected}
                 >
-                    <BtnText>Continue</BtnText>
+                    <BtnText>{t("continue")}</BtnText>
                 </Button>
             </BackWrapper>
         </>

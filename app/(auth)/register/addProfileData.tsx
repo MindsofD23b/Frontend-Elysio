@@ -7,12 +7,13 @@ import { BtnText, Button } from "@/components/button";
 import DateInput from "@/components/dateInput";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
-
+import i18n from "@/i18n";
 export default function AddProfileDataPage() {
     const { gs, theme } = useTheme();
 
     const [dateSelect, setDateSelect] = useState(false);
 
+    const t = (key: string) => i18n.t(`auth.register.addProfile.${key}`);
     useEffect(() => {
         router.prefetch("/register/sendVerificationEmail");
     }, []);
@@ -35,16 +36,17 @@ export default function AddProfileDataPage() {
             <BackWrapper>
                 <Text style={[gs.h1, { marginTop: 35 }]}>Finish your Profile</Text>
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
-                    Make your <Text style={{ fontWeight: "bold" }}>Profile</Text>{" "}
-                    attractive
+                    {t("subtitleStart")}
+                    <Text style={{ fontWeight: "bold" }}>{t("profile")}</Text>{" "}
+                    {t("subtitleEnd")}
                 </Text>
                 <PhoneNumberInput sendData={handleTelefonData} />
-                <Input placeholder="Full name" style={{ marginVertical: 16 }} />
-                <Input placeholder="Job Title" style={{ marginVertical: 16 }} />
+                <Input placeholder={t("fullName")} style={{ marginVertical: 16 }} />
+                <Input placeholder={t("jobTitle")} style={{ marginVertical: 16 }} />
 
                 {!dateSelect && (
                     <Button onPress={() => setDateSelect(true)}>
-                        <BtnText>Select your birthday</BtnText>
+                        <BtnText>{t("selectBirthday")}</BtnText>
                     </Button>
                 )}
                 {dateSelect && <DateInput />}
@@ -53,7 +55,7 @@ export default function AddProfileDataPage() {
                     onPress={() => router.push("/register/sendVerificationEmail")}
                     style={{ marginTop: "auto" }}
                 >
-                    <BtnText>Continue</BtnText>
+                    <BtnText>{t("continue")}</BtnText>
                 </Button>
             </BackWrapper>
         </>

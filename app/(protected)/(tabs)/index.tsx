@@ -1,13 +1,12 @@
 import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Dimensions, Easing, Pressable, StyleSheet, View, Text } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
-import { Heart } from "lucide-react-native";
 import { router } from "expo-router";
 import { canCall } from "@/lib/premium/canCall";
 import { PlanType } from "@/lib/constants";
-
+import i18n from "@/i18n";
 // TODO: Implement plan based constants
 const user = {
     plan: PlanType.FREE,
@@ -17,7 +16,7 @@ const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
 const GAP = 28;
 const PAD = 16;
-
+const t = (key: string) => i18n.t(`home.${key}`);
 const COL_W = (width - PAD * 2 - GAP) / 2;
 const images = [
     // left column
@@ -307,9 +306,12 @@ export default function Index() {
 
                 {/* Button */}
                 <Pressable onPress={onStart} style={styles.startBtn}>
-                    <Animated.View style={{ transform: [{ scale: zoom }] }}>
-                        <Heart size={50} color={theme.white} />
-                    </Animated.View>
+                    <Text style={[gs.btnTextDefault, { fontSize: 22 }]}>
+                        {t("start")}
+                    </Text>
+                    <Text style={[gs.btnTextDefault, { fontSize: 28, marginTop: 4 }]}>
+                        {count}
+                    </Text>
                 </Pressable>
             </View>
         </View>

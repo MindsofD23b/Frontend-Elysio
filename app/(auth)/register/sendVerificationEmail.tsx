@@ -5,10 +5,11 @@ import { router, useLocalSearchParams } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
+import i18n from "@/i18n";
 
 export default function SendVerificationEmail() {
     const { gs, theme } = useTheme();
-
+    const t = (key: string) => i18n.t(`auth.register.verifyEmail.${key}`);
     useEffect(() => {}, []);
 
     const { email } = useLocalSearchParams<{ email: string }>();
@@ -24,7 +25,7 @@ export default function SendVerificationEmail() {
                         height: "100%",
                     }}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>Confirm Email</Text>
+                    <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
 
                     <LucideMailbox
                         size={100}
@@ -42,7 +43,7 @@ export default function SendVerificationEmail() {
                             },
                         ]}
                     >
-                        We{"'"}ve sent you a confirmation email
+                        {t("sent")}
                     </Text>
                     <Text
                         style={[
@@ -54,7 +55,7 @@ export default function SendVerificationEmail() {
                             },
                         ]}
                     >
-                        To log in to your account verify your email:{" "}
+                        {t("verify")}{" "}
                         <Text style={{ fontWeight: "bold", color: theme.primary }}>
                             {email}
                         </Text>
@@ -70,12 +71,12 @@ export default function SendVerificationEmail() {
                             },
                         ]}
                     >
-                        Didn{"'"}t receive the email? Check your spam folder or{" "}
+                        {t("noEmail")}{" "} 
                         <Text
                             style={{ fontWeight: "bold", color: theme.primary }}
                             onPress={() => alert("Resend")}
                         >
-                            Click here to resend.
+                            {t("resend")}
                         </Text>
                     </Text>
 
@@ -83,7 +84,7 @@ export default function SendVerificationEmail() {
                         style={{ marginTop: "auto", marginBottom: 0 }}
                         onPress={() => router.push("/register/password")}
                     >
-                        <BtnText>Continue</BtnText>
+                        <BtnText>{t("continue")}</BtnText>
                     </Button>
                 </View>
             </BackWrapper>

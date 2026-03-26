@@ -5,9 +5,11 @@ import { Image } from "expo-image";
 import { BtnText, Button } from "@/components/button";
 import { router } from "expo-router";
 import { useEffect } from "react";
+import i18n from "@/i18n";
 
 export default function AddProfilePicturePage() {
     const { gs, theme } = useTheme();
+    const t = (key: string) => i18n.t(`auth.register.profilePicture.${key}`);
 
     useEffect(() => {
         router.prefetch("/register/addProfileData");
@@ -16,10 +18,10 @@ export default function AddProfilePicturePage() {
     return (
         <>
             <BackWrapper>
-                <Text style={[gs.h1, { marginTop: 35 }]}>Add your Profile Picture</Text>
+                <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
-                    Make your <Text style={{ fontWeight: "bold" }}>Profile</Text>{" "}
-                    attractive
+                   {t("makeAttractive")}{" "} <Text style={{ fontWeight: "bold" }}>{t("makeAttractiveBold")}</Text>{" "}
+                    {t("makeAttractiveSuffix")}
                 </Text>
 
                 <Pressable onPress={() => alert("change Picture")}>
@@ -47,7 +49,7 @@ export default function AddProfilePicturePage() {
                     onPress={() => router.push("/register/addProfileData")}
                     style={{ marginTop: "auto" }}
                 >
-                    <BtnText>Continue</BtnText>
+                    <BtnText>{t("continue")}</BtnText>
                 </Button>
             </BackWrapper>
         </>
