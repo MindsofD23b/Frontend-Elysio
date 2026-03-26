@@ -2,6 +2,7 @@ import { Slot } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
@@ -33,13 +34,15 @@ export default function RootLayout() {
 
     return (
         <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-            <BaseTheme>
-                <SafeAreaProvider>
-                    <SafeAreaWrapper>
-                        <Slot />
-                    </SafeAreaWrapper>
-                </SafeAreaProvider>
-            </BaseTheme>
+            <AuthProvider>
+                <BaseTheme>
+                    <SafeAreaProvider>
+                        <SafeAreaWrapper>
+                            <Slot />
+                        </SafeAreaWrapper>
+                    </SafeAreaProvider>
+                </BaseTheme>
+            </AuthProvider>
         </View>
     );
 }

@@ -4,13 +4,21 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Eye, Globe, Heart, MessageCircle, Sun, User } from "lucide-react-native";
 import { Href, router } from "expo-router";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 export default function SettingsScreen() {
     const { gs, theme } = useTheme();
 
+    const { logout } = useAuth();
+
     const mutedText = withAlpha(theme.text, 0.55);
     const divider = withAlpha(theme.text, 0.15);
     const iconColor = withAlpha(theme.text, 0.9);
+
+    const handleLogout = async () => {
+        await logout();
+        router.replace("/login")
+    }
 
     return (
         <View style={gs.container}>
@@ -82,7 +90,7 @@ export default function SettingsScreen() {
                 />
             </View>
 
-            <Button style={{ marginTop: "auto" }} onPress={() => {}}>
+            <Button style={{ marginTop: "auto" }} onPress={handleLogout}>
                 <BtnText>Log Out</BtnText>
             </Button>
         </View>
