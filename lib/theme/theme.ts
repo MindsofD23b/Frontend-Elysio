@@ -1,6 +1,3 @@
-import { useState } from "react";
-import { useColorScheme } from "react-native";
-
 export const colors = {
     light: {
         background: "#FFFFFF",

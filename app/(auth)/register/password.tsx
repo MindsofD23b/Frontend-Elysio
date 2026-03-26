@@ -1,4 +1,4 @@
-    import { useTheme } from "@/app/theme/context";
+    import { useTheme } from "@/lib/theme/context";
     import BackWrapper from "@/components/backwrapper";
     import { BtnText, Button, Loader } from "@/components/button";
     import Input from "@/components/input";
@@ -20,9 +20,9 @@
     export default function Password() {
         const { gs, theme } = useTheme();
 
-        useEffect(() => {
-            router.prefetch("/auth/register/gender");
-        }, []);
+    useEffect(() => {
+        router.prefetch("/register/gender");
+    }, []);
 
         const [password, setPassword] = useState("");
         const [confPassword, setConfPassword] = useState("");
@@ -61,11 +61,11 @@
 
             setError({});
 
-            setTimeout(() => {
-                setLoading(false);
-                router.push("/auth/register/gender");
-            }, 2000);
-        }
+        setTimeout(() => {
+            setLoading(false);
+            router.push("/register/gender");
+        }, 2000);
+    }
 
         return (
             <>

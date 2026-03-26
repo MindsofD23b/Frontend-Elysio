@@ -1,16 +1,19 @@
 import { Link, router } from "expo-router";
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { HomeIcon } from "lucide-react-native";
 import { useEffect } from "react";
 import { StyleSheet, Text, useColorScheme, View } from "react-native";
 import { Image } from "expo-image";
-import { Theme } from "@/app/theme/theme";
+import { Theme } from "@/lib/theme/theme";
 import i18n from "@/i18n";
+
 export default function Register() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
+    const colorScheme = useColorScheme();
     const t = (key: string) => i18n.t(`auth.register.${key}`);
+
     useEffect(() => {
         router.prefetch("/register/withEmail");
         router.prefetch("/login");
@@ -104,7 +107,7 @@ export default function Register() {
                     style={{ flex: 1, width: "100%", borderColor: theme.base + "4D" }}
                     onPress={() => alert("Login button pressed")}
                 >
-                    {useColorScheme() === "light" ? (
+                    {colorScheme === "light" ? (
                         <Image
                             source={require("@/assets/apple_dark.png")}
                             style={{ width: 20, height: 20, marginRight: 8 }}
@@ -128,8 +131,8 @@ export default function Register() {
             </View>
 
             <View>
-                <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
-                    {t("terms")}{" "}
+               {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
+                    By continuing, you agree to our{" "}
                     <Link
                         href={"/legal/termsOfService"}
                         style={{ color: theme.primary }}
@@ -146,7 +149,7 @@ export default function Register() {
                         {t("privacyPolicy")}
                     </Link>
                     .
-                </Text>
+                </Text> */}
             </View>
         </View>
     );

@@ -1,7 +1,7 @@
 // Made with ChatGPT
 import { createContext, useContext } from "react";
-import { makeGlobalStyles } from "@/app/theme/styles";
-import { Theme } from "@/app/theme/theme";
+import { makeGlobalStyles } from "@/lib/theme/styles";
+import { Theme } from "@/lib/theme/theme";
 
 // Made with https://claude.ai
 type TThemeContext = {

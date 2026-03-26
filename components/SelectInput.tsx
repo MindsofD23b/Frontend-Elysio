@@ -1,5 +1,5 @@
-import { useTheme } from "@/app/theme/context";
-import { Theme } from "@/app/theme/theme";
+import { useTheme } from "@/lib/theme/context";
+import { Theme } from "@/lib/theme/theme";
 import { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import Animated, {

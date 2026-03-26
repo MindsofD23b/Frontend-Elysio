@@ -1,12 +1,14 @@
 import { BtnText, Button } from "@/components/button";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useTheme } from "@/app/theme/context";
-import { colors } from "@/app/theme/theme";
+import { useTheme } from "@/lib/theme/context";
+import { Eye, Globe, Heart, MessageCircle, Sun, User } from "lucide-react-native";
+import { Href, router } from "expo-router";
 import i18n from "@/i18n";
 export default function SettingsScreen() {
-    const { theme, setTheme } = useTheme();
+    const { theme, gs } = useTheme();
     const t = (key: string) => i18n.t(`settings.${key}`);
+
     const mutedText = withAlpha(theme.text, 0.55);
     const divider = withAlpha(theme.text, 0.15);
     const iconColor = withAlpha(theme.text, 0.9);
@@ -110,7 +112,7 @@ export default function SettingsScreen() {
             <View style={styles.list}>
                 <MenuRow
                     icon={User}
-                    label="Personal Details"
+                    label={t("personalDetails")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -118,7 +120,7 @@ export default function SettingsScreen() {
                 />
                 <MenuRow
                     icon={Heart}
-                    label="Interests"
+                    label={t("interests")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -126,7 +128,7 @@ export default function SettingsScreen() {
                 />
                 <MenuRow
                     icon={Globe}
-                    label="Terms and Conditions"
+                    label={t("termsAndConditions")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -134,7 +136,7 @@ export default function SettingsScreen() {
                 />
                 <MenuRow
                     icon={MessageCircle}
-                    label="Privacy & Policy"
+                    label={t("privacyPolicy")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -142,7 +144,7 @@ export default function SettingsScreen() {
                 />
                 <MenuRow
                     icon={Eye}
-                    label="About us"
+                    label={t("aboutUs")}
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
@@ -158,10 +160,13 @@ export default function SettingsScreen() {
                 />
             </View>
 
-            <Button style={{ marginTop: "auto" }} onPress={() => {}}>
-                <BtnText>Log Out</BtnText>
-            </Button>
-        </View>
+                <Button
+                    style={{ marginTop: "auto", marginBottom: 30 }}
+                    onPress={() => {}}
+                >
+                    <BtnText>{t("logOut")}</BtnText>
+                </Button>
+            </View>
     );
 }
 

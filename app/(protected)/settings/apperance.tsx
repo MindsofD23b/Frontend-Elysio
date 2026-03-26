@@ -1,5 +1,5 @@
-import { useTheme } from "@/app/theme/context";
-import { colors, strToOption, ThemeOptions } from "@/app/theme/theme";
+import { useTheme } from "@/lib/theme/context";
+import { colors, strToOption, ThemeOptions } from "@/lib/theme/theme";
 import BackWrapper from "@/components/backwrapper";
 import Select from "@/components/SelectInput";
 import { get, store } from "@/utils/store";
