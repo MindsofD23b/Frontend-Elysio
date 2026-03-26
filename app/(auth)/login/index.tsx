@@ -14,8 +14,9 @@ export default function Login() {
     const styles = makeStyles(theme);
     const t = (key: string) => i18n.t("auth.login.${key}");
     useEffect(() => {
-        router.prefetch("/auth/login/withEmail");
-        router.prefetch("/auth/login/withPhoneNumber");
+        router.prefetch("/login/withEmail");
+        router.prefetch("/login/withPhoneNumber");
+        router.prefetch("/register");
     }, []);
 
     return (
@@ -35,14 +36,14 @@ export default function Login() {
                 </Button>
                 <Button
                     variante="outline"
-                    onPress={() => router.push("/auth/login/withPhoneNumber")}
+                    onPress={() => router.push("/login/withPhoneNumber")}
                 >
                     <BtnText>{t("continueWithPhone")}</BtnText>
                 </Button>
             </View>
 
             <Link
-                href="/auth/register"
+                href="/register"
                 style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
             >
                 {t("noAccount")}{" "}

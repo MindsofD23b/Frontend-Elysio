@@ -74,7 +74,7 @@ export default function Gender() {
 
                 <Button
                     style={{ marginTop: "auto" }}
-                    onPress={() => router.push("/auth/register/interests")}
+                    onPress={() => router.push("/register/interests")}
                     disabled={!selected}
                 >
                     <BtnText>{t("continue")}</BtnText>

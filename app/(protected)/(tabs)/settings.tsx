@@ -1,6 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
 import { BtnText, Button } from "@/components/button";
-import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/app/theme/context";
 import { colors } from "@/app/theme/theme";
@@ -11,8 +10,6 @@ export default function SettingsScreen() {
     const mutedText = withAlpha(theme.text, 0.55);
     const divider = withAlpha(theme.text, 0.15);
     const iconColor = withAlpha(theme.text, 0.9);
-
-    const isLight = theme.background === colors.light.background;
 
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
@@ -109,30 +106,96 @@ export default function SettingsScreen() {
                     <BtnText>{t("logOut")}</BtnText>
                 </Button>
             </View>
-        </SafeAreaView>
+
+            <View style={styles.list}>
+                <MenuRow
+                    icon={User}
+                    label="Personal Details"
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/settings/apperance"
+                />
+                <MenuRow
+                    icon={Heart}
+                    label="Interests"
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/settings/apperance"
+                />
+                <MenuRow
+                    icon={Globe}
+                    label="Terms and Conditions"
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/settings/apperance"
+                />
+                <MenuRow
+                    icon={MessageCircle}
+                    label="Privacy & Policy"
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/settings/apperance"
+                />
+                <MenuRow
+                    icon={Eye}
+                    label="About us"
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/settings/apperance"
+                />
+                <MenuRow
+                    icon={Sun}
+                    label="Apperance"
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/settings/apperance"
+                />
+            </View>
+
+            <Button style={{ marginTop: "auto" }} onPress={() => {}}>
+                <BtnText>Log Out</BtnText>
+            </Button>
+        </View>
     );
 }
 
 function MenuRow({
-    icon,
+    icon: Icon,
     label,
     divider,
     iconColor,
     textColor,
+    href,
 }: {
-    icon: any;
+    icon: React.ElementType;
     label: string;
     divider: string;
     iconColor: string;
     textColor: string;
+    href: Href;
 }) {
+    const { theme } = useTheme();
+
     return (
-        <View style={[styles.row, { borderBottomColor: divider }]}>
+        <Pressable
+            onPress={() => router.push(href)}
+            style={({ pressed }) => [
+                styles.row,
+                { borderBottomColor: divider, width: "100%" },
+                pressed && { backgroundColor: theme.base + "0A", borderRadius: 16 },
+            ]}
+        >
             <View style={styles.rowLeft}>
-                <Ionicons name={icon} size={20} color={iconColor} />
+                <Icon size={20} color={iconColor} />
                 <Text style={[styles.rowLabel, { color: textColor }]}>{label}</Text>
             </View>
-        </View>
+        </Pressable>
     );
 }
 
@@ -145,15 +208,10 @@ function withAlpha(hex: string, alpha: number) {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1 },
-
     container: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 10,
-        justifyContent: "space-between",
+        padding: 16,
     },
-
     title: {
         fontSize: 26,
         fontWeight: "800",
@@ -183,15 +241,19 @@ const styles = StyleSheet.create({
     },
 
     list: {
+        width: "100%",
         marginTop: 10,
     },
 
     row: {
+        width: "100%",
         paddingVertical: 14,
+        paddingHorizontal: 7,
         borderBottomWidth: StyleSheet.hairlineWidth,
     },
 
     rowLeft: {
+        width: "100%",
         flexDirection: "row",
         alignItems: "center",
         gap: 12,

@@ -1,15 +1,23 @@
 import { useColorScheme } from "react-native";
 import { ThemeContext } from "@/app/theme/context";
 import { makeGlobalStyles } from "@/app/theme/styles";
-import { colors, Theme } from "@/app/theme/theme";
-import { useState } from "react";
+import { colors, strToOption, Theme, ThemeOptions } from "@/app/theme/theme";
+import { useEffect, useState } from "react";
+import { get, store } from "@/utils/store";
 
 export default function BaseTheme({ children }: { children: React.ReactNode }) {
-    const system = useColorScheme();
+    const [theme, setTheme] = useState<Theme>(colors.light);
+    const COLOR_SCHEME = useColorScheme();
 
-    const [theme, setTheme] = useState<Theme>(
-        colors[system === "dark" ? "dark" : "light"],
-    );
+    useEffect(() => {
+        get<ThemeOptions>("theme").then((saved) => {
+            const option = saved ?? ThemeOptions.automatic;
+            const resolved =
+                option === ThemeOptions.automatic ? strToOption(COLOR_SCHEME) : option;
+
+            setTheme(colors[resolved === ThemeOptions.dark ? "dark" : "light"]);
+        });
+    }, [COLOR_SCHEME]);
 
     const gs = makeGlobalStyles(theme);
 

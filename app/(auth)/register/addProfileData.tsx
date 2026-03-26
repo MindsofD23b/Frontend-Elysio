@@ -15,7 +15,7 @@ export default function AddProfileDataPage() {
 
     const t = (key: string) => i18n.t(`auth.register.${key}`);
     useEffect(() => {
-        router.prefetch("/auth/register/sendVerificationEmail");
+        router.prefetch("/register/sendVerificationEmail");
     }, []);
 
     function handleTelefonData(
@@ -44,7 +44,7 @@ export default function AddProfileDataPage() {
                 {dateSelect && <DateInput />}
 
                 <Button
-                    onPress={() => router.push("/auth/register/sendVerificationEmail")}
+                    onPress={() => router.push("/register/sendVerificationEmail")}
                     style={{ marginTop: "auto" }}
                 >
                     <BtnText>Continue</BtnText>

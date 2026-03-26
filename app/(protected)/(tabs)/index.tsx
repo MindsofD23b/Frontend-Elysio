@@ -131,8 +131,8 @@ export default function Index() {
     const driftL = useRef(new Animated.Value(0)).current;
     const driftR = useRef(new Animated.Value(0)).current;
 
-    const SPEED_L = 6000;
-    const SPEED_R = 8000;
+    const SPEED_L = 7000;
+    const SPEED_R = 9000;
 
     useEffect(() => {
         let cancelledL = false;
@@ -173,13 +173,18 @@ export default function Index() {
         };
     }, []);
     const [count, setCount] = useState(10);
+    const maxCount = 10;
 
     const onStart = () => {
         setCount((prev) => (prev > 0 ? prev - 1 : 0));
+        // router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
     };
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;
     const spin3 = useRef(new Animated.Value(0)).current;
+
+    const zoom = useRef(new Animated.Value(1)).current;
+
     useEffect(() => {
         let cancelled = false;
 
@@ -221,6 +226,23 @@ export default function Index() {
                 runSpin3();
             });
         };
+
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(zoom, {
+                    toValue: 1.3,
+                    duration: 800,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(zoom, {
+                    toValue: 1,
+                    duration: 800,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ]),
+        ).start();
 
         runSpin1();
         runSpin2();

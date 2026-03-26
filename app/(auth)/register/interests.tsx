@@ -25,7 +25,7 @@ export default function Interests() {
     const styles = makeStyles(theme);
 
     useEffect(() => {
-        router.prefetch("/auth/register/addProfilePicture");
+        router.prefetch("/register/addProfilePicture");
     }, []);
 
     const [loading, setLoading] = useState(true);
@@ -54,7 +54,7 @@ export default function Interests() {
             setErrorOpen(true);
             return;
         }
-        router.push("/auth/register/addProfilePicture");
+        router.push("/register/addProfilePicture");
     };
 
     useEffect(() => {

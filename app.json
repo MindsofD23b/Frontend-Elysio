@@ -8,7 +8,13 @@
     "scheme": "elysio",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow access to camera for video calls",
+        "NSMicrophoneUsageDescription": "Allow access to microphone for calls",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.mindsofd23b.elysio"
     },
     "android": {
       "adaptiveIcon": {
@@ -16,6 +22,11 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundImage": "./assets/images/adaptive-icon.png"
       },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.jamie123456789.elysio"
@@ -48,6 +59,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4e9048d5-2e15-4fbc-ab31-22fbb78608d3"
+      }
+    },
+    "owner": "mindsofd23b"
   }
 }
