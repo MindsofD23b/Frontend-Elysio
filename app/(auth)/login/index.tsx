@@ -5,7 +5,6 @@ import { HomeIcon } from "lucide-react-native";
 import { StyleSheet, Text, View, useColorScheme } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
-import { useEffect } from "react";
 import i18n from "@/i18n";
 
 export default function Login() {

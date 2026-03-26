@@ -2,7 +2,7 @@ import { Link, router } from "expo-router";
 import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { HomeIcon } from "lucide-react-native";
-import { useEffect } from "react";
+// import { useEffect } from "react";
 import { StyleSheet, Text, useColorScheme, View } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
@@ -131,7 +131,7 @@ export default function Register() {
             </View>
 
             <View>
-               {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
+                {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
                     By continuing, you agree to our{" "}
                     <Link
                         href={"/legal/termsOfService"}

@@ -4,10 +4,12 @@ import { Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { BtnText, Button } from "@/components/button";
 import { router } from "expo-router";
+// import { I18n } from "i18n-js";
 
 export default function AddProfilePicturePage() {
     const { gs, theme } = useTheme();
-    const t = (key: string) => i18n.t(`auth.register.profilePicture.${key}`);
+    // const i18n = new I18n();
+    // const t = (key: string) => i18n.t(`auth.register.profilePicture.${key}`);
 
     return (
         <BackWrapper>

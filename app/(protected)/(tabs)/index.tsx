@@ -1,6 +1,14 @@
 import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, Pressable, StyleSheet, View, Text } from "react-native";
+import {
+    Animated,
+    Dimensions,
+    Easing,
+    Pressable,
+    StyleSheet,
+    View,
+    Text,
+} from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { router } from "expo-router";
