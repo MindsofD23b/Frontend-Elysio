@@ -1,13 +1,33 @@
 import { BtnText, Button } from "@/components/button";
-import { Image, Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
+import {
+    Image,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+    SafeAreaView,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme/context";
-import { Eye, Globe, Heart, MessageCircle, Sun, User } from "lucide-react-native";
+import {
+    Eye,
+    Globe,
+    Heart,
+    MessageCircle,
+    Sun,
+    User,
+    Moon,
+} from "lucide-react-native";
 import { Href, router } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { I18n } from "i18n-js";
+import { colors } from "@/lib/theme/theme";
 
 export default function SettingsScreen() {
-    const { theme } = useTheme();
+    const { theme, setTheme } = useTheme();
+    const isLight = theme.background === colors.light.background;
+
+    const i18n = new I18n();
     const t = (key: string) => i18n.t(`settings.${key}`);
 
     const { logout } = useAuth();
@@ -43,39 +63,44 @@ export default function SettingsScreen() {
 
                 <View style={styles.list}>
                     <MenuRow
-                        icon="person-outline"
+                        icon={User}
                         label={t("personalDetails")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        href="/settings/apperance"
                     />
                     <MenuRow
-                        icon="heart-outline"
+                        icon={Heart}
                         label={t("interests")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        href="/settings/apperance"
                     />
                     <MenuRow
-                        icon="globe-outline"
+                        icon={Globe}
                         label={t("termsAndConditions")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        href="/settings/apperance"
                     />
                     <MenuRow
-                        icon="notifications-outline"
+                        icon={MessageCircle}
                         label={t("privacyPolicy")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        href="/settings/apperance"
                     />
                     <MenuRow
-                        icon="eye-outline"
+                        icon={Eye}
                         label={t("aboutUs")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        href="/settings/apperance"
                     />
                 </View>
 
@@ -111,67 +136,12 @@ export default function SettingsScreen() {
 
                 <Button
                     style={{ marginTop: "auto", marginBottom: 30 }}
-                    onPress={() => {}}
+                    onPress={handleLogout}
                 >
                     <BtnText>{t("logOut")}</BtnText>
                 </Button>
             </View>
-
-            <View style={styles.list}>
-                <MenuRow
-                    icon={User}
-                    label={t("personalDetails")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Heart}
-                    label={t("interests")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Globe}
-                    label={t("termsAndConditions")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={MessageCircle}
-                    label={t("privacyPolicy")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Eye}
-                    label={t("aboutUs")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Sun}
-                    label="Apperance"
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-            </View>
-
-            <Button style={{ marginTop: "auto" }} onPress={handleLogout}>
-                <BtnText>Log Out</BtnText>
-            </Button>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -223,8 +193,8 @@ const styles = StyleSheet.create({
         padding: 16,
     },
     safe: {
-    flex: 1,
-},
+        flex: 1,
+    },
 
     title: {
         fontSize: 26,
@@ -281,7 +251,7 @@ const styles = StyleSheet.create({
     modeRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginTop: 8,
+        marginTop: 16,
     },
 
     modeItem: {

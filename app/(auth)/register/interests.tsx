@@ -15,6 +15,7 @@ import { Theme } from "@/lib/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
 import { useFetch } from "@/hooks";
 import { useRegisterStore } from "@/utils/registerStore";
+import { I18n } from "i18n-js"
 
 type InterestItem = {
     id: string;
@@ -27,6 +28,8 @@ const MIN = 3;
 const MAX = 12;
 
 export default function Interests() {
+    const i18n = new I18n();
+    const t = (key: string, options?: Record<string, unknown>) => i18n.t(`settings.${key}`, options);
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
     const tintColor = useColorScheme()?.toString();
