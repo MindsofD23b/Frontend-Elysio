@@ -131,7 +131,7 @@ export default function Register() {
             </View>
 
             <View>
-               {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
+                {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
                     By continuing, you agree to our{" "}
                     <Link
                         href={"/legal/termsOfService"}

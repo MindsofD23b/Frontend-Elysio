@@ -20,7 +20,8 @@ export default function AddProfilePicturePage() {
             <BackWrapper>
                 <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
-                   {t("makeAttractive")}{" "} <Text style={{ fontWeight: "bold" }}>{t("makeAttractiveBold")}</Text>{" "}
+                    {t("makeAttractive")}{" "}
+                    <Text style={{ fontWeight: "bold" }}>{t("makeAttractiveBold")}</Text>{" "}
                     {t("makeAttractiveSuffix")}
                 </Text>
 
