@@ -1,23 +1,8 @@
 import { BtnText, Button } from "@/components/button";
-import {
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-    SafeAreaView,
-} from "react-native";
+import { Image, Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme/context";
-import {
-    Eye,
-    Globe,
-    Heart,
-    MessageCircle,
-    Sun,
-    User,
-    Moon,
-} from "lucide-react-native";
+import { Eye, Globe, Heart, MessageCircle, User } from "lucide-react-native";
 import { Href, router } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { I18n } from "i18n-js";

@@ -8,7 +8,6 @@ import { useState } from "react";
 import { router } from "expo-router";
 import { useFetch } from "@/hooks";
 import { useRegisterStore } from "@/utils/registerStore";
-import { Theme } from "@/lib/theme/theme";
 
 type RegisterResponse = {
     message?: string;
@@ -30,7 +29,7 @@ type FormErrors = {
 
 export default function AddProfileDataPage() {
     const { gs, theme } = useTheme();
-    const styles = makeStyles(theme);
+    const styles = makeStyles();
     const { data, setPersonalDetails, reset } = useRegisterStore();
 
     const [phonePrefix, setPhonePrefix] = useState(data.phonePrefix || "");
@@ -64,7 +63,7 @@ export default function AddProfileDataPage() {
     );
 
     function handleTelefonData(
-        prefix: string,
+        // prefix: string,
         tel: string,
         internationalTel: string,
         nationalTel: string | undefined,
@@ -435,7 +434,7 @@ export default function AddProfileDataPage() {
     );
 }
 
-const makeStyles = (theme: Theme) =>
+const makeStyles = () =>
     StyleSheet.create({
         scrollContent: {
             paddingBottom: 32,
