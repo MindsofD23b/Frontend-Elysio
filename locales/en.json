@@ -14,7 +14,18 @@
             "terms": "By continuing, you agree to our",
             "termsOfService": "Terms of Service",
             "and": "and",
-            "privacyPolicy": "Privacy Policy"
+            "privacyPolicy": "Privacy Policy",
+            "withEmail": {
+                "title": "Login with Email",
+                "body": "Please enter your",
+                "bodyBold": "Credentials",
+                "emailPlaceholder": "Email",
+                "passwordPlaceholder": "Password",
+                "login": "Login",
+                "errors": {
+                    "invalidEmail": "Invalid email address"
+                }
+            }
         },
         "register": {
             "title": "Elysio",

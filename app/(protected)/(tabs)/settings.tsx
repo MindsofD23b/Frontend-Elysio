@@ -1,12 +1,12 @@
 import { BtnText, Button } from "@/components/button";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-
+import { Image, Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme/context";
 import { Eye, Globe, Heart, MessageCircle, Sun, User } from "lucide-react-native";
 import { Href, router } from "expo-router";
 import i18n from "@/i18n";
 export default function SettingsScreen() {
-    const { theme, gs } = useTheme();
+    const { theme } = useTheme();
     const t = (key: string) => i18n.t(`settings.${key}`);
 
     const mutedText = withAlpha(theme.text, 0.55);
@@ -166,7 +166,7 @@ export default function SettingsScreen() {
                 >
                     <BtnText>{t("logOut")}</BtnText>
                 </Button>
-            </View>
+            </SafeAreaView>
     );
 }
 
@@ -217,6 +217,10 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16,
     },
+    safe: {
+    flex: 1,
+},
+
     title: {
         fontSize: 26,
         fontWeight: "800",

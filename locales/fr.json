@@ -1,115 +1,126 @@
 {
-  "auth": {
-    "login": {
-      "title": "Elysio",
-      "subtitle": "Connectez-vous pour continuer",
-      "body": "Bon retour ! Veuillez vous connecter à votre compte.",
-      "continueWithEmail": "Continuer avec l'e-mail",
-      "continueWithPhone": "Continuer avec le numéro de téléphone",
-      "noAccount": "Pas encore de compte ?",
-      "register": "S'inscrire",
-      "orLoginWith": "Ou se connecter avec",
-      "google": "Google",
-      "apple": "Apple",
-      "terms": "En continuant, vous acceptez nos",
-      "termsOfService": "Conditions d'utilisation",
-      "and": "et",
-      "privacyPolicy": "Politique de confidentialité"
-    },
-    "register": {
-      "title": "Elysio",
-      "subtitle": "Inscrivez-vous pour continuer",
-      "body": "Découvrez un nouvel amour",
-      "continueWithEmail": "Continuer avec l'e-mail",
-      "alreadyHaveAccount": "Vous avez déjà un",
-      "account": "compte ?",
-      "orLoginWith": "Ou se connecter avec",
-      "google": "Google",
-      "apple": "Apple",
-      "terms": "En continuant, vous acceptez nos",
-      "termsOfService": "Conditions d'utilisation",
-      "and": "et",
-      "privacyPolicy": "Politique de confidentialité",
-      "profilePicture": {
-        "title": "Ajouter une photo de profil",
-        "makeAttractive": "Rendez votre",
-        "makeAttractiveBold": "profil",
-        "makeAttractiveSuffix": "attrayant",
-        "continue": "Continuer"
-      },
-      "profileData": {
-        "title": "Complétez votre profil",
-        "makeAttractive": "Rendez votre",
-        "makeAttractiveBold": "profil",
-        "makeAttractiveSuffix": "attrayant",
-        "fullName": "Nom complet",
-        "jobTitle": "Titre du poste",
-        "selectBirthday": "Sélectionnez votre anniversaire",
-        "continue": "Continuer"
-      },
-      "password": {
-        "title": "Définir votre mot de passe",
-        "body": "Votre mot de passe protège votre compte.",
-        "bodyBold": "Choisissez-le bien",
-        "enterPassword": "Entrer le mot de passe",
-        "confirmPassword": "Confirmer le mot de passe",
-        "continue": "Continuer",
-        "errors": {
-          "mustBeSet": "Le mot de passe doit être défini",
-          "minLength": "Le mot de passe doit contenir au moins 6 caractères",
-          "uppercase": "Le mot de passe doit contenir au moins 1 majuscule",
-          "lowercase": "Le mot de passe doit contenir au moins 1 minuscule",
-          "number": "Le mot de passe doit contenir au moins 1 chiffre",
-          "noMatch": "Les mots de passe ne correspondent pas"
+    "auth": {
+        "login": {
+            "title": "Elysio",
+            "subtitle": "Connectez-vous pour continuer",
+            "body": "Bon retour ! Veuillez vous connecter.",
+            "continueWithEmail": "Continuer avec l'e-mail",
+            "continueWithPhone": "Continuer avec le téléphone",
+            "noAccount": "Pas de compte ?",
+            "register": "S'inscrire",
+            "orLoginWith": "Ou se connecter avec",
+            "google": "Google",
+            "apple": "Apple",
+            "terms": "En continuant, vous acceptez nos",
+            "termsOfService": "Conditions d'utilisation",
+            "and": "et",
+            "privacyPolicy": "Politique de confidentialité",
+            "withEmail": {
+                "title": "Se connecter avec l'e-mail",
+                "body": "Veuillez entrer vos",
+                "bodyBold": "Identifiants",
+                "emailPlaceholder": "E-mail",
+                "passwordPlaceholder": "Mot de passe",
+                "login": "Se connecter",
+                "errors": {
+                    "invalidEmail": "Adresse e-mail invalide"
+                }
+            }
+        },
+        "register": {
+            "title": "Elysio",
+            "subtitle": "Inscrivez-vous pour continuer",
+            "body": "Créer un nouvel amour",
+            "continueWithEmail": "Continuer avec l'e-mail",
+            "alreadyHaveAccount": "Déjà un",
+            "account": "Compte",
+            "orLoginWith": "Ou se connecter avec",
+            "google": "Google",
+            "apple": "Apple",
+            "terms": "En continuant, vous acceptez nos",
+            "termsOfService": "Conditions d'utilisation",
+            "and": "et",
+            "privacyPolicy": "Politique de confidentialité",
+            "profilePicture": {
+                "title": "Ajouter votre photo de profil",
+                "makeAttractive": "Rendez votre",
+                "makeAttractiveBold": "Profil",
+                "makeAttractiveSuffix": "attrayant",
+                "continue": "Continuer"
+            },
+            "profileData": {
+                "title": "Terminez votre profil",
+                "makeAttractive": "Rendez votre",
+                "makeAttractiveBold": "Profil",
+                "makeAttractiveSuffix": "attrayant",
+                "fullName": "Nom complet",
+                "jobTitle": "Titre du poste",
+                "selectBirthday": "Sélectionnez votre anniversaire",
+                "continue": "Continuer"
+            },
+            "password": {
+                "title": "Définir votre mot de passe",
+                "body": "Votre mot de passe protège votre compte.",
+                "bodyBold": "Choisissez judicieusement",
+                "enterPassword": "Entrer le mot de passe",
+                "confirmPassword": "Confirmer le mot de passe",
+                "continue": "Continuer",
+                "errors": {
+                    "mustBeSet": "Le mot de passe doit être défini",
+                    "minLength": "Le mot de passe doit comporter au moins 6 caractères",
+                    "uppercase": "Le mot de passe doit contenir au moins 1 majuscule",
+                    "lowercase": "Le mot de passe doit contenir au moins 1 minuscule",
+                    "number": "Le mot de passe doit contenir au moins 1 chiffre",
+                    "noMatch": "Les mots de passe ne correspondent pas"
+                }
+            },
+            "gender": {
+                "title": "Sélectionnez votre genre",
+                "body": "Veuillez sélectionner",
+                "bodyBold": "votre genre",
+                "male": "Homme",
+                "female": "Femme",
+                "continue": "Continuer"
+            },
+            "interests": {
+                "title": "Sélectionnez vos intérêts",
+                "body": "Choisissez 6 intérêts pour matcher avec des utilisateurs similaires",
+                "continue": "Continuer",
+                "errorTitle": "Limite de sélection",
+                "errorBody": "Veuillez choisir minimum {{min}} et maximum {{max}} intérêts."
+            },
+            "verifyEmail": {
+                "title": "Confirmer l'e-mail",
+                "sent": "Nous vous avons envoyé un e-mail de confirmation",
+                "verify": "Pour vous connecter, vérifiez votre e-mail :",
+                "noEmail": "Vous n'avez pas reçu l'e-mail ? Vérifiez vos spams ou",
+                "resend": "Cliquez ici pour renvoyer.",
+                "continue": "Continuer"
+            },
+            "withEmail": {
+                "title": "Entrez votre e-mail",
+                "body": "Veuillez entrer votre",
+                "bodyBold": "adresse e-mail",
+                "placeholder": "E-mail",
+                "continue": "Continuer",
+                "errors": {
+                    "invalidEmail": "Adresse e-mail invalide"
+                }
+            }
+        },
+        "home": {
+            "start": "DÉMARRER"
+        },
+        "settings": {
+            "title": "Paramètres",
+            "personalDetails": "Informations personnelles",
+            "interests": "Intérêts",
+            "termsAndConditions": "Conditions générales",
+            "privacyPolicy": "Confidentialité & Politique",
+            "aboutUs": "À propos de nous",
+            "lightmode": "Mode clair",
+            "darkmode": "Mode sombre",
+            "logOut": "Se déconnecter"
         }
-      },
-      "gender": {
-        "title": "Sélectionnez votre genre",
-        "body": "Veuillez sélectionner",
-        "bodyBold": "votre genre",
-        "male": "Homme",
-        "female": "Femme",
-        "continue": "Continuer"
-      },
-      "interests": {
-        "title": "Sélectionnez vos intérêts",
-        "body": "Choisissez 6 intérêts pour matcher avec des utilisateurs similaires",
-        "continue": "Continuer",
-        "errorTitle": "Limite de sélection",
-        "errorBody": "Veuillez choisir minimum {{min}} et maximum {{max}} intérêts."
-      },
-      "verifyEmail": {
-        "title": "Confirmer l'e-mail",
-        "sent": "Nous vous avons envoyé un e-mail de confirmation",
-        "verify": "Pour vous connecter, vérifiez votre e-mail :",
-        "noEmail": "E-mail non reçu ? Vérifiez vos spams ou",
-        "resend": "Cliquez ici pour renvoyer.",
-        "continue": "Continuer"
-      },
-      "withEmail": {
-        "title": "Entrez votre e-mail",
-        "body": "Veuillez entrer votre",
-        "bodyBold": "adresse e-mail",
-        "placeholder": "E-mail",
-        "continue": "Continuer",
-        "errors": {
-          "invalidEmail": "Adresse e-mail invalide"
-        }
-      }
     }
-  },
-  "home": {
-    "start": "DÉMARRER"
-  },
-  "settings": {
-    "title": "Paramètres",
-    "personalDetails": "Informations personnelles",
-    "interests": "Intérêts",
-    "termsAndConditions": "Conditions générales",
-    "privacyPolicy": "Confidentialité & Politique",
-    "aboutUs": "À propos de nous",
-    "lightmode": "Mode clair",
-    "darkmode": "Mode sombre",
-    "logOut": "Se déconnecter"
-  }
 }

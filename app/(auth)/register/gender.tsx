@@ -15,7 +15,7 @@ export default function Gender() {
     const styles = makeStyles(theme);
     const t = (key: string) => i18n.t(`auth.register.gender.${key}`);
     useEffect(() => {
-        router.prefetch("/auth/register/interests");
+        router.prefetch("/register/interests");
     }, []); 
 
     const [selected, setSelected] = useState<GenderType | null>(null);
