@@ -1,69 +1,48 @@
-import { Stack, useRouter } from "expo-router";
+import { Slot } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
-import { useState, useEffect, useCallback } from "react";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 
-const isLoggedIn = false;
-const screenOptions = { headerShown: false };
-
-SplashScreen.preventAutoHideAsync();
-
-SplashScreen.setOptions({
-    duration: 500,
-    fade: true,
-});
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-    const [appIsReady, setAppIsReady] = useState<boolean>(false);
-    const [navigationReady, setNavigationReady] = useState<boolean>(false);
-    const router = useRouter();
+    const [appIsReady, setAppIsReady] = useState(false);
 
     useEffect(() => {
         async function prepare() {
             try {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-            } catch (err) {
-                console.warn(err);
+                await new Promise((resolve) => setTimeout(resolve, 500));
             } finally {
                 setAppIsReady(true);
             }
         }
+
         prepare();
     }, []);
 
-    useEffect(() => {
-        if (!appIsReady) return;
-        if (!isLoggedIn) {
-            router.replace("/(auth)/login");
-        }
-        setNavigationReady(true);
-    }, [appIsReady, router]);
-
-    const onLayoutRootView = useCallback(() => {
+    const onLayoutRootView = useCallback(async () => {
         if (appIsReady) {
-            SplashScreen.hide();
+            await SplashScreen.hideAsync();
         }
     }, [appIsReady]);
 
-    if (!appIsReady || !navigationReady) {
-        return null;
-    }
+    if (!appIsReady) return null;
 
     return (
         <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-            <BaseTheme>
-                <SafeAreaProvider>
-                    <SafeAreaWrapper>
-                        <Stack screenOptions={screenOptions}>
-                            <Stack.Screen name="(auth)" />
-                            <Stack.Screen name="(protected)" />
-                        </Stack>
-                    </SafeAreaWrapper>
-                </SafeAreaProvider>
-            </BaseTheme>
+            <AuthProvider>
+                <BaseTheme>
+                    <SafeAreaProvider>
+                        <SafeAreaWrapper>
+                            <Slot />
+                        </SafeAreaWrapper>
+                    </SafeAreaProvider>
+                </BaseTheme>
+            </AuthProvider>
         </View>
     );
 }

@@ -14,11 +14,11 @@ export default function Login() {
     const colorScheme = useColorScheme();
     const t = (key: string) => i18n.t(`auth.login.${key}`);
 
-    useEffect(() => {
-        router.prefetch("/login/withEmail");
-        router.prefetch("/login/withPhoneNumber");
-        router.prefetch("/register");
-    }, []);
+    // useEffect(() => {
+    //     router.prefetch("/login/withEmail");
+    //     router.prefetch("/login/withPhoneNumber");
+    //     router.prefetch("/register");
+    // }, []);
 
     return (
         <View style={gs.container}>
@@ -32,19 +32,19 @@ export default function Login() {
                 {t("body")}
             </Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
-                <Button onPress={() => router.push("/login/withEmail")}>
-                    <BtnText> {t("continueWithEmail")}</BtnText>
+                <Button onPress={() => router.push("/(auth)/login/withEmail")}>
+                    <BtnText>Continue with Email</BtnText>
                 </Button>
                 <Button
                     variante="outline"
-                    onPress={() => router.push("/login/withPhoneNumber")}
+                    onPress={() => router.push("/(auth)/login/withPhoneNumber")}
                 >
                     <BtnText>{t("continueWithPhone")}</BtnText>
                 </Button>
             </View>
 
             <Link
-                href="/register"
+                href="/(auth)/register"
                 style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
             >
                 {t("noAccount")}{" "}

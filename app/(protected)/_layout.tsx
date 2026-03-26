@@ -1,11 +1,21 @@
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { ActivityIndicator, View } from "react-native";
 
 export default function ProtectedLayout() {
-    return (
-        <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="videocall" options={{ headerShown: true }} />
-            <Stack.Screen name="settings" options={{ headerShown: false }} />
-        </Stack>
-    );
+    const { isAuthenticated, isLoading } = useAuth();
+
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator />
+            </View>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return <Redirect href="/login" />;
+    }
+
+    return <Stack screenOptions={{ headerShown: false }} />;
 }

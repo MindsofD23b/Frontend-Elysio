@@ -4,14 +4,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme/context";
 import { Eye, Globe, Heart, MessageCircle, Sun, User } from "lucide-react-native";
 import { Href, router } from "expo-router";
-import i18n from "@/i18n";
+import { useAuth } from "@/lib/auth/AuthProvider";
+
 export default function SettingsScreen() {
     const { theme } = useTheme();
     const t = (key: string) => i18n.t(`settings.${key}`);
 
+    const { logout } = useAuth();
+
     const mutedText = withAlpha(theme.text, 0.55);
     const divider = withAlpha(theme.text, 0.15);
     const iconColor = withAlpha(theme.text, 0.9);
+
+    const handleLogout = async () => {
+        await logout();
+        router.replace("/login");
+    };
 
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
@@ -160,13 +168,10 @@ export default function SettingsScreen() {
                 />
             </View>
 
-                <Button
-                    style={{ marginTop: "auto", marginBottom: 30 }}
-                    onPress={() => {}}
-                >
-                    <BtnText>{t("logOut")}</BtnText>
-                </Button>
-            </SafeAreaView>
+            <Button style={{ marginTop: "auto" }} onPress={handleLogout}>
+                <BtnText>Log Out</BtnText>
+            </Button>
+        </View>
     );
 }
 

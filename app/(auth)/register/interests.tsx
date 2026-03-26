@@ -1,8 +1,8 @@
 import BackWrapper from "@/components/backwrapper";
-import { BtnText, Button } from "@/components/button";
+import { BtnText, Button, Loader } from "@/components/button";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
     Pressable,
     ScrollView,
@@ -13,38 +13,48 @@ import {
 } from "react-native";
 import { Theme } from "@/lib/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
-import i18n from "@/i18n";
-type Activity = { id: string | number; name: string };
-type ActivitiesByTitle = Record<string, Activity[]>;
-const t = (key: string, opts?: object) => i18n.t(`auth.register.interests.${key}`, opts);
+import { useFetch } from "@/hooks";
+import { useRegisterStore } from "@/utils/registerStore";
+
+type InterestItem = {
+    id: string;
+    name: string;
+};
+
+type ActivitiesByTitle = Record<string, InterestItem[]>;
+
 const MIN = 3;
 const MAX = 12;
 
 export default function Interests() {
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
-
-    useEffect(() => {
-        router.prefetch("/register/addProfilePicture");
-    }, []);
-
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<ActivitiesByTitle>({});
-    const [selected, setSelected] = useState<(string | number)[]>([]);
-    const [errorOpen, setErrorOpen] = useState(false);
     const tintColor = useColorScheme()?.toString();
+
+    const { data: registerData, setInterests } = useRegisterStore();
+
+    const [selected, setSelected] = useState<string[]>(registerData.interests || []);
+    const [errorOpen, setErrorOpen] = useState(false);
+
+    const [data, loading, fetchError] = useFetch<ActivitiesByTitle>("/interests", {
+        method: "GET",
+    });
 
     const canContinue = selected.length >= MIN && selected.length <= MAX;
 
-    const toggleId = (id: string | number) => {
+    const toggleId = (id: string) => {
         setSelected((prev) => {
             const exists = prev.includes(id);
-            if (exists) return prev.filter((x) => x !== id);
+
+            if (exists) {
+                return prev.filter((x) => x !== id);
+            }
 
             if (prev.length >= MAX) {
                 setErrorOpen(true);
                 return prev;
             }
+
             return [...prev, id];
         });
     };
@@ -54,63 +64,10 @@ export default function Interests() {
             setErrorOpen(true);
             return;
         }
-        router.push("/register/addProfilePicture");
+
+        setInterests(selected);
+        router.push("/register/addProfileData");
     };
-
-    useEffect(() => {
-        const t = setTimeout(() => {
-            setData({
-                Sports: [
-                    { id: 1, name: "Gym" },
-                    { id: 2, name: "Swimming" },
-                    { id: 3, name: "Ski" },
-                    { id: 4, name: "Hiking" },
-                    { id: 5, name: "Running" },
-                    { id: 6, name: "Cycling" },
-                ],
-                Arts: [
-                    { id: 10, name: "Music" },
-                    { id: 11, name: "Art" },
-                    { id: 12, name: "Photography" },
-                    { id: 13, name: "Film" },
-                    { id: 14, name: "Writing" },
-                ],
-                dumb: [
-                    { id: 15, name: "Gym" },
-                    { id: 21, name: "Swimming" },
-                    { id: 31, name: "Ski" },
-                    { id: 41, name: "Hiking" },
-                    { id: 51, name: "Running" },
-                    { id: 61, name: "Cycling" },
-                ],
-                grey: [
-                    { id: 22, name: "Music" },
-                    { id: 23, name: "Art" },
-                    { id: 24, name: "Photography" },
-                    { id: 25, name: "Film" },
-                    { id: 26, name: "Writing" },
-                ],
-                play: [
-                    { id: 80, name: "Gym" },
-                    { id: 27, name: "Swimming" },
-                    { id: 33, name: "Ski" },
-                    { id: 43, name: "Hiking" },
-                    { id: 53, name: "Running" },
-                    { id: 63, name: "Cycling" },
-                ],
-                game: [
-                    { id: 103, name: "Music" },
-                    { id: 112, name: "Art" },
-                    { id: 122, name: "Photography" },
-                    { id: 132, name: "Film" },
-                    { id: 142, name: "Writing" },
-                ],
-            });
-            setLoading(false);
-        }, 900);
-
-        return () => clearTimeout(t);
-    }, []);
 
     return (
         <BackWrapper>
@@ -119,12 +76,13 @@ export default function Interests() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
+                    <Text style={[gs.h1, { marginTop: 35 }]}>Select your Interests</Text>
 
                     <Text
                         style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}
                     >
-                        {t("body")}
+                        Pick between {MIN} and {MAX} interests to match with users who
+                        have similar things in common
                     </Text>
 
                     <View style={styles.scrollArea}>
@@ -217,8 +175,16 @@ export default function Interests() {
                                     </View>
                                 </View>
                             </>
+                        ) : fetchError ? (
+                            <View style={{ marginTop: 24 }}>
+                                <Text style={{ color: "red", fontSize: 14 }}>
+                                    {fetchError instanceof Error
+                                        ? fetchError.message
+                                        : "Failed to load interests"}
+                                </Text>
+                            </View>
                         ) : (
-                            Object.entries(data).map(([title, items]) => (
+                            Object.entries(data || {}).map(([title, items]) => (
                                 <View key={title} style={styles.section}>
                                     <Text
                                         style={[
@@ -237,13 +203,13 @@ export default function Interests() {
                                     />
 
                                     <View style={styles.wrap}>
-                                        {items.map((a) => {
-                                            const active = selected.includes(a.id);
+                                        {items.map((item) => {
+                                            const active = selected.includes(item.id);
 
                                             return (
                                                 <Pressable
-                                                    key={String(a.id)}
-                                                    onPress={() => toggleId(a.id)}
+                                                    key={item.id}
+                                                    onPress={() => toggleId(item.id)}
                                                     style={[
                                                         styles.chip,
                                                         {
@@ -266,7 +232,7 @@ export default function Interests() {
                                                             },
                                                         ]}
                                                     >
-                                                        {a.name}
+                                                        {item.name}
                                                     </Text>
                                                 </Pressable>
                                             );
@@ -277,12 +243,13 @@ export default function Interests() {
                         )}
                     </View>
                 </ScrollView>
+
                 <Button
                     style={{ marginTop: "auto", width: "100%", alignSelf: "stretch" }}
-                    disabled={!canContinue}
+                    disabled={!canContinue || loading}
                     onPress={onContinue}
                 >
-                    <BtnText>{t("continue")}</BtnText>
+                    {loading ? <Loader /> : <BtnText>Continue</BtnText>}
                 </Button>
 
                 {errorOpen ? (
@@ -293,7 +260,7 @@ export default function Interests() {
                         <BlurView
                             intensity={50}
                             tint={(tintColor as BlurTint) || "dark"}
-                            style={[styles.errorCard]}
+                            style={styles.errorCard}
                         >
                             <Text style={[styles.errorTitle, { color: theme.text }]}>
                                 {t("errorTitle")}
@@ -401,8 +368,18 @@ const makeStyles = (theme: Theme) =>
             borderWidth: 1,
             borderColor: theme.base + "80",
         },
-        errorTitle: { fontSize: 18, fontWeight: "800" },
-        errorText: { marginTop: 8, fontSize: 14, lineHeight: 20 },
+
+        errorTitle: {
+            fontSize: 18,
+            fontWeight: "800",
+        },
+
+        errorText: {
+            marginTop: 8,
+            fontSize: 14,
+            lineHeight: 20,
+        },
+
         errorOk: {
             marginTop: 14,
             alignSelf: "flex-end",
@@ -410,5 +387,9 @@ const makeStyles = (theme: Theme) =>
             paddingVertical: 10,
             borderRadius: 10,
         },
-        errorOkText: { color: "#fff", fontWeight: "800" },
+
+        errorOkText: {
+            color: "#fff",
+            fontWeight: "800",
+        },
     });

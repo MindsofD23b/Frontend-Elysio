@@ -14,10 +14,10 @@ export default function Register() {
     const colorScheme = useColorScheme();
     const t = (key: string) => i18n.t(`auth.register.${key}`);
 
-    useEffect(() => {
-        router.prefetch("/register/withEmail");
-        router.prefetch("/login");
-    }, []);
+    // useEffect(() => {
+    //     router.prefetch("/(auth)/register/withEmail");
+    //     router.prefetch("/(auth)/login");
+    // }, []);
 
     return (
         <View style={gs.container}>
@@ -33,14 +33,14 @@ export default function Register() {
             <View style={{ width: "100%", marginVertical: 16, marginTop: 8 }}>
                 <Button
                     style={{ marginVertical: 16 }}
-                    onPress={() => router.push("/register/withEmail")}
+                    onPress={() => router.push("/(auth)/register/withEmail")}
                 >
                     <BtnText>{t("continueWithEmail")}</BtnText>
                 </Button>
             </View>
 
             <Link
-                href="/login"
+                href="/(auth)/login"
                 style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
             >
                 {t("alreadyHaveAccount")}
