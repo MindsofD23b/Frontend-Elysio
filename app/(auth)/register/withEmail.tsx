@@ -5,28 +5,21 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
-import { useFetch } from "@/hooks";
+import { useFetch } from "@/hooks/useFetch";
 import { useRegisterStore } from "@/utils/registerStore";
+import { RegisterResponse, EmailFormErrors } from "@/types/register";
+import { createT } from "@/i18n";
 
-type RegisterEmailResponse = {
-    message?: string;
-    error?: string;
-    statusCode?: number;
-};
-
-type FormErrors = {
-    email?: { message: string };
-    general?: { message: string };
-};
+const t = createT("auth.register.withEmail");
 
 export default function WithEmail() {
     const { gs, theme } = useTheme();
     const { data, setEmail } = useRegisterStore();
 
     const [email, setEmailInput] = useState(data.email || "");
-    const [errors, setErrors] = useState<FormErrors>({});
+    const [errors, setErrors] = useState<EmailFormErrors>({});
 
-    const [, loading, fetchError, checkEmail] = useFetch<RegisterEmailResponse>(
+    const [_, loading, fetchError, checkEmail] = useFetch<RegisterResponse>(
         "/auth/check-email",
         {
             method: "POST",
@@ -42,12 +35,12 @@ export default function WithEmail() {
 
     const onSubmit = async () => {
         const normalizedEmail = email.trim().toLowerCase();
-        const nextErrors: FormErrors = {};
+        const nextErrors: EmailFormErrors = {};
 
         if (!normalizedEmail) {
-            nextErrors.email = { message: "Email is required" };
+            nextErrors.email = { message: t("errors.required") };
         } else if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
-            nextErrors.email = { message: "Invalid email address" };
+            nextErrors.email = { message: t("errors.invalidEmail") };
         }
 
         setErrors({});
@@ -67,7 +60,7 @@ export default function WithEmail() {
             if (response?.statusCode && response.statusCode >= 400) {
                 setErrors({
                     email: {
-                        message: response.message || "Email is already in use",
+                        message: response.message || t("fallbacks.inUse"),
                     },
                 });
                 return;
@@ -78,7 +71,10 @@ export default function WithEmail() {
         } catch (err) {
             setErrors({
                 general: {
-                    message: err instanceof Error ? err.message : "Request failed",
+                    message:
+                        err instanceof Error
+                            ? err.message
+                            : t("fallbacks.errors.reqFailed"),
                 },
             });
         }
@@ -87,15 +83,15 @@ export default function WithEmail() {
     return (
         <BackWrapper>
             <View style={{ flex: 1, width: "100%" }}>
-                <Text style={[gs.h1, { marginTop: 35 }]}>Enter your Email</Text>
+                <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
-                    Please enter your{" "}
-                    <Text style={{ fontWeight: "bold" }}>Email Address</Text>
+                    {t("body")}{" "}
+                    <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
                 </Text>
 
                 <View style={{ width: "100%", marginTop: 30 }}>
                     <Input
-                        placeholder="Email"
+                        placeholder={t("email")}
                         keyboardType="email-address"
                         value={email}
                         onChangeText={(text) => {
@@ -123,7 +119,7 @@ export default function WithEmail() {
                         <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
                             {fetchError instanceof Error
                                 ? fetchError.message
-                                : "Something went wrong"}
+                                : t("fallbacks.errors.wentWrong")}
                         </Text>
                     )}
                 </View>
@@ -133,7 +129,7 @@ export default function WithEmail() {
                     onPress={onSubmit}
                     disabled={loading}
                 >
-                    {loading ? <Loader /> : <BtnText>Continue</BtnText>}
+                    {loading ? <Loader /> : <BtnText>{t("continue")}</BtnText>}
                 </Button>
             </View>
         </BackWrapper>

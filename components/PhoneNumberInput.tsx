@@ -19,9 +19,9 @@ const schema = z.object({
 
 interface IPhoneNumberInput {
     sendData: (
+        cc: CountryCode,
         prefix: string,
         tel: string,
-        intTel: string,
         natTel: string | undefined,
     ) => void;
 }
@@ -71,7 +71,6 @@ export default function PhoneNumberInput({ sendData }: IPhoneNumberInput) {
             countryCode as CountryCode,
         )?.formatNational();
 
-        console.log("International Parsed phone number:", parsedInternational);
         console.log("National Parsed phone number:", parsedNational);
 
         if (!parsedInternational || parsedInternational.length < 5) {
@@ -82,7 +81,7 @@ export default function PhoneNumberInput({ sendData }: IPhoneNumberInput) {
             return;
         }
 
-        sendData(prefix, text, parsedInternational, parsedNational);
+        sendData(countryCode as CountryCode, prefix, text, parsedNational);
     };
 
     return (

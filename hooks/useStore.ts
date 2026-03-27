@@ -24,7 +24,7 @@ export function useStore<S>(
             }
             setLoaded(true);
         });
-    }, []);
+    }, [key, loaded]);
 
     const setFunc = useCallback(
         (newVal: S) => {
@@ -37,7 +37,7 @@ export function useStore<S>(
 
     const clearFunc = useCallback(() => {
         ramStore.delete(key);
-        setValue(initialValue!);
+        setValue(initialValue || ({} as S));
         AsyncStorage.removeItem(key).catch(console.error);
     }, [key]);
 

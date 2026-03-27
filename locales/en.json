@@ -50,13 +50,32 @@
             },
             "profileData": {
                 "title": "Finish your Profile",
-                "makeAttractive": "Make your",
-                "makeAttractiveBold": "Profile",
-                "makeAttractiveSuffix": "attractive",
+                "body": "Complete your profile details to create your account",
                 "fullName": "Full name",
                 "jobTitle": "Job Title",
+                "dateOfBirth": "Date of Birth",
+                "aboutMe": "About me",
+                "countryCode": "Country code, e.g. CH",
+                "language": "Language code, e.g. de",
+                "termsOfService": "I accept the Terms of Service",
+                "privacyPolicy": "I accept the Privacy Policy",
                 "selectBirthday": "Select your birthday",
-                "continue": "Continue"
+                "continue": "Create Account",
+                "errors": {
+                    "fullnameReq": "Full name is required",
+                    "phonenumberReq": "Phone number is required",
+                    "validDate": "Please enter a valid date in YYYY-MM-DD format",
+                    "jobtitleReq": "Job title is required",
+                    "aboutmeReq": "About me is required",
+                    "termsReq": "You must accept the terms",
+                    "privReq": "You must accept the privacy policy"
+                },
+                "fallback": {
+                    "regFailed": "Registration failed",
+                    "errors": {
+                        "wentWrong": "Something went wrong"
+                    }
+                }
             },
             "password": {
                 "title": "Set Your Password",
@@ -84,15 +103,20 @@
             },
             "interests": {
                 "title": "Select your Interests",
-                "body": "Pick 6 interests to match with users who have similar things in common",
+                "body": "Pick between {{min}} and {{max}} interests to match with users who have similar things in common",
                 "continue": "Continue",
                 "errorTitle": "Selection limit",
-                "errorBody": "Please choose minimum {{min}} and maximum {{max}} interests."
+                "ok": "OK",
+                "errorBody": "Please choose minimum {{min}} and maximum {{max}} interests.",
+                "fallbacks": {
+                    "failToLoad": "Failed to load interests"
+                }
             },
             "verifyEmail": {
                 "title": "Confirm Email",
                 "sent": "We've sent you a confirmation email",
-                "verify": "To log in to your account verify your email:",
+                "verify": "To activate your account, please verify your email address:",
+                "after": "After confirming your email, you can log in to your account.",
                 "noEmail": "Didn't receive the email? Check your spam folder or",
                 "resend": "Click here to resend.",
                 "continue": "Continue"
@@ -101,10 +125,18 @@
                 "title": "Enter your Email",
                 "body": "Please enter your",
                 "bodyBold": "Email Address",
-                "placeholder": "Email",
+                "email": "Email",
                 "continue": "Continue",
                 "errors": {
+                    "required": "Email is required",
                     "invalidEmail": "Invalid email address"
+                },
+                "fallbacks": {
+                    "inUse": "Email is already in use",
+                    "errors": {
+                        "reqFailed": "Request failed",
+                        "wentWrong": "Something went wrong"
+                    }
                 }
             }
         },
