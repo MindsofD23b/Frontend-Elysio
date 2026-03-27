@@ -1,18 +1,7 @@
 import { useRef, useState, useEffect } from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    Pressable,
-    Alert,
-} from "react-native";
+import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-    registerGlobals,
-    mediaDevices,
-    RTCView,
-    MediaStream,
-} from "react-native-webrtc";
+import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
 import * as mediasoupClient from "mediasoup-client";
 import { io, Socket } from "socket.io-client";
 import {
@@ -339,7 +328,7 @@ export default function VideoCall() {
         consumersRef.current.forEach((consumer) => {
             try {
                 consumer.close();
-            } catch { }
+            } catch {}
         });
 
         consumersRef.current.clear();
@@ -367,10 +356,7 @@ export default function VideoCall() {
         const next = !isSpeakerOn;
         setIsSpeakerOn(next);
 
-        Alert.alert(
-            "Speaker",
-            `Speaker ${next ? "enabled" : "disabled"}`
-        );
+        Alert.alert("Speaker", `Speaker ${next ? "enabled" : "disabled"}`);
 
         // Für echtes Routing auf Lautsprecher brauchst du auf iOS/Android meist:
         // react-native-incall-manager oder eine native Audio Route Lösung
@@ -391,7 +377,7 @@ export default function VideoCall() {
     function handleIcebreaker() {
         Alert.alert(
             "Icebreaker",
-            "Hier kannst du Tipps oder einen kurzen Gesprächsstarter anzeigen."
+            "Hier kannst du Tipps oder einen kurzen Gesprächsstarter anzeigen.",
         );
     }
 
@@ -463,7 +449,11 @@ export default function VideoCall() {
                             onPress={toggleSpeaker}
                             icon={
                                 <Ionicons
-                                    name={isSpeakerOn ? "volume-high-outline" : "volume-mute-outline"}
+                                    name={
+                                        isSpeakerOn
+                                            ? "volume-high-outline"
+                                            : "volume-mute-outline"
+                                    }
                                     size={22}
                                     color="#111"
                                 />
@@ -473,7 +463,9 @@ export default function VideoCall() {
                         <ControlButton
                             onPress={handleLike}
                             variant="success"
-                            icon={<Ionicons name="heart-outline" size={22} color="#fff" />}
+                            icon={
+                                <Ionicons name="heart-outline" size={22} color="#fff" />
+                            }
                         />
 
                         <ControlButton
@@ -484,12 +476,24 @@ export default function VideoCall() {
 
                         <ControlButton
                             onPress={handleReaction}
-                            icon={<FontAwesome6 name="face-smile-beam" size={20} color="#111" />}
+                            icon={
+                                <FontAwesome6
+                                    name="face-smile-beam"
+                                    size={20}
+                                    color="#111"
+                                />
+                            }
                         />
 
                         <ControlButton
                             onPress={handleIcebreaker}
-                            icon={<MaterialCommunityIcons name="magic-staff" size={22} color="#111" />}
+                            icon={
+                                <MaterialCommunityIcons
+                                    name="magic-staff"
+                                    size={22}
+                                    color="#111"
+                                />
+                            }
                         />
                     </View>
                 </View>
