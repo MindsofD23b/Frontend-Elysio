@@ -3,8 +3,10 @@ import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
 import { router, useLocalSearchParams } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
-import { Text, View } from "react-native";
-// import i18n from "@/i18n";
+import { Pressable, Text, View } from "react-native";
+import { createT } from "@/i18n";
+
+const t = createT("auth.register.verifyEmail");
 
 export default function SendVerificationEmail() {
     const { gs, theme } = useTheme();
@@ -21,7 +23,7 @@ export default function SendVerificationEmail() {
                 }}
             >
                 <Text style={[gs.h1, { marginTop: 35, textAlign: "center" }]}>
-                    Confirm Email
+                    {t("title")}
                 </Text>
 
                 <LucideMailbox
@@ -40,7 +42,7 @@ export default function SendVerificationEmail() {
                         },
                     ]}
                 >
-                    We{"'"}ve sent you a confirmation email.
+                    {t("sent")}
                 </Text>
 
                 <Text
@@ -54,7 +56,7 @@ export default function SendVerificationEmail() {
                         },
                     ]}
                 >
-                    To activate your account, please verify your email address:
+                    {t("verify")}
                 </Text>
 
                 <Text
@@ -82,7 +84,7 @@ export default function SendVerificationEmail() {
                         },
                     ]}
                 >
-                    After confirming your email, you can log in to your account.
+                    {t("after")}
                 </Text>
 
                 <Text
@@ -96,14 +98,14 @@ export default function SendVerificationEmail() {
                         },
                     ]}
                 >
-                    Didn{"'"}t receive the email? Check your spam folder first.
+                    {t("noEmail")}
                 </Text>
-
+                <Pressable onPress={() => alert("resend email")}>{t("resend")}</Pressable>
                 <Button
                     style={{ marginTop: "auto", marginBottom: 12 }}
                     onPress={() => router.replace("/login")}
                 >
-                    <BtnText>Go to Login</BtnText>
+                    <BtnText>{t("continue")}</BtnText>
                 </Button>
             </View>
         </BackWrapper>

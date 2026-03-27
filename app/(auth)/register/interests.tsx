@@ -13,24 +13,17 @@ import {
 } from "react-native";
 import { Theme } from "@/lib/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
-import { useFetch } from "@/hooks";
+import { useFetch } from "@/hooks/useFetch";
 import { useRegisterStore } from "@/utils/registerStore";
-import { I18n } from "i18n-js";
-
-type InterestItem = {
-    id: string;
-    name: string;
-};
-
-type ActivitiesByTitle = Record<string, InterestItem[]>;
+import { createT } from "@/i18n";
+import { ActivitiesByTitle } from "@/types/register";
 
 const MIN = 3;
 const MAX = 12;
 
+const t = createT("auth.register.interests");
+
 export default function Interests() {
-    const i18n = new I18n();
-    const t = (key: string, options?: Record<string, unknown>) =>
-        i18n.t(`settings.${key}`, options);
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
     const tintColor = useColorScheme()?.toString();
@@ -80,13 +73,12 @@ export default function Interests() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>Select your Interests</Text>
+                    <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
 
                     <Text
                         style={[gs.bodyText, { marginTop: 10, color: theme.text + "54" }]}
                     >
-                        Pick between {MIN} and {MAX} interests to match with users who
-                        have similar things in common
+                        {t("body", { min: MIN, max: MAX })}
                     </Text>
 
                     <View style={styles.scrollArea}>
@@ -184,7 +176,7 @@ export default function Interests() {
                                 <Text style={{ color: "red", fontSize: 14 }}>
                                     {fetchError instanceof Error
                                         ? fetchError.message
-                                        : "Failed to load interests"}
+                                        : t("fallbacks.failToLoad")}
                                 </Text>
                             </View>
                         ) : (
@@ -253,7 +245,7 @@ export default function Interests() {
                     disabled={!canContinue || loading}
                     onPress={onContinue}
                 >
-                    {loading ? <Loader /> : <BtnText>Continue</BtnText>}
+                    {loading ? <Loader /> : <BtnText>{t("continue")}</BtnText>}
                 </Button>
 
                 {errorOpen ? (
@@ -281,7 +273,7 @@ export default function Interests() {
                                 ]}
                                 onPress={() => setErrorOpen(false)}
                             >
-                                <Text style={styles.errorOkText}>OK</Text>
+                                <Text style={styles.errorOkText}>{t("ok")}</Text>
                             </Pressable>
                         </BlurView>
                     </Pressable>

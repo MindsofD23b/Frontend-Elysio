@@ -7,20 +7,19 @@ import { useState } from "react";
 import { Text, View } from "react-native";
 import { z } from "zod";
 import { useRegisterStore } from "@/utils/registerStore";
+import { PasswordErrors } from "@/types/register";
+import { createT } from "@/i18n";
+
+const t = createT("auth.register.password");
 
 const schema = z.object({
     password: z
-        .string({ error: "Password must be set" })
-        .min(6, { message: "Password must be at least 6 characters long" })
-        .regex(/[A-Z]/, { message: "Password must contain at least 1 uppercase letter" })
-        .regex(/[a-z]/, { message: "Password must contain at least 1 lowercase letter" })
-        .regex(/[0-9]/, { message: "Password must contain at least 1 number" }),
+        .string({ error: t("errors.mustBeSet") })
+        .min(6, { message: t("errors.minLength") })
+        .regex(/[A-Z]/, { message: t("errors.uppercase") })
+        .regex(/[a-z]/, { message: t("errors.lowercase") })
+        .regex(/[0-9]/, { message: t("errors.number") }),
 });
-
-type PasswordErrors = {
-    password?: { message: string };
-    confPassword?: { message: string };
-};
 
 export default function Password() {
     const { gs, theme } = useTheme();
@@ -51,7 +50,7 @@ export default function Password() {
 
         if (confPasswordValue !== passwordValue) {
             setError({
-                confPassword: { message: "Passwords don't match" },
+                confPassword: { message: t("errors.noMatch") },
             });
             return;
         }
@@ -67,7 +66,7 @@ export default function Password() {
 
     return (
         <BackWrapper>
-            <Text style={[gs.h1, { marginTop: 35 }]}>Set Your Password</Text>
+            <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
 
             <Text
                 style={[
@@ -75,13 +74,14 @@ export default function Password() {
                     { marginTop: 10, color: theme.base + "54", textAlign: "left" },
                 ]}
             >
-                Your Password keeps your account safe.{"\n"}
-                <Text style={{ fontWeight: "bold" }}>Choose wisely</Text>
+                {t("body")}
+                {"\n"}
+                <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
             </Text>
 
             <View style={{ marginTop: 15 }}>
                 <Input
-                    placeholder="Enter Password"
+                    placeholder={t("enterPassword")}
                     textContentType="newPassword"
                     passwordRules="minlength: 6;"
                     value={password}
@@ -107,7 +107,7 @@ export default function Password() {
                 )}
 
                 <Input
-                    placeholder="Confirm Password"
+                    placeholder={t("confirmPassword")}
                     textContentType="newPassword"
                     value={confPassword}
                     autoComplete="new-password"
@@ -136,7 +136,7 @@ export default function Password() {
                 style={{ marginTop: "auto" }}
                 disabled={loading}
             >
-                {loading ? <Loader /> : <BtnText>Continue</BtnText>}
+                {loading ? <Loader /> : <BtnText>{t("continue")}</BtnText>}
             </Button>
         </BackWrapper>
     );

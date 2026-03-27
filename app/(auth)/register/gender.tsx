@@ -5,10 +5,11 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mars, Venus } from "lucide-react-native";
-// import i18n from "@/i18n";
+import { createT } from "@/i18n";
 import { useRegisterStore } from "@/utils/registerStore";
+import { GenderType } from "@/types/register";
 
-type GenderType = "male" | "female";
+const t = createT("auth.register.gender");
 
 export default function Gender() {
     const { gs, theme } = useTheme();
@@ -44,7 +45,7 @@ export default function Gender() {
 
     return (
         <BackWrapper>
-            <Text style={[gs.h1, { marginTop: 35 }]}>Select your Gender</Text>
+            <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
 
             <Text
                 style={[
@@ -52,7 +53,7 @@ export default function Gender() {
                     { marginTop: 10, color: theme.base + "54", textAlign: "left" },
                 ]}
             >
-                Please select <Text style={{ fontWeight: "bold" }}>your Gender</Text>
+                {t("body")} <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
             </Text>
 
             <View style={styles.cardsArea}>
@@ -62,7 +63,7 @@ export default function Gender() {
                 >
                     <Mars size={36} color={getLabelColor("male")} />
                     <Text style={[styles.cardText, { color: getLabelColor("male") }]}>
-                        Male
+                        {t("male")}
                     </Text>
                 </Pressable>
 
@@ -72,13 +73,13 @@ export default function Gender() {
                 >
                     <Venus size={36} color={getLabelColor("female")} />
                     <Text style={[styles.cardText, { color: getLabelColor("female") }]}>
-                        Female
+                        {t("female")}
                     </Text>
                 </Pressable>
             </View>
 
             <Button style={{ marginTop: "auto" }} onPress={onSubmit} disabled={!selected}>
-                <BtnText>Continue</BtnText>
+                <BtnText>{t("continue")}</BtnText>
             </Button>
         </BackWrapper>
     );
