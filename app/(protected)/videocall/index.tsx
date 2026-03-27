@@ -1,11 +1,19 @@
 import { useRef, useState, useEffect } from "react";
+import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
-import { Text, View } from "react-native";
-import { BtnText, Button } from "@/components/button";
 import * as mediasoupClient from "mediasoup-client";
 import { io, Socket } from "socket.io-client";
+import {
+    Ionicons,
+    MaterialCommunityIcons,
+    Feather,
+    FontAwesome6,
+} from "@expo/vector-icons";
 
 registerGlobals();
+
+// made with chatgpt
 
 const BASE_URL = "https://elysio.jamiepoeffel.ch";
 const ROOM_ID = "test-room-fresh-2";
@@ -14,6 +22,9 @@ export default function VideoCall() {
     const [started, setStarted] = useState(false);
     const [localUrl, setLocalUrl] = useState<string | null>(null);
     const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+
+    const [isMuted, setIsMuted] = useState(false);
+    const [isSpeakerOn, setIsSpeakerOn] = useState(true);
 
     const peerIdRef = useRef(`peer-${Math.random().toString(36).slice(2, 10)}`);
     const deviceRef = useRef<any>(null);
@@ -56,11 +67,9 @@ export default function VideoCall() {
         const device = deviceRef.current;
 
         if (!recvTransport || !device) return;
-        // Check both sets: already done, and currently in-flight
         if (consumedProducerIdsRef.current.has(producerId)) return;
         if (consumingProducerIdsRef.current.has(producerId)) return;
 
-        // Mark as in-flight BEFORE any await
         consumingProducerIdsRef.current.add(producerId);
 
         try {
@@ -90,40 +99,20 @@ export default function VideoCall() {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
             });
-            setTimeout(async () => {
-                try {
-                    console.log(
-                        `consumer ${consumer.id} stats`,
-                        await consumer.getStats(),
-                    );
-                } catch (e) {
-                    console.error("consumer stats error", e);
-                }
-            }, 3000);
 
             consumer.track.enabled = true;
-
-            console.log("consumer created", {
-                kind: consumer.kind,
-                producerId,
-                trackReadyState: consumer.track.readyState,
-                trackMuted: consumer.track.muted,
-                trackEnabled: consumer.track.enabled,
-            });
 
             if (consumer.kind === "video") {
                 const videoStream = new MediaStream([consumer.track]);
                 remoteVideoStreamRef.current = videoStream;
 
                 const url = videoStream.toURL();
-                console.log("setting remoteUrl to:", url);
 
                 setTimeout(() => {
                     setRemoteUrl(url);
                 }, 300);
             }
         } catch (err) {
-            // Remove from in-flight on error so it can be retried
             consumingProducerIdsRef.current.delete(producerId);
             console.error("consumeProducer error", err);
         }
@@ -148,14 +137,6 @@ export default function VideoCall() {
                     credential: "q9E811BDjLsK",
                 },
             ],
-        });
-
-        recvTransport.on("connectionstatechange", (state: string) => {
-            console.log("[recvTransport] connectionstatechange", state);
-        });
-
-        recvTransport.on("icegatheringstatechange", (state: string) => {
-            console.log("[recvTransport] icegatheringstatechange", state);
         });
 
         recvTransportRef.current = recvTransport;
@@ -213,14 +194,6 @@ export default function VideoCall() {
             ],
         });
 
-        sendTransport.on("connectionstatechange", (state: string) => {
-            console.log("[sendTransport] connectionstatechange", state);
-        });
-
-        sendTransport.on("icegatheringstatechange", (state: string) => {
-            console.log("[sendTransport] icegatheringstatechange", state);
-        });
-
         sendTransportRef.current = sendTransport;
 
         sendTransport.on(
@@ -274,7 +247,6 @@ export default function VideoCall() {
     }
 
     async function startCall() {
-        // Guard against concurrent/duplicate calls
         if (startingRef.current || started) return;
         startingRef.current = true;
 
@@ -296,8 +268,6 @@ export default function VideoCall() {
             await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
             deviceRef.current = device;
 
-            // Create recv transport FIRST so new-producer events don't arrive
-            // before recvTransportRef is set
             await createRecvTransportAndConsume(device);
 
             const socket: Socket = io(BASE_URL, {
@@ -318,7 +288,6 @@ export default function VideoCall() {
                     peerId: string;
                 }) => {
                     if (peerId === peerIdRef.current) return;
-                    console.log("new-producer event", { producerId, peerId });
                     await consumeProducer(producerId);
                 },
             );
@@ -361,6 +330,7 @@ export default function VideoCall() {
                 consumer.close();
             } catch {}
         });
+
         consumersRef.current.clear();
         consumedProducerIdsRef.current.clear();
         consumingProducerIdsRef.current.clear();
@@ -371,6 +341,46 @@ export default function VideoCall() {
         setStarted(false);
     }
 
+    function toggleMute() {
+        const stream = localStreamRef.current;
+        if (!stream) return;
+
+        const nextMuted = !isMuted;
+        stream.getAudioTracks().forEach((track: MediaStreamTrack) => {
+            track.enabled = !nextMuted;
+        });
+        setIsMuted(nextMuted);
+    }
+
+    function toggleSpeaker() {
+        const next = !isSpeakerOn;
+        setIsSpeakerOn(next);
+
+        Alert.alert("Speaker", `Speaker ${next ? "enabled" : "disabled"}`);
+
+        // Für echtes Routing auf Lautsprecher brauchst du auf iOS/Android meist:
+        // react-native-incall-manager oder eine native Audio Route Lösung
+    }
+
+    function handleLike() {
+        Alert.alert("Liked", "User wurde geliked.");
+    }
+
+    function handleNextUser() {
+        Alert.alert("Next user", "Hier kannst du den nächsten Match laden.");
+    }
+
+    function handleReaction() {
+        Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
+    }
+
+    function handleIcebreaker() {
+        Alert.alert(
+            "Icebreaker",
+            "Hier kannst du Tipps oder einen kurzen Gesprächsstarter anzeigen.",
+        );
+    }
+
     useEffect(() => {
         return () => {
             stopCall().catch(() => undefined);
@@ -379,39 +389,254 @@ export default function VideoCall() {
 
     if (!started) {
         return (
-            <View>
-                <Text>Ready for mediasoup test</Text>
-                <Button onPress={startCall}>
-                    <BtnText>Start</BtnText>
-                </Button>
-            </View>
+            <SafeAreaView style={styles.startContainer}>
+                <Text style={styles.startTitle}>Ready for call</Text>
+                <Pressable style={styles.startButton} onPress={startCall}>
+                    <Text style={styles.startButtonText}>Start video call</Text>
+                </Pressable>
+            </SafeAreaView>
         );
     }
 
     return (
-        <View style={{ flex: 1 }}>
-            {localUrl && (
-                <RTCView
-                    streamURL={localUrl}
-                    style={{ flex: 1, backgroundColor: "black" }}
-                    objectFit="cover"
-                    mirror={true}
-                />
-            )}
+        <SafeAreaView style={styles.container}>
+            <View style={styles.videoLayer}>
+                {remoteUrl ? (
+                    <RTCView
+                        key={remoteUrl}
+                        streamURL={remoteUrl}
+                        style={styles.remoteVideo}
+                        objectFit="cover"
+                        mirror={false}
+                    />
+                ) : (
+                    <View style={[styles.remoteVideo, styles.waitingContainer]}>
+                        <Text style={styles.waitingText}>Warte auf Gegenüber...</Text>
+                    </View>
+                )}
 
-            {remoteUrl && (
-                <RTCView
-                    key={remoteUrl}
-                    streamURL={remoteUrl}
-                    style={{ flex: 1, backgroundColor: "black" }}
-                    objectFit="cover"
-                    mirror={false}
-                />
-            )}
+                {localUrl && (
+                    <View style={styles.localPreviewWrapper}>
+                        <RTCView
+                            streamURL={localUrl}
+                            style={styles.localPreview}
+                            objectFit="cover"
+                            mirror={true}
+                        />
+                    </View>
+                )}
 
-            <Button onPress={stopCall}>
-                <BtnText>Stop</BtnText>
-            </Button>
-        </View>
+                <View style={styles.topBar}>
+                    <Pressable style={styles.topButton} onPress={stopCall}>
+                        <Ionicons name="chevron-back" size={22} color="#fff" />
+                    </Pressable>
+                </View>
+
+                <View style={styles.bottomControlsWrapper}>
+                    <View style={styles.bottomControls}>
+                        <ControlButton
+                            onPress={toggleMute}
+                            icon={
+                                <Feather
+                                    name={isMuted ? "mic-off" : "mic"}
+                                    size={22}
+                                    color="#111"
+                                />
+                            }
+                        />
+
+                        <ControlButton
+                            onPress={toggleSpeaker}
+                            icon={
+                                <Ionicons
+                                    name={
+                                        isSpeakerOn
+                                            ? "volume-high-outline"
+                                            : "volume-mute-outline"
+                                    }
+                                    size={22}
+                                    color="#111"
+                                />
+                            }
+                        />
+
+                        <ControlButton
+                            onPress={handleLike}
+                            variant="success"
+                            icon={
+                                <Ionicons name="heart-outline" size={22} color="#fff" />
+                            }
+                        />
+
+                        <ControlButton
+                            onPress={handleNextUser}
+                            variant="danger"
+                            icon={<Ionicons name="close" size={24} color="#fff" />}
+                        />
+
+                        <ControlButton
+                            onPress={handleReaction}
+                            icon={
+                                <FontAwesome6
+                                    name="face-smile-beam"
+                                    size={20}
+                                    color="#111"
+                                />
+                            }
+                        />
+
+                        <ControlButton
+                            onPress={handleIcebreaker}
+                            icon={
+                                <MaterialCommunityIcons
+                                    name="magic-staff"
+                                    size={22}
+                                    color="#111"
+                                />
+                            }
+                        />
+                    </View>
+                </View>
+            </View>
+        </SafeAreaView>
     );
 }
+
+function ControlButton({
+    onPress,
+    icon,
+    variant = "default",
+}: {
+    onPress: () => void;
+    icon: React.ReactNode;
+    variant?: "default" | "success" | "danger";
+}) {
+    return (
+        <Pressable
+            onPress={onPress}
+            style={[
+                styles.controlButton,
+                variant === "success" && styles.controlButtonSuccess,
+                variant === "danger" && styles.controlButtonDanger,
+            ]}
+        >
+            {icon}
+        </Pressable>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "#000",
+    },
+    videoLayer: {
+        flex: 1,
+        position: "relative",
+        backgroundColor: "#000",
+    },
+    remoteVideo: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "#111",
+    },
+    waitingContainer: {
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    waitingText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "600",
+    },
+    localPreviewWrapper: {
+        position: "absolute",
+        right: 16,
+        bottom: 128,
+        width: 94,
+        height: 154,
+        borderRadius: 16,
+        overflow: "hidden",
+        backgroundColor: "#222",
+        borderWidth: 1.5,
+        borderColor: "rgba(255,255,255,0.18)",
+    },
+    localPreview: {
+        width: "100%",
+        height: "100%",
+        backgroundColor: "#222",
+    },
+    topBar: {
+        position: "absolute",
+        top: 10,
+        left: 12,
+        right: 12,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    topButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: "rgba(0,0,0,0.35)",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    bottomControlsWrapper: {
+        position: "absolute",
+        left: 10,
+        right: 10,
+        bottom: 16,
+    },
+    bottomControls: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "rgba(255,255,255,0.92)",
+        borderRadius: 24,
+        paddingHorizontal: 10,
+        paddingVertical: 10,
+    },
+    controlButton: {
+        width: 54,
+        height: 54,
+        borderRadius: 18,
+        backgroundColor: "#fff",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "#d7d7d7",
+    },
+    controlButtonSuccess: {
+        backgroundColor: "#45c466",
+        borderColor: "#45c466",
+    },
+    controlButtonDanger: {
+        backgroundColor: "#df1d1d",
+        borderColor: "#df1d1d",
+    },
+    startContainer: {
+        flex: 1,
+        backgroundColor: "#0b0b0b",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+    },
+    startTitle: {
+        color: "#fff",
+        fontSize: 22,
+        fontWeight: "700",
+        marginBottom: 16,
+    },
+    startButton: {
+        backgroundColor: "#fff",
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        borderRadius: 14,
+    },
+    startButtonText: {
+        color: "#111",
+        fontSize: 16,
+        fontWeight: "700",
+    },
+});
