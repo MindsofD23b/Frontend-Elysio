@@ -1,26 +1,36 @@
-import { Ionicons } from "@expo/vector-icons";
 import { BtnText, Button } from "@/components/button";
-import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
-
-import { router } from "expo-router";
-
-import { useTheme } from "@/app/theme/context";
-import { colors } from "@/app/theme/theme";
+import { Image, Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/lib/theme/context";
+import { Eye, Globe, Heart, MessageCircle, User } from "lucide-react-native";
+import { Href, router } from "expo-router";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { I18n } from "i18n-js";
+import { colors } from "@/lib/theme/theme";
 
 export default function SettingsScreen() {
     const { theme, setTheme } = useTheme();
+    const isLight = theme.background === colors.light.background;
+
+    const i18n = new I18n();
+    const t = (key: string) => i18n.t(`settings.${key}`);
+
+    const { logout } = useAuth();
 
     const mutedText = withAlpha(theme.text, 0.55);
     const divider = withAlpha(theme.text, 0.15);
     const iconColor = withAlpha(theme.text, 0.9);
 
-    const isLight = theme.background === colors.light.background;
+    const handleLogout = async () => {
+        await logout();
+        router.replace("/login");
+    };
 
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
             <View style={styles.container}>
                 <Text style={[styles.title, { marginTop: 20, color: theme.text }]}>
-                    Settings
+                    {t("title")}
                 </Text>
 
                 <View style={styles.profileWrap}>
@@ -38,41 +48,44 @@ export default function SettingsScreen() {
 
                 <View style={styles.list}>
                     <MenuRow
-                        icon="person-outline"
-                        label="Personal Details"
+                        icon={User}
+                        label={t("personalDetails")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
-                        onPress={() => router.push("/settings/personaldetails")}
+                        href="/settings/apperance"
                     />
                     <MenuRow
-                        icon="heart-outline"
-                        label="Interests"
+                        icon={Heart}
+                        label={t("interests")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
-                        onPress={() => router.push("/settings/interests")}
+                        href="/settings/apperance"
                     />
                     <MenuRow
-                        icon="globe-outline"
-                        label="Terms and Conditions"
+                        icon={Globe}
+                        label={t("termsAndConditions")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        href="/settings/apperance"
                     />
                     <MenuRow
-                        icon="notifications-outline"
-                        label="Privacy & Policy"
+                        icon={MessageCircle}
+                        label={t("privacyPolicy")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        href="/settings/apperance"
                     />
                     <MenuRow
-                        icon="eye-outline"
-                        label="About us"
+                        icon={Eye}
+                        label={t("aboutUs")}
                         divider={divider}
                         iconColor={iconColor}
                         textColor={theme.text}
+                        href="/settings/apperance"
                     />
                 </View>
 
@@ -87,7 +100,7 @@ export default function SettingsScreen() {
                             color={isLight ? theme.primary : mutedText}
                         />
                         <Text style={{ color: isLight ? theme.primary : mutedText }}>
-                            Lightmode
+                            {t("lightmode")}
                         </Text>
                     </Pressable>
 
@@ -101,40 +114,49 @@ export default function SettingsScreen() {
                             color={!isLight ? theme.primary : mutedText}
                         />
                         <Text style={{ color: !isLight ? theme.primary : mutedText }}>
-                            Darkmode
+                            {t("darkmode")}
                         </Text>
                     </Pressable>
                 </View>
 
                 <Button
                     style={{ marginTop: "auto", marginBottom: 30 }}
-                    onPress={() => {}}
+                    onPress={handleLogout}
                 >
-                    <BtnText>Log Out</BtnText>
+                    <BtnText>{t("logOut")}</BtnText>
                 </Button>
             </View>
         </SafeAreaView>
     );
 }
 function MenuRow({
-    icon,
+    icon: Icon,
     label,
     divider,
     iconColor,
     textColor,
-    onPress,
+    href,
 }: {
-    icon: any;
+    icon: React.ElementType;
     label: string;
     divider: string;
     iconColor: string;
     textColor: string;
-    onPress?: () => void;
+    href: Href;
 }) {
+    const { theme } = useTheme();
+
     return (
-        <Pressable onPress={onPress} style={[styles.row, { borderBottomColor: divider }]}>
+        <Pressable
+            onPress={() => router.push(href)}
+            style={({ pressed }) => [
+                styles.row,
+                { borderBottomColor: divider, width: "100%" },
+                pressed && { backgroundColor: theme.base + "0A", borderRadius: 16 },
+            ]}
+        >
             <View style={styles.rowLeft}>
-                <Ionicons name={icon} size={20} color={iconColor} />
+                <Icon size={20} color={iconColor} />
                 <Text style={[styles.rowLabel, { color: textColor }]}>{label}</Text>
             </View>
         </Pressable>
@@ -150,13 +172,12 @@ function withAlpha(hex: string, alpha: number) {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1 },
-
     container: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 10,
-        justifyContent: "space-between",
+        padding: 16,
+    },
+    safe: {
+        flex: 1,
     },
 
     title: {
@@ -189,15 +210,19 @@ const styles = StyleSheet.create({
     },
 
     list: {
+        width: "100%",
         marginTop: 10,
     },
 
     row: {
+        width: "100%",
         paddingVertical: 14,
+        paddingHorizontal: 7,
         borderBottomWidth: StyleSheet.hairlineWidth,
     },
 
     rowLeft: {
+        width: "100%",
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
@@ -211,7 +236,7 @@ const styles = StyleSheet.create({
     modeRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginTop: 8,
+        marginTop: 16,
     },
 
     modeItem: {

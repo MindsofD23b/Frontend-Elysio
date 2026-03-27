@@ -1,7 +1,7 @@
-import { useTheme } from "@/app/theme/context";
-import { router } from "expo-router";
+import { useTheme } from "@/lib/theme/context";
 import {
     CountryCode,
+    getExtPrefix,
     parseIncompletePhoneNumber,
     parsePhoneNumberFromString,
 } from "libphonenumber-js";
@@ -18,7 +18,12 @@ const schema = z.object({
 });
 
 interface IPhoneNumberInput {
-    sendData: (tel: string, intTel: string, natTel: string | undefined) => void;
+    sendData: (
+        prefix: string,
+        tel: string,
+        intTel: string,
+        natTel: string | undefined,
+    ) => void;
 }
 
 export default function PhoneNumberInput({ sendData }: IPhoneNumberInput) {
@@ -48,6 +53,7 @@ export default function PhoneNumberInput({ sendData }: IPhoneNumberInput) {
             }));
             return;
         }
+        const prefix = getExtPrefix(countryCode as CountryCode);
 
         const telStriped = text.startsWith("0")
             ? text.startsWith("00")
@@ -76,7 +82,7 @@ export default function PhoneNumberInput({ sendData }: IPhoneNumberInput) {
             return;
         }
 
-        sendData(text, parsedInternational, parsedNational);
+        sendData(prefix, text, parsedInternational, parsedNational);
     };
 
     return (
