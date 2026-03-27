@@ -3,7 +3,6 @@ import { I18n } from "i18n-js";
 // all language files made by claud ai
 import en from "./locales/en.json";
 
-
 // types created with claude.ai
 type GetNested<T, Path extends string> = Path extends `${infer Key}.${infer Rest}`
     ? Key extends keyof T
@@ -15,7 +14,9 @@ type GetNested<T, Path extends string> = Path extends `${infer Key}.${infer Rest
 
 type DotPaths<T> = T extends object
     ? {
-          [K in keyof T & string]: T[K] extends object ? `${K}` | `${K}.${DotPaths<T[K]>}` : K;
+          [K in keyof T & string]: T[K] extends object
+              ? `${K}` | `${K}.${DotPaths<T[K]>}`
+              : K;
       }[keyof T & string]
     : never;
 
