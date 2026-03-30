@@ -81,7 +81,10 @@
             "expo lint --fix",
             "prettier --write"
         ],
-        "*.{json,md,css}": [
+        "*.{md,css}": [
+            "prettier --write"
+        ],
+        "!(package-lock).json": [
             "prettier --write"
         ]
     }
