@@ -1,24 +1,27 @@
 name: Validate Branch Name
 
 on:
-    pull_request:
-        types: [opened, edited, synchronize, reopened]
+  push:
+    branches:
+      - '**'
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
 
 jobs:
-    branch-name-check:
-        runs-on: ubuntu-latest
+  branch-name-check:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Check branch name
-              env:
-                  BRANCH_NAME: ${{ github.head_ref }}
-              run: |
-                  echo "Checking branch: $BRANCH_NAME"
+    steps:
+      - name: Check branch name
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        run: |
+          echo "Checking branch: $BRANCH_NAME"
 
-                  if [[ ! "$BRANCH_NAME" =~ ^(feature|fix|chore)/[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
-                    echo "Invalid branch name!"
-                    echo "Branch must match: (feature|fix|chore)/kebab-case-name"
-                    exit 1
-                  fi
+          if [[ ! "$BRANCH_NAME" =~ ^(feature|fix|chore)/[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo "Invalid branch name!"
+            echo "Branch must match: (feature|fix|chore)/kebab-case-name"
+            exit 1
+          fi
 
-                  echo "Branch name is valid"
+          echo "Branch name is valid"
