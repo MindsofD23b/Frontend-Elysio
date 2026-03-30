@@ -43,7 +43,6 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-package-lock.json
 
 app-example
 
