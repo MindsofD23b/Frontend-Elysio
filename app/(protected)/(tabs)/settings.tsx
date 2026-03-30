@@ -141,9 +141,6 @@ function withAlpha(hex: string, alpha: number) {
 }
 
 const styles = StyleSheet.create({
-    safe: {
-        flex: 1,
-    },
     title: {
         fontSize: 26,
         fontWeight: "800",
