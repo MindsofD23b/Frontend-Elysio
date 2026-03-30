@@ -11,7 +11,7 @@ import { useRegisterStore } from "@/utils/registerStore";
 import { RegisterResponse, ProfileDataFormErrors } from "@/types/register";
 import { createT } from "@/i18n";
 import { CountryCode } from "libphonenumber-js";
-import { getLocales } from "expo-localization";
+// import { getLocales } from "expo-localization";
 
 const t = createT("auth.register.profileData");
 

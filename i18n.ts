@@ -1,4 +1,4 @@
-import { getLocales } from "expo-localization";
+// import { getLocales } from "expo-localization";
 import { I18n } from "i18n-js";
 // all language files made by claud ai
 import en from "./locales/en.json";
@@ -42,7 +42,12 @@ const i18n = new I18n({
 });
 
 const supported = ["en", "de", "fr", "es"];
-const deviceLocale = getLocales()[0]?.languageCode ?? "en";
+let deviceLocale = "en";
+try {
+    deviceLocale = getLocales()[0]?.languageCode ?? "en";
+} catch {
+    // Native module not available (web or pre-initialization)
+}
 i18n.locale = supported.includes(deviceLocale) ? deviceLocale : "en";
 i18n.defaultLocale = "en";
 i18n.enableFallback = true;
