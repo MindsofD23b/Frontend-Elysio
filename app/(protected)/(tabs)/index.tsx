@@ -300,9 +300,11 @@ export default function Index() {
             </View>
 
             <View style={styles.bottomIndicator} pointerEvents="none">
-                <Text style={styles.indicatorText}>
-                    {count}/{CONSTANTS.PLANS[user.plan].maxCalls}
-                </Text>
+                <View style={styles.indicatorPill}>
+                    <Text style={styles.indicatorText}>
+                        {count}/{CONSTANTS.PLANS[user.plan].maxCalls}
+                    </Text>
+                </View>
             </View>
 
             <View style={styles.centerWrap} pointerEvents="box-none">
@@ -395,9 +397,12 @@ const makeStyles = (theme: Theme) =>
         bottomIndicator: {
             position: "absolute",
             bottom: 8,
-            left: "48%",
+            left: 0,
+            right: 0,
+            alignItems: "center",
+        },
+        indicatorPill: {
             paddingHorizontal: 8,
-            textAlign: "center",
             paddingVertical: 4,
             borderRadius: 99,
             backgroundColor: theme.base + "80",
