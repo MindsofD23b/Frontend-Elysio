@@ -3,12 +3,9 @@ name: branch-name-check
 on:
   push:
     branches:
-      - 'feature/*'
-      - 'fix/*'
-      - 'chore/*'
+      - '**'   
   pull_request:
     types: [opened, synchronize, reopened, edited]
-
 
 jobs:
   branch-name-check:
@@ -20,11 +17,11 @@ jobs:
           BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
         run: |
           echo "Checking branch: $BRANCH_NAME"
-
+          
           if [[ ! "$BRANCH_NAME" =~ ^(feature|fix|chore)/[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
             echo "Invalid branch name!"
             echo "Branch must match: (feature|fix|chore)/kebab-case-name"
             exit 1
           fi
 
-          echo "Branch name is valid"
+          echo "Branch name is valid."
