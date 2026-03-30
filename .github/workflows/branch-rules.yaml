@@ -10,9 +10,9 @@ jobs:
 
         steps:
             - name: Check branch name
+              env:
+                  BRANCH_NAME: ${{ github.head_ref }}
               run: |
-                  BRANCH_NAME="${{ github.head_ref }}"
-
                   echo "Checking branch: $BRANCH_NAME"
 
                   if [[ ! "$BRANCH_NAME" =~ ^(feature|fix|chore)/[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
