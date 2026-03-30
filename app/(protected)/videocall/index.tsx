@@ -1,676 +1,642 @@
-// // this file is a test try for testing videocall stuff and is created by https://claude.ai
-
-// import React, { useState, useRef, useCallback } from "react";
-// import {
-//     View,
-//     Text,
-//     TextInput,
-//     TouchableOpacity,
-//     ActivityIndicator,
-//     ScrollView,
-//     StyleSheet,
-//     SafeAreaView,
-// } from "react-native";
-// import { RTCView, mediaDevices } from "react-native-webrtc";
-// import type { MediaStream } from "react-native-webrtc";
-// import { Device } from "mediasoup-client";
-// import type {
-//     Transport,
-//     Producer,
-//     Consumer,
-//     RtpCapabilities,
-// } from "mediasoup-client/types";
-// import { io, Socket } from "socket.io-client";
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // CONFIG — change this to your server URL
-// // ─────────────────────────────────────────────────────────────────────────────
-
-// const SERVER_URL = "https://your-mediasoup-server.com";
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // TYPES
-// // ─────────────────────────────────────────────────────────────────────────────
-
-// type CallStatus =
-//     | "idle"
-//     | "connecting"
-//     | "joining"
-//     | "in-call"
-//     | "error"
-//     | "disconnected";
-
-// interface RemoteParticipant {
-//     producerId: string;
-//     stream: MediaStream;
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SOCKET SERVICE
-// // ─────────────────────────────────────────────────────────────────────────────
-
-// class SocketService {
-//     private socket: Socket | null = null;
-
-//     connect(): Socket {
-//         this.socket = io(SERVER_URL, { transports: ["websocket"], reconnection: true });
-//         return this.socket;
-//     }
-
-//     disconnect(): void {
-//         this.socket?.disconnect();
-//         this.socket = null;
-//     }
-
-//     emit<TPayload, TResponse>(event: string, data: TPayload): Promise<TResponse> {
-//         return new Promise((resolve, reject) => {
-//             if (!this.socket) return reject(new Error("Socket not connected"));
-//             this.socket.emit(event, data, (res: TResponse) => resolve(res));
-//         });
-//     }
-
-//     on<T>(event: string, handler: (data: T) => void): void {
-//         this.socket?.on(event, handler);
-//     }
-
-//     off(event: string): void {
-//         this.socket?.off(event);
-//     }
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // MEDIASOUP SERVICE
-// // ─────────────────────────────────────────────────────────────────────────────
-
-// class MediasoupService {
-//     private device: Device | null = null;
-//     private sendTransport: Transport | null = null;
-//     private recvTransport: Transport | null = null;
-//     private producers: Map<string, Producer> = new Map();
-//     private consumers: Map<string, Consumer> = new Map();
-
-//     async loadDevice(socket: SocketService, roomId: string): Promise<void> {
-//         const { rtpCapabilities } = await socket.emit<
-//             { roomId: string },
-//             { rtpCapabilities: RtpCapabilities }
-//         >("getRouterRtpCapabilities", { roomId });
-
-//         this.device = new Device();
-//         await this.device.load({ routerRtpCapabilities: rtpCapabilities });
-//     }
-
-//     async createSendTransport(socket: SocketService, roomId: string): Promise<void> {
-//         if (!this.device) throw new Error("Device not loaded");
-
-//         const params = await socket.emit<object, object>("createWebRtcTransport", {
-//             roomId,
-//             direction: "send",
-//         });
-
-//         const transport = this.device.createSendTransport(params as any);
-//         this.sendTransport = transport;
-
-//         transport.on("connect", async ({ dtlsParameters }, callback, errback) => {
-//             try {
-//                 await socket.emit("connectTransport", {
-//                     transportId: transport.id,
-//                     dtlsParameters,
-//                 });
-//                 callback();
-//             } catch (err) {
-//                 errback(err as Error);
-//             }
-//         });
-
-//         transport.on("produce", async ({ kind, rtpParameters }, callback, errback) => {
-//             try {
-//                 const { producerId } = await socket.emit<object, { producerId: string }>(
-//                     "produce",
-//                     {
-//                         transportId: transport.id,
-//                         kind,
-//                         rtpParameters,
-//                         roomId,
-//                     },
-//                 );
-//                 callback({ id: producerId });
-//             } catch (err) {
-//                 errback(err as Error);
-//             }
-//         });
-//     }
-
-//     async createRecvTransport(socket: SocketService, roomId: string): Promise<void> {
-//         if (!this.device) throw new Error("Device not loaded");
-
-//         const params = await socket.emit<object, object>("createWebRtcTransport", {
-//             roomId,
-//             direction: "recv",
-//         });
-
-//         const transport = this.device.createRecvTransport(params as any);
-//         this.recvTransport = transport;
-
-//         transport.on("connect", async ({ dtlsParameters }, callback, errback) => {
-//             try {
-//                 await socket.emit("connectTransport", {
-//                     transportId: transport.id,
-//                     dtlsParameters,
-//                 });
-//                 callback();
-//             } catch (err) {
-//                 errback(err as Error);
-//             }
-//         });
-//     }
-
-//     async produceStream(stream: MediaStream): Promise<void> {
-//         if (!this.sendTransport) throw new Error("Send transport not ready");
-//         for (const track of stream.getTracks()) {
-//             const producer = await this.sendTransport.produce({ track: track as any });
-//             this.producers.set(track.kind, producer);
-//         }
-//     }
-
-//     async consumeProducer(
-//         socket: SocketService,
-//         producerId: string,
-//         roomId: string,
-//     ): Promise<MediaStream> {
-//         if (!this.device || !this.recvTransport) throw new Error("Not initialized");
-
-//         const { id, kind, rtpParameters } = await socket.emit<
-//             object,
-//             { id: string; kind: "audio" | "video"; rtpParameters: object }
-//         >("consume", {
-//             producerId,
-//             rtpCapabilities: this.device.rtpCapabilities,
-//             roomId,
-//         });
-
-//         const consumer = await this.recvTransport.consume({
-//             id,
-//             producerId,
-//             kind,
-//             rtpParameters: rtpParameters as any,
-//         });
-
-//         this.consumers.set(producerId, consumer);
-//         await socket.emit("resumeConsumer", { consumerId: id });
-
-//         const { MediaStream: RNMediaStream } = require("react-native-webrtc");
-//         return new RNMediaStream([consumer.track]);
-//     }
-
-//     async getProducers(socket: SocketService, roomId: string): Promise<string[]> {
-//         const { producerIds } = await socket.emit<object, { producerIds: string[] }>(
-//             "getProducers",
-//             { roomId },
-//         );
-//         return producerIds;
-//     }
-
-//     closeAll(): void {
-//         this.producers.forEach((p) => p.close());
-//         this.consumers.forEach((c) => c.close());
-//         this.sendTransport?.close();
-//         this.recvTransport?.close();
-//         this.producers.clear();
-//         this.consumers.clear();
-//         this.sendTransport = null;
-//         this.recvTransport = null;
-//         this.device = null;
-//     }
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // HOOK
-// // ─────────────────────────────────────────────────────────────────────────────
-
-// function useVideoCall() {
-//     const [status, setStatus] = useState<CallStatus>("idle");
-//     const [errorMessage, setErrorMessage] = useState<string | undefined>();
-//     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-//     const [remoteParticipants, setRemoteParticipants] = useState<
-//         Record<string, RemoteParticipant>
-//     >({});
-//     const [roomId, setRoomId] = useState("");
-
-//     const socketRef = useRef(new SocketService());
-//     const mediasoupRef = useRef(new MediasoupService());
-
-//     const addParticipant = (producerId: string, stream: MediaStream) =>
-//         setRemoteParticipants((prev) => ({
-//             ...prev,
-//             [producerId]: { producerId, stream },
-//         }));
-
-//     const removeParticipant = (producerId: string) =>
-//         setRemoteParticipants((prev) => {
-//             const next = { ...prev };
-//             delete next[producerId];
-//             return next;
-//         });
-
-//     const consumeProducer = useCallback(async (producerId: string, rid: string) => {
-//         try {
-//             const stream = await mediasoupRef.current.consumeProducer(
-//                 socketRef.current,
-//                 producerId,
-//                 rid,
-//             );
-//             addParticipant(producerId, stream);
-//         } catch (err) {
-//             console.warn("[VideoCall] consume failed:", err);
-//         }
-//     }, []);
-
-//     const joinRoom = useCallback(
-//         async (rid: string) => {
-//             setStatus("connecting");
-//             setErrorMessage(undefined);
-
-//             try {
-//                 const socket = socketRef.current.connect();
-
-//                 await new Promise<void>((resolve, reject) => {
-//                     socket.once("connect", resolve);
-//                     socket.once("connect_error", reject);
-//                 });
-
-//                 setStatus("joining");
-
-//                 const stream = (await mediaDevices.getUserMedia({
-//                     audio: true,
-//                     video: { facingMode: "user", width: 640, height: 480 },
-//                 })) as MediaStream;
-//                 setLocalStream(stream);
-
-//                 const ms = mediasoupRef.current;
-//                 const sk = socketRef.current;
-
-//                 await ms.loadDevice(sk, rid);
-//                 await ms.createSendTransport(sk, rid);
-//                 await ms.createRecvTransport(sk, rid);
-//                 await ms.produceStream(stream);
-
-//                 const producerIds = await ms.getProducers(sk, rid);
-//                 await Promise.all(producerIds.map((id) => consumeProducer(id, rid)));
-
-//                 socketRef.current.on<{ producerId: string }>(
-//                     "new-producer",
-//                     ({ producerId }) => consumeProducer(producerId, rid),
-//                 );
-//                 socketRef.current.on<{ producerId: string }>(
-//                     "producer-closed",
-//                     ({ producerId }) => removeParticipant(producerId),
-//                 );
-//                 socketRef.current.on("disconnect", () => setStatus("disconnected"));
-
-//                 setStatus("in-call");
-//             } catch (err) {
-//                 const msg = err instanceof Error ? err.message : "Unknown error";
-//                 setStatus("error");
-//                 setErrorMessage(msg);
-//             }
-//         },
-//         [consumeProducer],
-//     );
-
-//     const leaveRoom = useCallback(() => {
-//         localStream?.getTracks().forEach((t) => t.stop());
-//         mediasoupRef.current.closeAll();
-//         socketRef.current.off("new-producer");
-//         socketRef.current.off("producer-closed");
-//         socketRef.current.off("disconnect");
-//         socketRef.current.disconnect();
-//         setLocalStream(null);
-//         setRemoteParticipants({});
-//         setStatus("idle");
-//         setErrorMessage(undefined);
-//     }, [localStream]);
-
-//     return {
-//         status,
-//         errorMessage,
-//         localStream,
-//         remoteParticipants,
-//         roomId,
-//         setRoomId,
-//         joinRoom,
-//         leaveRoom,
-//     };
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // COMPONENTS
-// // ─────────────────────────────────────────────────────────────────────────────
-
-// const Lobby: React.FC<{
-//     roomId: string;
-//     onChangeRoomId: (v: string) => void;
-//     status: CallStatus;
-//     errorMessage?: string;
-//     onJoin: () => void;
-// }> = ({ roomId, onChangeRoomId, status, errorMessage, onJoin }) => {
-//     const isLoading = status === "connecting" || status === "joining";
-
-//     const statusLabels: Partial<Record<CallStatus, string>> = {
-//         connecting: "Connecting to server...",
-//         joining: "Setting up call...",
-//         error: errorMessage ?? "Something went wrong",
-//         disconnected: "Disconnected from server",
-//     };
-
-//     return (
-//         <View style={s.lobby}>
-//             <View style={s.card}>
-//                 <Text style={s.cardIcon}>📹</Text>
-//                 <Text style={s.cardTitle}>Video Call</Text>
-//                 <Text style={s.cardSubtitle}>Enter a room ID to start or join</Text>
-
-//                 <TextInput
-//                     style={s.input}
-//                     placeholder="Room ID"
-//                     placeholderTextColor="#555"
-//                     value={roomId}
-//                     onChangeText={onChangeRoomId}
-//                     autoCapitalize="none"
-//                     autoCorrect={false}
-//                     editable={!isLoading}
-//                     onSubmitEditing={onJoin}
-//                     returnKeyType="join"
-//                 />
-
-//                 <TouchableOpacity
-//                     style={[
-//                         s.joinBtn,
-//                         (isLoading || !roomId.trim()) && s.joinBtnDisabled,
-//                     ]}
-//                     onPress={onJoin}
-//                     disabled={isLoading || !roomId.trim()}
-//                     activeOpacity={0.8}
-//                 >
-//                     {isLoading ? (
-//                         <ActivityIndicator color="#fff" />
-//                     ) : (
-//                         <Text style={s.joinBtnText}>Join Room</Text>
-//                     )}
-//                 </TouchableOpacity>
-
-//                 {statusLabels[status] && (
-//                     <Text style={[s.statusText, status === "error" && s.errorText]}>
-//                         {statusLabels[status]}
-//                     </Text>
-//                 )}
-//             </View>
-//         </View>
-//     );
-// };
-
-// const LocalVideo: React.FC<{ stream: MediaStream }> = ({ stream }) => (
-//     <View style={s.localWrapper} pointerEvents="none">
-//         <RTCView
-//             streamURL={stream.toURL()}
-//             style={s.localVideo}
-//             mirror
-//             objectFit="cover"
-//             zOrder={1}
-//         />
-//     </View>
-// );
-
-// const RemoteGrid: React.FC<{ participants: Record<string, RemoteParticipant> }> = ({
-//     participants,
-// }) => {
-//     const entries = Object.values(participants);
-
-//     if (entries.length === 0) {
-//         return (
-//             <View style={s.emptyContainer}>
-//                 <Text style={s.emptyIcon}>👥</Text>
-//                 <Text style={s.emptyText}>Waiting for others to join...</Text>
-//             </View>
-//         );
-//     }
-
-//     return (
-//         <ScrollView contentContainerStyle={s.grid}>
-//             {entries.map(({ producerId, stream }) => (
-//                 <View key={producerId} style={s.remoteWrapper}>
-//                     <RTCView
-//                         streamURL={stream.toURL()}
-//                         style={s.remoteVideo}
-//                         objectFit="cover"
-//                     />
-//                     <View style={s.badge}>
-//                         <Text style={s.badgeText}>
-//                             {producerId.slice(0, 6).toUpperCase()}
-//                         </Text>
-//                     </View>
-//                 </View>
-//             ))}
-//         </ScrollView>
-//     );
-// };
-
-// const CallControls: React.FC<{
-//     roomId: string;
-//     localStream: MediaStream | null;
-//     onLeave: () => void;
-// }> = ({ roomId, localStream, onLeave }) => {
-//     const [micOn, setMicOn] = useState(true);
-//     const [camOn, setCamOn] = useState(true);
-
-//     const toggleMic = () => {
-//         localStream?.getAudioTracks().forEach((t) => {
-//             t.enabled = !micOn;
-//         });
-//         setMicOn((v) => !v);
-//     };
-
-//     const toggleCam = () => {
-//         localStream?.getVideoTracks().forEach((t) => {
-//             t.enabled = !camOn;
-//         });
-//         setCamOn((v) => !v);
-//     };
-
-//     return (
-//         <View style={s.controls}>
-//             <View style={s.roomPill}>
-//                 <Text style={s.roomLabel}>🔴 {roomId}</Text>
-//             </View>
-//             <View style={s.controlBtns}>
-//                 <TouchableOpacity
-//                     style={[s.iconBtn, !micOn && s.iconBtnOff]}
-//                     onPress={toggleMic}
-//                 >
-//                     <Text style={s.iconBtnLabel}>{micOn ? "🎤" : "🔇"}</Text>
-//                 </TouchableOpacity>
-//                 <TouchableOpacity
-//                     style={[s.iconBtn, !camOn && s.iconBtnOff]}
-//                     onPress={toggleCam}
-//                 >
-//                     <Text style={s.iconBtnLabel}>{camOn ? "📷" : "🚫"}</Text>
-//                 </TouchableOpacity>
-//                 <TouchableOpacity
-//                     style={s.leaveBtn}
-//                     onPress={onLeave}
-//                     activeOpacity={0.8}
-//                 >
-//                     <Text style={s.leaveBtnText}>Leave</Text>
-//                 </TouchableOpacity>
-//             </View>
-//         </View>
-//     );
-// };
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SCREEN
-// // ─────────────────────────────────────────────────────────────────────────────
-
-// export default function VideoCallScreen() {
-//     const {
-//         status,
-//         errorMessage,
-//         localStream,
-//         remoteParticipants,
-//         roomId,
-//         setRoomId,
-//         joinRoom,
-//         leaveRoom,
-//     } = useVideoCall();
-
-//     if (status !== "in-call") {
-//         return (
-//             <Lobby
-//                 roomId={roomId}
-//                 onChangeRoomId={setRoomId}
-//                 status={status}
-//                 errorMessage={errorMessage}
-//                 onJoin={() => joinRoom(roomId)}
-//             />
-//         );
-//     }
-
-//     return (
-//         <SafeAreaView style={s.screen}>
-//             <View style={s.remoteArea}>
-//                 <RemoteGrid participants={remoteParticipants} />
-//             </View>
-//             {localStream && <LocalVideo stream={localStream} />}
-//             <CallControls roomId={roomId} localStream={localStream} onLeave={leaveRoom} />
-//         </SafeAreaView>
-//     );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // STYLES
-// // ─────────────────────────────────────────────────────────────────────────────
-
-// const s = StyleSheet.create({
-//     // Lobby
-//     lobby: {
-//         flex: 1,
-//         justifyContent: "center",
-//         alignItems: "center",
-//         backgroundColor: "#0a0a0a",
-//         padding: 24,
-//     },
-//     card: {
-//         width: "100%",
-//         backgroundColor: "#141414",
-//         borderRadius: 20,
-//         padding: 28,
-//         borderWidth: 1,
-//         borderColor: "#222",
-//         alignItems: "center",
-//     },
-//     cardIcon: { fontSize: 48, marginBottom: 12 },
-//     cardTitle: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 6 },
-//     cardSubtitle: { fontSize: 14, color: "#666", marginBottom: 28, textAlign: "center" },
-//     input: {
-//         width: "100%",
-//         backgroundColor: "#1e1e1e",
-//         color: "#fff",
-//         borderRadius: 12,
-//         paddingHorizontal: 16,
-//         paddingVertical: 14,
-//         fontSize: 16,
-//         borderWidth: 1,
-//         borderColor: "#2a2a2a",
-//         marginBottom: 16,
-//     },
-//     joinBtn: {
-//         width: "100%",
-//         backgroundColor: "#6366f1",
-//         borderRadius: 12,
-//         paddingVertical: 16,
-//         alignItems: "center",
-//     },
-//     joinBtnDisabled: { opacity: 0.4 },
-//     joinBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-//     statusText: { marginTop: 16, color: "#888", fontSize: 13, textAlign: "center" },
-//     errorText: { color: "#f87171" },
-//     // Screen
-//     screen: { flex: 1, backgroundColor: "#0a0a0a" },
-//     remoteArea: { flex: 1 },
-//     // Remote grid
-//     grid: { flexDirection: "row", flexWrap: "wrap", padding: 8, gap: 8 },
-//     remoteWrapper: {
-//         flex: 1,
-//         minWidth: 160,
-//         height: 220,
-//         borderRadius: 14,
-//         overflow: "hidden",
-//         backgroundColor: "#1a1a1a",
-//         borderWidth: 1,
-//         borderColor: "#2a2a2a",
-//     },
-//     remoteVideo: { flex: 1 },
-//     badge: {
-//         position: "absolute",
-//         bottom: 8,
-//         left: 8,
-//         backgroundColor: "rgba(0,0,0,0.6)",
-//         paddingHorizontal: 8,
-//         paddingVertical: 3,
-//         borderRadius: 6,
-//     },
-//     badgeText: { color: "#fff", fontSize: 11, fontWeight: "600" },
-//     emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
-//     emptyIcon: { fontSize: 48 },
-//     emptyText: { color: "#444", fontSize: 16 },
-//     // Local PiP
-//     localWrapper: {
-//         position: "absolute",
-//         top: 56,
-//         right: 16,
-//         width: 100,
-//         height: 148,
-//         borderRadius: 14,
-//         overflow: "hidden",
-//         zIndex: 10,
-//         borderWidth: 2,
-//         borderColor: "#6366f1",
-//     },
-//     localVideo: { flex: 1, backgroundColor: "#1a1a1a" },
-//     // Controls
-//     controls: {
-//         flexDirection: "row",
-//         justifyContent: "space-between",
-//         alignItems: "center",
-//         paddingHorizontal: 16,
-//         paddingVertical: 14,
-//         backgroundColor: "#111",
-//         borderTopWidth: 1,
-//         borderColor: "#222",
-//     },
-//     roomPill: {
-//         backgroundColor: "#1e1e1e",
-//         paddingHorizontal: 12,
-//         paddingVertical: 6,
-//         borderRadius: 20,
-//     },
-//     roomLabel: { color: "#aaa", fontSize: 13 },
-//     controlBtns: { flexDirection: "row", alignItems: "center", gap: 10 },
-//     iconBtn: {
-//         width: 44,
-//         height: 44,
-//         borderRadius: 22,
-//         backgroundColor: "#2a2a2a",
-//         justifyContent: "center",
-//         alignItems: "center",
-//     },
-//     iconBtnOff: { opacity: 0.5 },
-//     iconBtnLabel: { fontSize: 20 },
-//     leaveBtn: {
-//         backgroundColor: "#ef4444",
-//         borderRadius: 10,
-//         paddingHorizontal: 20,
-//         paddingVertical: 10,
-//         marginLeft: 8,
-//     },
-//     leaveBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-// });
+import { useRef, useState, useEffect } from "react";
+import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
+import * as mediasoupClient from "mediasoup-client";
+import { io, Socket } from "socket.io-client";
+import {
+    Ionicons,
+    MaterialCommunityIcons,
+    Feather,
+    FontAwesome6,
+} from "@expo/vector-icons";
+
+registerGlobals();
+
+// made with chatgpt
+
+const BASE_URL = "https://elysio.jamiepoeffel.ch";
+const ROOM_ID = "test-room-fresh-2";
+
+export default function VideoCall() {
+    const [started, setStarted] = useState(false);
+    const [localUrl, setLocalUrl] = useState<string | null>(null);
+    const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+
+    const [isMuted, setIsMuted] = useState(false);
+    const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+
+    const peerIdRef = useRef(`peer-${Math.random().toString(36).slice(2, 10)}`);
+    const deviceRef = useRef<any>(null);
+    const sendTransportRef = useRef<any>(null);
+    const recvTransportRef = useRef<any>(null);
+    const socketRef = useRef<Socket | null>(null);
+
+    const localStreamRef = useRef<any>(null);
+    const remoteStreamRef = useRef<any>(new MediaStream());
+
+    const consumedProducerIdsRef = useRef<Set<string>>(new Set());
+    const startingRef = useRef(false);
+    const consumingProducerIdsRef = useRef<Set<string>>(new Set());
+    const consumersRef = useRef<Map<string, any>>(new Map());
+    const remoteVideoStreamRef = useRef<any>(null);
+
+    async function api(path: string, options?: RequestInit) {
+        const url = `${BASE_URL}${path}`;
+        console.log("API REQUEST:", url, options?.method ?? "GET");
+
+        try {
+            const res = await fetch(url, {
+                headers: { "Content-Type": "application/json" },
+                ...options,
+            });
+
+            const text = await res.text();
+            console.log("API RESPONSE:", res.status, text);
+
+            if (!res.ok) throw new Error(`${res.status} ${text}`);
+            return text ? JSON.parse(text) : {};
+        } catch (error) {
+            console.log("API FETCH FAILED:", url, error);
+            throw error;
+        }
+    }
+
+    async function consumeProducer(producerId: string) {
+        const recvTransport = recvTransportRef.current;
+        const device = deviceRef.current;
+
+        if (!recvTransport || !device) return;
+        if (consumedProducerIdsRef.current.has(producerId)) return;
+        if (consumingProducerIdsRef.current.has(producerId)) return;
+
+        consumingProducerIdsRef.current.add(producerId);
+
+        try {
+            const consumerData = await api(
+                `/video/room/${ROOM_ID}/transport/${recvTransport.id}/consume`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        peerId: peerIdRef.current,
+                        producerId,
+                        rtpCapabilities: device.rtpCapabilities,
+                    }),
+                },
+            );
+
+            const consumer = await recvTransport.consume({
+                id: consumerData.id,
+                producerId: consumerData.producerId,
+                kind: consumerData.kind,
+                rtpParameters: consumerData.rtpParameters,
+            });
+
+            consumersRef.current.set(consumer.id, consumer);
+            consumedProducerIdsRef.current.add(producerId);
+
+            await api(`/video/room/${ROOM_ID}/consumer/${consumer.id}/resume`, {
+                method: "POST",
+                body: JSON.stringify({ peerId: peerIdRef.current }),
+            });
+
+            consumer.track.enabled = true;
+
+            if (consumer.kind === "video") {
+                const videoStream = new MediaStream([consumer.track]);
+                remoteVideoStreamRef.current = videoStream;
+
+                const url = videoStream.toURL();
+
+                setTimeout(() => {
+                    setRemoteUrl(url);
+                }, 300);
+            }
+        } catch (err) {
+            consumingProducerIdsRef.current.delete(producerId);
+            console.error("consumeProducer error", err);
+        }
+    }
+
+    async function createRecvTransportAndConsume(device: any) {
+        const transportInfo = await api(`/video/room/${ROOM_ID}/transport`, {
+            method: "POST",
+            body: JSON.stringify({ peerId: peerIdRef.current }),
+        });
+
+        const recvTransport = device.createRecvTransport({
+            ...transportInfo,
+            iceServers: [
+                {
+                    urls: [
+                        "turn:elysioturn.jamiepoeffel.ch:3478?transport=udp",
+                        "turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp",
+                        "turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp",
+                    ],
+                    username: "elysioturn",
+                    credential: "q9E811BDjLsK",
+                },
+            ],
+        });
+
+        recvTransportRef.current = recvTransport;
+
+        recvTransport.on(
+            "connect",
+            async ({ dtlsParameters }: any, callback: any, errback: any) => {
+                try {
+                    await api(
+                        `/video/room/${ROOM_ID}/transport/${recvTransport.id}/connect`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({
+                                peerId: peerIdRef.current,
+                                dtlsParameters,
+                            }),
+                        },
+                    );
+                    callback();
+                } catch (err) {
+                    errback(err);
+                }
+            },
+        );
+
+        const producers = await api(
+            `/video/room/${ROOM_ID}/producers?peerId=${peerIdRef.current}`,
+            { method: "GET" },
+        );
+
+        for (const producer of producers) {
+            if (producer.peerId === peerIdRef.current) continue;
+            await consumeProducer(producer.producerId);
+        }
+    }
+
+    async function createSendTransportAndProduce(device: any, localStream: any) {
+        const transportInfo = await api(`/video/room/${ROOM_ID}/transport`, {
+            method: "POST",
+            body: JSON.stringify({ peerId: peerIdRef.current }),
+        });
+
+        const sendTransport = device.createSendTransport({
+            ...transportInfo,
+            iceServers: [
+                {
+                    urls: [
+                        "turn:elysioturn.jamiepoeffel.ch:3478?transport=udp",
+                        "turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp",
+                        "turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp",
+                    ],
+                    username: "elysioturn",
+                    credential: "q9E811BDjLsK",
+                },
+            ],
+        });
+
+        sendTransportRef.current = sendTransport;
+
+        sendTransport.on(
+            "connect",
+            async ({ dtlsParameters }: any, callback: any, errback: any) => {
+                try {
+                    await api(
+                        `/video/room/${ROOM_ID}/transport/${sendTransport.id}/connect`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({
+                                peerId: peerIdRef.current,
+                                dtlsParameters,
+                            }),
+                        },
+                    );
+                    callback();
+                } catch (err) {
+                    errback(err);
+                }
+            },
+        );
+
+        sendTransport.on(
+            "produce",
+            async ({ kind, rtpParameters }: any, callback: any, errback: any) => {
+                try {
+                    const data = await api(
+                        `/video/room/${ROOM_ID}/transport/${sendTransport.id}/produce`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({
+                                peerId: peerIdRef.current,
+                                kind,
+                                rtpParameters,
+                            }),
+                        },
+                    );
+                    callback({ id: data.id });
+                } catch (err) {
+                    errback(err);
+                }
+            },
+        );
+
+        const audioTrack = localStream.getAudioTracks()[0];
+        const videoTrack = localStream.getVideoTracks()[0];
+
+        if (audioTrack) await sendTransport.produce({ track: audioTrack });
+        if (videoTrack) await sendTransport.produce({ track: videoTrack });
+    }
+
+    async function startCall() {
+        if (startingRef.current || started) return;
+        startingRef.current = true;
+
+        try {
+            const localStream = await mediaDevices.getUserMedia({
+                audio: true,
+                video: { frameRate: 30, facingMode: "user" },
+            });
+
+            localStreamRef.current = localStream;
+            setLocalUrl(localStream.toURL());
+
+            const joinData = await api(`/video/room/${ROOM_ID}/join`, {
+                method: "POST",
+                body: JSON.stringify({ peerId: peerIdRef.current }),
+            });
+
+            const device = new mediasoupClient.Device();
+            await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
+            deviceRef.current = device;
+
+            await createRecvTransportAndConsume(device);
+
+            const socket: Socket = io(BASE_URL, {
+                query: { peerId: peerIdRef.current, roomId: ROOM_ID },
+                transports: ["websocket"],
+                forceNew: true,
+            });
+
+            socketRef.current = socket;
+
+            socket.on(
+                "new-producer",
+                async ({
+                    producerId,
+                    peerId,
+                }: {
+                    producerId: string;
+                    peerId: string;
+                }) => {
+                    if (peerId === peerIdRef.current) return;
+                    await consumeProducer(producerId);
+                },
+            );
+
+            await createSendTransportAndProduce(device, localStream);
+
+            setStarted(true);
+        } catch (error) {
+            console.error("startCall error", error);
+            startingRef.current = false;
+        }
+    }
+
+    async function stopCall() {
+        startingRef.current = false;
+        socketRef.current?.disconnect();
+        socketRef.current = null;
+
+        try {
+            await fetch(`${BASE_URL}/video/room/${ROOM_ID}/leave`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ peerId: peerIdRef.current }),
+            });
+        } catch (err) {
+            console.error("leave error", err);
+        }
+
+        sendTransportRef.current?.close();
+        recvTransportRef.current?.close();
+        localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
+
+        sendTransportRef.current = null;
+        recvTransportRef.current = null;
+        localStreamRef.current = null;
+        remoteStreamRef.current = new MediaStream();
+
+        consumersRef.current.forEach((consumer) => {
+            try {
+                consumer.close();
+            } catch {}
+        });
+
+        consumersRef.current.clear();
+        consumedProducerIdsRef.current.clear();
+        consumingProducerIdsRef.current.clear();
+        remoteVideoStreamRef.current = null;
+
+        setLocalUrl(null);
+        setRemoteUrl(null);
+        setStarted(false);
+    }
+
+    function toggleMute() {
+        const stream = localStreamRef.current;
+        if (!stream) return;
+
+        const nextMuted = !isMuted;
+        stream.getAudioTracks().forEach((track: MediaStreamTrack) => {
+            track.enabled = !nextMuted;
+        });
+        setIsMuted(nextMuted);
+    }
+
+    function toggleSpeaker() {
+        const next = !isSpeakerOn;
+        setIsSpeakerOn(next);
+
+        Alert.alert("Speaker", `Speaker ${next ? "enabled" : "disabled"}`);
+
+        // Für echtes Routing auf Lautsprecher brauchst du auf iOS/Android meist:
+        // react-native-incall-manager oder eine native Audio Route Lösung
+    }
+
+    function handleLike() {
+        Alert.alert("Liked", "User wurde geliked.");
+    }
+
+    function handleNextUser() {
+        Alert.alert("Next user", "Hier kannst du den nächsten Match laden.");
+    }
+
+    function handleReaction() {
+        Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
+    }
+
+    function handleIcebreaker() {
+        Alert.alert(
+            "Icebreaker",
+            "Hier kannst du Tipps oder einen kurzen Gesprächsstarter anzeigen.",
+        );
+    }
+
+    useEffect(() => {
+        return () => {
+            stopCall().catch(() => undefined);
+        };
+    }, []);
+
+    if (!started) {
+        return (
+            <SafeAreaView style={styles.startContainer}>
+                <Text style={styles.startTitle}>Ready for call</Text>
+                <Pressable style={styles.startButton} onPress={startCall}>
+                    <Text style={styles.startButtonText}>Start video call</Text>
+                </Pressable>
+            </SafeAreaView>
+        );
+    }
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <View style={styles.videoLayer}>
+                {remoteUrl ? (
+                    <RTCView
+                        key={remoteUrl}
+                        streamURL={remoteUrl}
+                        style={styles.remoteVideo}
+                        objectFit="cover"
+                        mirror={false}
+                    />
+                ) : (
+                    <View style={[styles.remoteVideo, styles.waitingContainer]}>
+                        <Text style={styles.waitingText}>Warte auf Gegenüber...</Text>
+                    </View>
+                )}
+
+                {localUrl && (
+                    <View style={styles.localPreviewWrapper}>
+                        <RTCView
+                            streamURL={localUrl}
+                            style={styles.localPreview}
+                            objectFit="cover"
+                            mirror={true}
+                        />
+                    </View>
+                )}
+
+                <View style={styles.topBar}>
+                    <Pressable style={styles.topButton} onPress={stopCall}>
+                        <Ionicons name="chevron-back" size={22} color="#fff" />
+                    </Pressable>
+                </View>
+
+                <View style={styles.bottomControlsWrapper}>
+                    <View style={styles.bottomControls}>
+                        <ControlButton
+                            onPress={toggleMute}
+                            icon={
+                                <Feather
+                                    name={isMuted ? "mic-off" : "mic"}
+                                    size={22}
+                                    color="#111"
+                                />
+                            }
+                        />
+
+                        <ControlButton
+                            onPress={toggleSpeaker}
+                            icon={
+                                <Ionicons
+                                    name={
+                                        isSpeakerOn
+                                            ? "volume-high-outline"
+                                            : "volume-mute-outline"
+                                    }
+                                    size={22}
+                                    color="#111"
+                                />
+                            }
+                        />
+
+                        <ControlButton
+                            onPress={handleLike}
+                            variant="success"
+                            icon={
+                                <Ionicons name="heart-outline" size={22} color="#fff" />
+                            }
+                        />
+
+                        <ControlButton
+                            onPress={handleNextUser}
+                            variant="danger"
+                            icon={<Ionicons name="close" size={24} color="#fff" />}
+                        />
+
+                        <ControlButton
+                            onPress={handleReaction}
+                            icon={
+                                <FontAwesome6
+                                    name="face-smile-beam"
+                                    size={20}
+                                    color="#111"
+                                />
+                            }
+                        />
+
+                        <ControlButton
+                            onPress={handleIcebreaker}
+                            icon={
+                                <MaterialCommunityIcons
+                                    name="magic-staff"
+                                    size={22}
+                                    color="#111"
+                                />
+                            }
+                        />
+                    </View>
+                </View>
+            </View>
+        </SafeAreaView>
+    );
+}
+
+function ControlButton({
+    onPress,
+    icon,
+    variant = "default",
+}: {
+    onPress: () => void;
+    icon: React.ReactNode;
+    variant?: "default" | "success" | "danger";
+}) {
+    return (
+        <Pressable
+            onPress={onPress}
+            style={[
+                styles.controlButton,
+                variant === "success" && styles.controlButtonSuccess,
+                variant === "danger" && styles.controlButtonDanger,
+            ]}
+        >
+            {icon}
+        </Pressable>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "#000",
+    },
+    videoLayer: {
+        flex: 1,
+        position: "relative",
+        backgroundColor: "#000",
+    },
+    remoteVideo: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "#111",
+    },
+    waitingContainer: {
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    waitingText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "600",
+    },
+    localPreviewWrapper: {
+        position: "absolute",
+        right: 16,
+        bottom: 128,
+        width: 94,
+        height: 154,
+        borderRadius: 16,
+        overflow: "hidden",
+        backgroundColor: "#222",
+        borderWidth: 1.5,
+        borderColor: "rgba(255,255,255,0.18)",
+    },
+    localPreview: {
+        width: "100%",
+        height: "100%",
+        backgroundColor: "#222",
+    },
+    topBar: {
+        position: "absolute",
+        top: 10,
+        left: 12,
+        right: 12,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    topButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: "rgba(0,0,0,0.35)",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    bottomControlsWrapper: {
+        position: "absolute",
+        left: 10,
+        right: 10,
+        bottom: 16,
+    },
+    bottomControls: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "rgba(255,255,255,0.92)",
+        borderRadius: 24,
+        paddingHorizontal: 10,
+        paddingVertical: 10,
+    },
+    controlButton: {
+        width: 54,
+        height: 54,
+        borderRadius: 18,
+        backgroundColor: "#fff",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "#d7d7d7",
+    },
+    controlButtonSuccess: {
+        backgroundColor: "#45c466",
+        borderColor: "#45c466",
+    },
+    controlButtonDanger: {
+        backgroundColor: "#df1d1d",
+        borderColor: "#df1d1d",
+    },
+    startContainer: {
+        flex: 1,
+        backgroundColor: "#0b0b0b",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+    },
+    startTitle: {
+        color: "#fff",
+        fontSize: 22,
+        fontWeight: "700",
+        marginBottom: 16,
+    },
+    startButton: {
+        backgroundColor: "#fff",
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        borderRadius: 14,
+    },
+    startButtonText: {
+        color: "#111",
+        fontSize: 16,
+        fontWeight: "700",
+    },
+});

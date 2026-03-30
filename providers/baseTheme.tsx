@@ -1,9 +1,9 @@
 import { useColorScheme } from "react-native";
-import { ThemeContext } from "@/app/theme/context";
-import { makeGlobalStyles } from "@/app/theme/styles";
-import { colors, strToOption, Theme, ThemeOptions } from "@/app/theme/theme";
-import { useEffect, useState } from "react";
-import { get, store } from "@/utils/store";
+import { ThemeContext } from "@/lib/theme/context";
+import { makeGlobalStyles } from "@/lib/theme/styles";
+import { colors, strToOption, Theme, ThemeOptions } from "@/lib/theme/theme";
+import { useEffect, useMemo, useState } from "react";
+import { get } from "@/utils/store";
 
 export default function BaseTheme({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>(colors.light);
@@ -19,11 +19,9 @@ export default function BaseTheme({ children }: { children: React.ReactNode }) {
         });
     }, [COLOR_SCHEME]);
 
-    const gs = makeGlobalStyles(theme);
+    const gs = useMemo(() => makeGlobalStyles(theme), [theme]);
 
-    return (
-        <ThemeContext.Provider value={{ theme, gs, setTheme }}>
-            {children}
-        </ThemeContext.Provider>
-    );
+    const contextValue = useMemo(() => ({ theme, gs, setTheme }), [theme, gs]);
+
+    return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 }

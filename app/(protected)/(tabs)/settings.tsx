@@ -1,91 +1,132 @@
 import { BtnText, Button } from "@/components/button";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-
-import { useTheme } from "@/app/theme/context";
-import { Eye, Globe, Heart, MessageCircle, Sun, User } from "lucide-react-native";
+import { Image, Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/lib/theme/context";
+import { Eye, Globe, Heart, MessageCircle, User } from "lucide-react-native";
 import { Href, router } from "expo-router";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { I18n } from "i18n-js";
+import { colors } from "@/lib/theme/theme";
 
 export default function SettingsScreen() {
-    const { gs, theme } = useTheme();
+    const { theme, setTheme } = useTheme();
+    const isLight = theme.background === colors.light.background;
+
+    const i18n = new I18n();
+    const t = (key: string) => i18n.t(`settings.${key}`);
+
+    const { logout } = useAuth();
 
     const mutedText = withAlpha(theme.text, 0.55);
     const divider = withAlpha(theme.text, 0.15);
     const iconColor = withAlpha(theme.text, 0.9);
 
+    const handleLogout = async () => {
+        await logout();
+        router.replace("/login");
+    };
+
     return (
-        <View style={gs.container}>
-            <Text style={[styles.title, { marginTop: 20, color: theme.text }]}>
-                Settings
-            </Text>
-
-            <View style={styles.profileWrap}>
-                <Image
-                    source={{
-                        uri: "https://images.unsplash.com/photo-1517849845537-4d257902454a",
-                    }}
-                    style={styles.avatar}
-                />
-                <Text style={[styles.name, { color: theme.text }]}>Lara Gut</Text>
-                <Text style={[styles.email, { color: mutedText }]}>
-                    Lara.gut@example.com
+        <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+            <View style={styles.container}>
+                <Text style={[styles.title, { marginTop: 20, color: theme.text }]}>
+                    {t("title")}
                 </Text>
-            </View>
 
-            <View style={styles.list}>
-                <MenuRow
-                    icon={User}
-                    label="Personal Details"
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />s
-                <MenuRow
-                    icon={Heart}
-                    label="Interests"
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Globe}
-                    label="Terms and Conditions"
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={MessageCircle}
-                    label="Privacy & Policy"
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Eye}
-                    label="About us"
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Sun}
-                    label="Apperance"
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-            </View>
+                <View style={styles.profileWrap}>
+                    <Image
+                        source={{
+                            uri: "https://images.unsplash.com/photo-1517849845537-4d257902454a",
+                        }}
+                        style={styles.avatar}
+                    />
+                    <Text style={[styles.name, { color: theme.text }]}>Lara Gut</Text>
+                    <Text style={[styles.email, { color: mutedText }]}>
+                        Lara.gut@example.com
+                    </Text>
+                </View>
 
-            <Button style={{ marginTop: "auto" }} onPress={() => {}}>
-                <BtnText>Log Out</BtnText>
-            </Button>
-        </View>
+                <View style={styles.list}>
+                    <MenuRow
+                        icon={User}
+                        label={t("personalDetails")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                        href="/settings/apperance"
+                    />
+                    <MenuRow
+                        icon={Heart}
+                        label={t("interests")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                        href="/settings/apperance"
+                    />
+                    <MenuRow
+                        icon={Globe}
+                        label={t("termsAndConditions")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                        href="/settings/apperance"
+                    />
+                    <MenuRow
+                        icon={MessageCircle}
+                        label={t("privacyPolicy")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                        href="/settings/apperance"
+                    />
+                    <MenuRow
+                        icon={Eye}
+                        label={t("aboutUs")}
+                        divider={divider}
+                        iconColor={iconColor}
+                        textColor={theme.text}
+                        href="/settings/apperance"
+                    />
+                </View>
+
+                <View style={styles.modeRow}>
+                    <Pressable
+                        style={styles.modeItem}
+                        onPress={() => setTheme(colors.light)}
+                    >
+                        <Ionicons
+                            name="sunny-outline"
+                            size={20}
+                            color={isLight ? theme.primary : mutedText}
+                        />
+                        <Text style={{ color: isLight ? theme.primary : mutedText }}>
+                            {t("lightmode")}
+                        </Text>
+                    </Pressable>
+
+                    <Pressable
+                        style={styles.modeItem}
+                        onPress={() => setTheme(colors.dark)}
+                    >
+                        <Ionicons
+                            name="moon-outline"
+                            size={20}
+                            color={!isLight ? theme.primary : mutedText}
+                        />
+                        <Text style={{ color: !isLight ? theme.primary : mutedText }}>
+                            {t("darkmode")}
+                        </Text>
+                    </Pressable>
+                </View>
+
+                <Button
+                    style={{ marginTop: "auto", marginBottom: 30 }}
+                    onPress={handleLogout}
+                >
+                    <BtnText>{t("logOut")}</BtnText>
+                </Button>
+            </View>
+        </SafeAreaView>
     );
 }
 
@@ -136,6 +177,10 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16,
     },
+    safe: {
+        flex: 1,
+    },
+
     title: {
         fontSize: 26,
         fontWeight: "800",
@@ -191,7 +236,7 @@ const styles = StyleSheet.create({
     modeRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginTop: 8,
+        marginTop: 16,
     },
 
     modeItem: {

@@ -1,96 +1,113 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
-import { router } from "expo-router";
-import { useSearchParams } from "expo-router/build/hooks";
+import { router, useLocalSearchParams } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
-import { useEffect } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { createT } from "@/i18n";
+
+const t = createT("auth.register.verifyEmail");
 
 export default function SendVerificationEmail() {
     const { gs, theme } = useTheme();
-
-    useEffect(() => {
-        router.prefetch("/register/password");
-    }, []);
-
-    const searchParams = useSearchParams();
-    const email = searchParams.get("email") || "error";
+    const { email } = useLocalSearchParams<{ email: string }>();
 
     return (
-        <>
-            <BackWrapper>
-                <View
-                    style={{
-                        flex: 1,
-                        flexDirection: "column",
-                        width: "100%",
-                        height: "100%",
-                    }}
+        <BackWrapper>
+            <View
+                style={{
+                    flex: 1,
+                    flexDirection: "column",
+                    width: "100%",
+                    height: "100%",
+                }}
+            >
+                <Text style={[gs.h1, { marginTop: 35, textAlign: "center" }]}>
+                    {t("title")}
+                </Text>
+
+                <LucideMailbox
+                    size={100}
+                    color={theme.primary}
+                    style={{ marginTop: 45, alignSelf: "center" }}
+                />
+
+                <Text
+                    style={[
+                        gs.bodyText,
+                        {
+                            marginTop: 30,
+                            color: theme.base + "54",
+                            textAlign: "center",
+                        },
+                    ]}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>Confirm Email</Text>
+                    {t("sent")}
+                </Text>
 
-                    <LucideMailbox
-                        size={100}
-                        color={theme.primary}
-                        style={{ marginTop: 45, alignSelf: "center" }}
-                    />
+                <Text
+                    style={[
+                        gs.bodyText,
+                        {
+                            marginTop: 20,
+                            color: theme.base + "54",
+                            textAlign: "center",
+                            lineHeight: 22,
+                        },
+                    ]}
+                >
+                    {t("verify")}
+                </Text>
 
-                    <Text
-                        style={[
-                            gs.bodyText,
-                            {
-                                marginTop: 30,
-                                color: theme.base + "54",
-                                textAlign: "center",
-                            },
-                        ]}
-                    >
-                        We{"'"}ve sent you a confirmation email
-                    </Text>
-                    <Text
-                        style={[
-                            gs.bodyText,
-                            {
-                                marginTop: 30,
-                                color: theme.base + "54",
-                                textAlign: "center",
-                            },
-                        ]}
-                    >
-                        To log in to your account verify your email:{" "}
-                        <Text style={{ fontWeight: "bold", color: theme.primary }}>
-                            {email}
-                        </Text>
-                    </Text>
+                <Text
+                    style={[
+                        gs.bodyText,
+                        {
+                            marginTop: 12,
+                            color: theme.primary,
+                            textAlign: "center",
+                            fontWeight: "700",
+                        },
+                    ]}
+                >
+                    {email}
+                </Text>
 
-                    <Text
-                        style={[
-                            gs.bodyText,
-                            {
-                                marginTop: 30,
-                                color: theme.base + "54",
-                                textAlign: "center",
-                            },
-                        ]}
-                    >
-                        Didn{"'"}t receive the email? Check your spam folder or{" "}
-                        <Text
-                            style={{ fontWeight: "bold", color: theme.primary }}
-                            onPress={() => alert("Resend")}
-                        >
-                            Click here to resend.
-                        </Text>
-                    </Text>
+                <Text
+                    style={[
+                        gs.bodyText,
+                        {
+                            marginTop: 24,
+                            color: theme.base + "54",
+                            textAlign: "center",
+                            lineHeight: 22,
+                        },
+                    ]}
+                >
+                    {t("after")}
+                </Text>
 
-                    <Button
-                        style={{ marginTop: "auto", marginBottom: 0 }}
-                        onPress={() => router.push("/register/password")}
-                    >
-                        <BtnText>Continue</BtnText>
-                    </Button>
-                </View>
-            </BackWrapper>
-        </>
+                <Text
+                    style={[
+                        gs.bodyText,
+                        {
+                            marginTop: 24,
+                            color: theme.base + "54",
+                            textAlign: "center",
+                            lineHeight: 22,
+                        },
+                    ]}
+                >
+                    {t("noEmail")}
+                </Text>
+                <Pressable onPress={() => alert("resend email")}>{t("resend")}</Pressable>
+                <Button
+                    style={{ marginTop: "auto", marginBottom: 12 }}
+                    onPress={() => router.replace("/login")}
+                >
+                    <BtnText>{t("continue")}</BtnText>
+                </Button>
+            </View>
+        </BackWrapper>
     );
 }

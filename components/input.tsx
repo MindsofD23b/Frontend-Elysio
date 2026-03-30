@@ -1,9 +1,7 @@
-import { useTheme } from "@/app/theme/context";
-import { StyleProp, TextInput, TextInputKeyPressEvent, TextStyle } from "react-native";
+import { useTheme } from "@/lib/theme/context";
+import { TextInput, TextInputProps } from "react-native";
 
-interface InputProps {
-    placeholder: string;
-    secureTextEntry?: boolean;
+interface InputProps extends TextInputProps {
     textContentType?:
         | "emailAddress"
         | "password"
@@ -20,19 +18,11 @@ interface InputProps {
         | "current-password"
         | "sms-otp"
         | "new-password";
-    onChangeText?: (text: string) => void;
-    passwordRules?: string;
-    value?: string;
-    style?: StyleProp<TextStyle>;
-    maxLength?: number;
-    textAlign?: "left" | "center" | "right";
-    onKeyPress?: (e: TextInputKeyPressEvent) => void | undefined;
     ref?: React.Ref<TextInput> | undefined;
-    readonly?: boolean;
 }
 
 export default function Input({
-    readonly,
+    editable,
     placeholder,
     secureTextEntry,
     textContentType,
@@ -50,7 +40,7 @@ export default function Input({
     const { theme } = useTheme();
     return (
         <TextInput
-            readOnly={readonly}
+            editable={editable}
             placeholder={placeholder}
             textContentType={textContentType}
             secureTextEntry={secureTextEntry}

@@ -6,18 +6,24 @@ import {
     Easing,
     Pressable,
     StyleSheet,
-    Text,
     View,
+    Text,
 } from "react-native";
-import { useTheme } from "@/app/theme/context";
-import { Theme } from "@/app/theme/theme";
+import { useTheme } from "@/lib/theme/context";
+import { Theme } from "@/lib/theme/theme";
+import { router } from "expo-router";
+import { canCall } from "@/lib/premium/canCall";
+import { CONSTANTS, PlanType } from "@/lib/constants";
 import { Heart } from "lucide-react-native";
+// TODO: Implement plan based constants
+const user = {
+    plan: PlanType.FREE,
+};
 
 const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
 const GAP = 28;
 const PAD = 16;
-
 const COL_W = (width - PAD * 2 - GAP) / 2;
 const images = [
     // left column
@@ -172,14 +178,22 @@ export default function Index() {
             driftL.stopAnimation();
             driftR.stopAnimation();
         };
-    }, []);
-    const [count, setCount] = useState(10);
-    const maxCount = 10;
+    });
+
+    const [count, setCount] = useState(0);
 
     const onStart = () => {
-        setCount((prev) => (prev > 0 ? prev - 1 : 0));
-        // router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
+        // TODO: Implement i18n here
+        if (!canCall(user.plan, count)) {
+            return user.plan === PlanType.FREE
+                ? alert("Upgrade to Paid plan!")
+                : alert("You have no more Calls to day");
+        }
+
+        setCount((prev) => prev + 1);
+        router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
     };
+
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;
     const spin3 = useRef(new Animated.Value(0)).current;
@@ -255,7 +269,7 @@ export default function Index() {
             spin2.stopAnimation();
             spin3.stopAnimation();
         };
-    }, []);
+    });
     //SPIN
     const r1 = spin.interpolate({
         inputRange: [0, 1],
@@ -283,6 +297,14 @@ export default function Index() {
                     drift={driftR}
                     colHeight={rightColHeight}
                 />
+            </View>
+
+            <View style={styles.bottomIndicator} pointerEvents="none">
+                <View style={styles.indicatorPill}>
+                    <Text style={styles.indicatorText}>
+                        {count}/{CONSTANTS.PLANS[user.plan].maxCalls}
+                    </Text>
+                </View>
             </View>
 
             <View style={styles.centerWrap} pointerEvents="box-none">
@@ -375,12 +397,20 @@ const makeStyles = (theme: Theme) =>
         bottomIndicator: {
             position: "absolute",
             bottom: 8,
-            left: "48%",
-            width: 6,
-            height: 18,
+            left: 0,
+            right: 0,
+            alignItems: "center",
+        },
+        indicatorPill: {
+            paddingHorizontal: 8,
+            paddingVertical: 4,
             borderRadius: 99,
-            backgroundColor: theme.primary,
-            opacity: 0.9,
+            backgroundColor: theme.base + "80",
+            elevation: 0.9,
+        },
+        indicatorText: {
+            color: theme.white,
+            fontWeight: "600",
         },
     });
 //inifinte loop cycle made with claude.ai

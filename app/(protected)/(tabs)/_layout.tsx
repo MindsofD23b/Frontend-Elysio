@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Heart, HomeIcon, MessageCircle, PieChart, Settings } from "lucide-react-native";
 import { Platform } from "react-native";
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 
 export default function TabLayout() {
     const { theme } = useTheme();

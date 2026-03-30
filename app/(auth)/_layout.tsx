@@ -1,10 +1,21 @@
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { ActivityIndicator, View } from "react-native";
 
-export default function AuthLayout() {
-    return (
-        <Stack>
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="register" options={{ headerShown: false }} />
-        </Stack>
-    );
+export default function RootLayout() {
+    const { isAuthenticated, isLoading } = useAuth();
+
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator />
+            </View>
+        );
+    }
+
+    if (isAuthenticated) {
+        return <Redirect href="/(protected)/(tabs)" />;
+    }
+
+    return <Stack screenOptions={{ headerShown: false }} />;
 }

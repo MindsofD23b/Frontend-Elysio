@@ -1,53 +1,53 @@
-import { useTheme } from "@/app/theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { Link, router } from "expo-router";
 import { HomeIcon } from "lucide-react-native";
 import { StyleSheet, Text, View, useColorScheme } from "react-native";
 import { Image } from "expo-image";
-import { Theme } from "@/app/theme/theme";
-import { useEffect } from "react";
+import { Theme } from "@/lib/theme/theme";
+import i18n from "@/i18n";
 
 export default function Login() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
+    const colorScheme = useColorScheme();
+    const t = (key: string) => i18n.t(`auth.login.${key}`);
 
-    useEffect(() => {
-        router.prefetch("/login/withEmail");
-        router.prefetch("/login/withPhoneNumber");
-        router.prefetch("/register");
-    }, []);
+    // useEffect(() => {
+    //     router.prefetch("/login/withEmail");
+    //     router.prefetch("/login/withPhoneNumber");
+    //     router.prefetch("/register");
+    // }, []);
 
     return (
         <View style={gs.container}>
             <HomeIcon size={48} color={theme.primary} />
             <Text style={[styles.Title, { marginBottom: 64, color: theme.primary }]}>
-                Elysio
+                {t("title")}
             </Text>
 
-            <Text style={[styles.Subtitle, { color: theme.text }]}>
-                Login to continue
-            </Text>
+            <Text style={[styles.Subtitle, { color: theme.text }]}>{t("subtitle")}</Text>
             <Text style={[gs.bodyText, { color: theme.accent, marginBottom: 32 }]}>
-                Welcome back! Please login to your account.
+                {t("body")}
             </Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
-                <Button onPress={() => router.push("/login/withEmail")}>
+                <Button onPress={() => router.push("/(auth)/login/withEmail")}>
                     <BtnText>Continue with Email</BtnText>
                 </Button>
                 <Button
                     variante="outline"
-                    onPress={() => router.push("/login/withPhoneNumber")}
+                    onPress={() => router.push("/(auth)/login/withPhoneNumber")}
                 >
-                    <BtnText>Continue with Phone Number</BtnText>
+                    <BtnText>{t("continueWithPhone")}</BtnText>
                 </Button>
             </View>
 
             <Link
-                href="/register"
+                href="/(auth)/register"
                 style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
             >
-                Don{"'"}t have an account?{" "}
-                <Text style={{ color: theme.primary }}>Register</Text>
+                {t("noAccount")}{" "}
+                <Text style={{ color: theme.primary }}>{t("register")}</Text>
             </Link>
 
             <View
@@ -68,7 +68,7 @@ export default function Login() {
                     }}
                 />
                 <Text style={{ fontSize: 12, textAlign: "center", color: theme.accent }}>
-                    Or Login with
+                    {t("orLoginWith")}
                 </Text>
                 <View
                     style={{
@@ -110,7 +110,7 @@ export default function Login() {
                     style={{ flex: 1, width: "100%", borderColor: theme.base + "4D" }}
                     onPress={() => alert("Login button pressed")}
                 >
-                    {useColorScheme() === "light" ? (
+                    {colorScheme === "light" ? (
                         <Image
                             source={require("@/assets/apple_dark.png")}
                             style={{ width: 20, height: 20, marginRight: 8 }}
@@ -134,25 +134,25 @@ export default function Login() {
             </View>
 
             <View>
-                <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
+                {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
                     By continuing, you agree to our{" "}
                     <Link
                         href={"/legal/termsOfService"}
                         style={{ color: theme.primary }}
                         onPress={() => alert("Terms of Service")}
                     >
-                        Terms of Service
-                    </Link>
-                    {" and "}
+                        {t("termsOfService")}
+                    </Link>{" "}
+                    {t("and")}{" "}
                     <Link
                         href={"/legal/privacyPolicy"}
                         style={{ color: theme.primary }}
                         onPress={() => alert("Privacy Policy")}
                     >
-                        Privacy Policy
+                        {t("privacyPolicy")}
                     </Link>
                     .
-                </Text>
+                </Text> */}
             </View>
         </View>
     );
