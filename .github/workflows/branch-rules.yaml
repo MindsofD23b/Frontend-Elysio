@@ -1,4 +1,4 @@
-name: branch-name-check
+name: name-check
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
     types: [opened, synchronize, reopened, edited]
 
 jobs:
-  branch-name-check:
+  name-check:
     runs-on: ubuntu-latest
 
     steps:
