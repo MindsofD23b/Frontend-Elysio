@@ -1,13 +1,12 @@
 // MADE WITH HELP FROM CLAUD AI
 import BackWrapper from "@/components/backwrapper";
-import { useTheme } from "../../theme/context";
+import { useTheme } from "@/lib/theme/context";
 import { Text, View } from "react-native";
 import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
-import OTPInputs from "@/components/OTP";
 
 type Step = "email" | "code" | "newPassword" | "success";
 
@@ -53,7 +52,7 @@ export default function ForgotPassword() {
             return;
         }
         if (newPassword !== confPassword) {
-            setError("Passwords don't match");
+            setError("Passwords dont match");
             return;
         }
         simulate(() => setStep("success"));
@@ -73,7 +72,7 @@ export default function ForgotPassword() {
                         >
                             Enter your{" "}
                             <Text style={{ fontWeight: "bold" }}>Email Address</Text> and
-                            we'll send you a reset code.
+                            we will send you a reset code.
                         </Text>
                         <View style={{ marginTop: 30 }}>
                             <Input
@@ -125,9 +124,12 @@ export default function ForgotPassword() {
                             </Text>
                         </Text>
                         <View style={{ marginTop: 30 }}>
-                            <OTPInputs
-                                onChange={(val) => setCode(val)}
-                                style={{ marginTop: 8 }}
+                            <Input
+                                placeholder="Enter code"
+                                keyboardType="phone-pad"
+                                onChangeText={setCode}
+                                value={code}
+                                autoComplete="sms-otp"
                             />
                             {error && (
                                 <Text

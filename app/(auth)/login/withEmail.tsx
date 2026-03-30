@@ -167,6 +167,17 @@ export default function WithEmail() {
                                 : "Something went wrong"}
                         </Text>
                     )}
+                    <Text
+                        onPress={() => router.push("/(auth)/login/forgetPassword")}
+                        style={{
+                            color: theme.primary,
+                            fontSize: 13,
+                            textAlign: "right",
+                            marginTop: 8,
+                        }}
+                    >
+                        Forgot Password?
+                    </Text>
                 </View>
 
                 <Button

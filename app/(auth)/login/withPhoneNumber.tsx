@@ -93,6 +93,17 @@ export default function WithPhoneNumber() {
                                 {errors.password.message}
                             </Text>
                         )}
+                        <Text
+                            onPress={() => router.push("/(auth)/login/forgetPassword")}
+                            style={{
+                                color: theme.primary,
+                                fontSize: 13,
+                                textAlign: "right",
+                                marginTop: 8,
+                            }}
+                        >
+                            Forgot Password?
+                        </Text>
                     </View>
                     <Button
                         style={{ marginTop: "auto", marginBottom: 0 }}
