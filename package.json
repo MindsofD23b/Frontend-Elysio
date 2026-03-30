@@ -68,11 +68,21 @@
         "@react-native-community/cli": "^20.1.2",
         "@types/react": "~19.2.14",
         "husky": "^9.1.7",
+        "lint-staged": "^16.4.0",
         "prettier": "^3.8.1",
         "typescript": "~5.9.2"
     },
     "private": true,
     "overrides": {
         "react-async-hook": "4.0.0"
+    },
+    "lint-staged": {
+        "*.{js,jsx,ts,tsx}": [
+            "expo lint --fix",
+            "prettier --write"
+        ],
+        "*.{json,md,css}": [
+            "prettier --write"
+        ]
     }
 }
