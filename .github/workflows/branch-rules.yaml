@@ -1,4 +1,4 @@
-name: Validate Branch Name
+name: branch-name-check
 
 on:
   push:
