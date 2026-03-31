@@ -6,39 +6,34 @@ import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
-import { useFetch } from "@/hooks";
+import { useFetch } from "@/hooks/useFetch";
 import { useRegisterStore } from "@/utils/registerStore";
+import { RegisterResponse, ProfileDataFormErrors } from "@/types/register";
+import { createT } from "@/i18n";
+import { CountryCode } from "libphonenumber-js";
+// import { getLocales } from "expo-localization";
 
-type RegisterResponse = {
-    message?: string;
-    error?: string;
-    statusCode?: number;
-};
-
-type FormErrors = {
-    firstName?: { message: string };
-    lastName?: { message: string };
-    phoneNumber?: { message: string };
-    dateOfBirth?: { message: string };
-    jobTitle?: { message: string };
-    aboutMe?: { message: string };
-    acceptedTerms?: { message: string };
-    acceptedPrivacyPolicy?: { message: string };
-    general?: { message: string };
-};
+const t = createT("auth.register.profileData");
 
 export default function AddProfileDataPage() {
     const { gs, theme } = useTheme();
     const styles = makeStyles();
     const { data, setPersonalDetails, reset } = useRegisterStore();
 
+    const [fullName, setFullName] = useState(data.firstName + " " + data.lastName || "");
     const [phonePrefix, setPhonePrefix] = useState(data.phonePrefix || "");
     const [phoneNumber, setPhoneNumber] = useState(data.phoneNumber || "");
-    const [firstName, setFirstName] = useState(data.firstName || "");
-    const [lastName, setLastName] = useState(data.lastName || "");
     const [dateOfBirth, setDateOfBirth] = useState(data.dateOfBirth || "");
     const [country, setCountry] = useState(data.country || "CH");
-    const [language, setLanguage] = useState(data.language || "de");
+    const [language, setLanguage] = useState(
+        data.language || getLocales()[0]?.languageCode || "en",
+    );
+    const fullLanguageName = new Intl.DisplayNames(
+        [getLocales()[0]?.languageTag ?? "en"],
+        {
+            type: "language",
+        },
+    ).of(language);
     const [jobTitle, setJobTitle] = useState(data.jobTitle || "");
     const [aboutMe, setAboutMe] = useState(data.aboutMe || "");
     const [acceptedTerms, setAcceptedTerms] = useState(data.acceptedTerms || false);
@@ -46,7 +41,7 @@ export default function AddProfileDataPage() {
         data.acceptedPrivacyPolicy || false,
     );
 
-    const [errors, setErrors] = useState<FormErrors>({});
+    const [errors, setErrors] = useState<ProfileDataFormErrors>({});
 
     const [, loading, fetchError, registerUser] = useFetch<RegisterResponse>(
         "/auth/register",
@@ -63,15 +58,13 @@ export default function AddProfileDataPage() {
     );
 
     function handleTelefonData(
-        // prefix: string,
+        cc: CountryCode,
+        prefix: string,
         tel: string,
-        internationalTel: string,
         nationalTel: string | undefined,
     ) {
-        const normalizedPrefix =
-            internationalTel && tel ? internationalTel.replace(tel, "").trim() : "";
-
-        setPhonePrefix(normalizedPrefix);
+        setPhonePrefix(prefix);
+        setCountry(cc);
         setPhoneNumber((nationalTel || tel || "").replace(/\s+/g, ""));
 
         if (errors.phoneNumber) {
@@ -106,43 +99,39 @@ export default function AddProfileDataPage() {
     };
 
     const validate = () => {
-        const nextErrors: FormErrors = {};
+        const nextErrors: ProfileDataFormErrors = {};
 
-        if (!firstName.trim()) {
-            nextErrors.firstName = { message: "First name is required" };
-        }
-
-        if (!lastName.trim()) {
-            nextErrors.lastName = { message: "Last name is required" };
+        if (!fullName.trim()) {
+            nextErrors.fullName = { message: t("errors.fullnameReq") };
         }
 
         if (!phoneNumber.trim()) {
-            nextErrors.phoneNumber = { message: "Phone number is required" };
+            nextErrors.phoneNumber = { message: t("errors.phonenumberReq") };
         }
 
         if (!validateDate(dateOfBirth)) {
             nextErrors.dateOfBirth = {
-                message: "Please enter a valid date in YYYY-MM-DD format",
+                message: t("errors.validDate"),
             };
         }
 
         if (!jobTitle.trim()) {
-            nextErrors.jobTitle = { message: "Job title is required" };
+            nextErrors.jobTitle = { message: t("errors.jobtitleReq") };
         }
 
         if (!aboutMe.trim()) {
-            nextErrors.aboutMe = { message: "About me is required" };
+            nextErrors.aboutMe = { message: t("errors.aboutmeReq") };
         }
 
         if (!acceptedTerms) {
             nextErrors.acceptedTerms = {
-                message: "You must accept the terms",
+                message: t("errors.termsReq"),
             };
         }
 
         if (!acceptedPrivacyPolicy) {
             nextErrors.acceptedPrivacyPolicy = {
-                message: "You must accept the privacy policy",
+                message: t("errors.privReq"),
             };
         }
 
@@ -161,8 +150,8 @@ export default function AddProfileDataPage() {
         const personalPayload = {
             phonePrefix: phonePrefix.trim(),
             phoneNumber: phoneNumber.trim(),
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
+            firstName: fullName.split(" ")[0].trim(),
+            lastName: fullName.split(" ")[1].trim(),
             dateOfBirth: dateOfBirth.trim(),
             country: country.trim().toUpperCase(),
             language: language.trim().toLowerCase(),
@@ -200,7 +189,7 @@ export default function AddProfileDataPage() {
             if (response?.statusCode && response.statusCode >= 400) {
                 setErrors({
                     general: {
-                        message: response.message || "Registration failed",
+                        message: response.message || t("fallback.regFailed"),
                     },
                 });
                 return;
@@ -216,7 +205,7 @@ export default function AddProfileDataPage() {
         } catch (err) {
             setErrors({
                 general: {
-                    message: err instanceof Error ? err.message : "Registration failed",
+                    message: err instanceof Error ? err.message : t("fallback.regFailed"),
                 },
             });
         }
@@ -230,10 +219,10 @@ export default function AddProfileDataPage() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-                <Text style={[gs.h1, { marginTop: 35 }]}>Finish your Profile</Text>
+                <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
 
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
-                    Complete your profile details to create your account
+                    {t("body")}
                 </Text>
 
                 <View style={styles.form}>
@@ -243,28 +232,11 @@ export default function AddProfileDataPage() {
                     )}
 
                     <Input
-                        placeholder="First name"
-                        value={firstName}
+                        placeholder={t("fullName")}
+                        value={fullName}
                         onChangeText={(val) => {
-                            setFirstName(val);
-                            if (errors.firstName) {
-                                setErrors((prev) => ({
-                                    ...prev,
-                                    firstName: undefined,
-                                }));
-                            }
-                        }}
-                    />
-                    {errors.firstName && (
-                        <Text style={styles.errorText}>{errors.firstName.message}</Text>
-                    )}
-
-                    <Input
-                        placeholder="Last name"
-                        value={lastName}
-                        onChangeText={(val) => {
-                            setLastName(val);
-                            if (errors.lastName) {
+                            setFullName(val);
+                            if (errors.fullName) {
                                 setErrors((prev) => ({
                                     ...prev,
                                     lastName: undefined,
@@ -272,12 +244,12 @@ export default function AddProfileDataPage() {
                             }
                         }}
                     />
-                    {errors.lastName && (
-                        <Text style={styles.errorText}>{errors.lastName.message}</Text>
+                    {errors.fullName && (
+                        <Text style={styles.errorText}>{errors.fullName.message}</Text>
                     )}
 
                     <Input
-                        placeholder="Date of birth (YYYY-MM-DD)"
+                        placeholder={t("dateOfBirth")}
                         value={dateOfBirth}
                         onChangeText={(val) => {
                             setDateOfBirth(formatDateInput(val));
@@ -298,7 +270,7 @@ export default function AddProfileDataPage() {
                     )}
 
                     <Input
-                        placeholder="Job title"
+                        placeholder={t("jobTitle")}
                         value={jobTitle}
                         onChangeText={(val) => {
                             setJobTitle(val);
@@ -315,7 +287,7 @@ export default function AddProfileDataPage() {
                     )}
 
                     <Input
-                        placeholder="About me"
+                        placeholder={t("aboutMe")}
                         value={aboutMe}
                         onChangeText={(val) => {
                             setAboutMe(val);
@@ -332,7 +304,7 @@ export default function AddProfileDataPage() {
                     )}
 
                     <Input
-                        placeholder="Country code, e.g. CH"
+                        placeholder={t("countryCode")}
                         value={country}
                         onChangeText={setCountry}
                         autoCapitalize="characters"
@@ -340,8 +312,8 @@ export default function AddProfileDataPage() {
                     />
 
                     <Input
-                        placeholder="Language code, e.g. de"
-                        value={language}
+                        placeholder={t("language")}
+                        value={fullLanguageName ?? language}
                         onChangeText={setLanguage}
                         autoCapitalize="none"
                         autoCorrect={false}
@@ -370,9 +342,7 @@ export default function AddProfileDataPage() {
                                 },
                             ]}
                         />
-                        <Text style={{ color: theme.text }}>
-                            I accept the Terms of Service
-                        </Text>
+                        <Text style={{ color: theme.text }}>{t("termsOfService")}</Text>
                     </Pressable>
                     {errors.acceptedTerms && (
                         <Text style={styles.errorText}>
@@ -403,9 +373,7 @@ export default function AddProfileDataPage() {
                                 },
                             ]}
                         />
-                        <Text style={{ color: theme.text }}>
-                            I accept the Privacy Policy
-                        </Text>
+                        <Text style={{ color: theme.text }}>{t("privacyPolicy")}</Text>
                     </Pressable>
                     {errors.acceptedPrivacyPolicy && (
                         <Text style={styles.errorText}>
@@ -421,13 +389,13 @@ export default function AddProfileDataPage() {
                         <Text style={styles.errorText}>
                             {fetchError instanceof Error
                                 ? fetchError.message
-                                : "Something went wrong"}
+                                : t("fallback.errors.wentWrong")}
                         </Text>
                     )}
                 </View>
 
                 <Button onPress={onSubmit} style={styles.submitButton} disabled={loading}>
-                    {loading ? <Loader /> : <BtnText>Create account</BtnText>}
+                    {loading ? <Loader /> : <BtnText>{t("continue")}</BtnText>}
                 </Button>
             </ScrollView>
         </BackWrapper>

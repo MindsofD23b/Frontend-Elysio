@@ -5,7 +5,7 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
-import { useFetch } from "@/hooks";
+import { useFetch } from "@/hooks/useFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 type FormData = {

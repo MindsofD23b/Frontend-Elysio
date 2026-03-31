@@ -6,18 +6,14 @@ import { HomeIcon } from "lucide-react-native";
 import { StyleSheet, Text, useColorScheme, View } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
-import i18n from "@/i18n";
+import { createT } from "@/i18n";
+
+const t = createT("auth.register");
 
 export default function Register() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();
-    const t = (key: string) => i18n.t(`auth.register.${key}`);
-
-    // useEffect(() => {
-    //     router.prefetch("/(auth)/register/withEmail");
-    //     router.prefetch("/(auth)/login");
-    // }, []);
 
     return (
         <View style={gs.container}>
@@ -65,7 +61,7 @@ export default function Register() {
                     }}
                 />
                 <Text style={{ fontSize: 12, textAlign: "center", color: theme.accent }}>
-                    Or Login with
+                    {t("orLoginWith")}
                 </Text>
                 <View
                     style={{

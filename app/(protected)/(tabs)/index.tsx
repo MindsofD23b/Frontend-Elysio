@@ -13,8 +13,8 @@ import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { router } from "expo-router";
 import { canCall } from "@/lib/premium/canCall";
-import { PlanType } from "@/lib/constants";
-import i18n from "@/i18n";
+import { CONSTANTS, PlanType } from "@/lib/constants";
+import { Heart } from "lucide-react-native";
 // TODO: Implement plan based constants
 const user = {
     plan: PlanType.FREE,
@@ -24,7 +24,6 @@ const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
 const GAP = 28;
 const PAD = 16;
-const t = (key: string) => i18n.t(`home.${key}`);
 const COL_W = (width - PAD * 2 - GAP) / 2;
 const images = [
     // left column
@@ -300,6 +299,14 @@ export default function Index() {
                 />
             </View>
 
+            <View style={styles.bottomIndicator} pointerEvents="none">
+                <View style={styles.indicatorPill}>
+                    <Text style={styles.indicatorText}>
+                        {count}/{CONSTANTS.PLANS[user.plan].maxCalls}
+                    </Text>
+                </View>
+            </View>
+
             <View style={styles.centerWrap} pointerEvents="box-none">
                 {/* Rings */}
                 <Animated.View
@@ -314,12 +321,9 @@ export default function Index() {
 
                 {/* Button */}
                 <Pressable onPress={onStart} style={styles.startBtn}>
-                    <Text style={[gs.btnTextDefault, { fontSize: 22 }]}>
-                        {t("start")}
-                    </Text>
-                    <Text style={[gs.btnTextDefault, { fontSize: 28, marginTop: 4 }]}>
-                        {count}
-                    </Text>
+                    <Animated.View style={{ transform: [{ scale: zoom }] }}>
+                        <Heart size={50} color={theme.white} />
+                    </Animated.View>
                 </Pressable>
             </View>
         </View>
@@ -393,12 +397,20 @@ const makeStyles = (theme: Theme) =>
         bottomIndicator: {
             position: "absolute",
             bottom: 8,
-            left: "48%",
-            width: 6,
-            height: 18,
+            left: 0,
+            right: 0,
+            alignItems: "center",
+        },
+        indicatorPill: {
+            paddingHorizontal: 8,
+            paddingVertical: 4,
             borderRadius: 99,
-            backgroundColor: theme.primary,
-            opacity: 0.9,
+            backgroundColor: theme.base + "80",
+            elevation: 0.9,
+        },
+        indicatorText: {
+            color: theme.white,
+            fontWeight: "600",
         },
     });
 //inifinte loop cycle made with claude.ai
