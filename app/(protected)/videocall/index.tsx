@@ -569,13 +569,26 @@ export default function VideoCall() {
     }
 
     useEffect(() => {
-        // ...
+        const init = async () => {
+            try {
+                await connectMatchmakingGateway();
+            } catch (error) {
+                console.error("VideoCall init error", error);
+            }
+        };
+
+        init().catch((error) => {
+            console.error("init error", error);
+        });
+
         return () => {
-            // ...
+            matchmakingSocketRef.current?.disconnect();
+            matchmakingSocketRef.current = null;
+
             deactivateMatchmaking().catch(() => undefined);
             stopCall().catch(() => undefined);
         };
-    }, [connectMatchmakingGateway, stopCall]); // no change needed here
+    }, [connectMatchmakingGateway, stopCall]);
 
     useEffect(() => {
         if (!matchmakingReady) return;
