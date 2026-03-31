@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
 import * as mediasoupClient from "mediasoup-client";
 import { io, Socket } from "socket.io-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
     Ionicons,
     MaterialCommunityIcons,
@@ -41,6 +42,13 @@ export default function VideoCall() {
     const consumersRef = useRef<Map<string, any>>(new Map());
     const remoteVideoStreamRef = useRef<any>(null);
 
+    const [matchmakingReady, setMatchmakingReady] = useState(false);
+    const [matchState, setMatchState] = useState<"idle" | "waiting" | "matched">("idle");
+    const [matchedUserId, setMatchedUserId] = useState<string | null>(null);
+    const [gatewayRoomId, setGatewayRoomId] = useState<string | null>(null);
+
+    const matchmakingSocketRef = useRef<Socket | null>(null);
+
     async function api(path: string, options?: RequestInit) {
         const url = `${BASE_URL}${path}`;
         console.log("API REQUEST:", url, options?.method ?? "GET");
@@ -60,6 +68,60 @@ export default function VideoCall() {
             console.log("API FETCH FAILED:", url, error);
             throw error;
         }
+    }
+
+    async function connectMatchmakingGateway() {
+        const token = await AsyncStorage.getItem("token");
+
+        if (!token) {
+            console.log("No JWT token found for matchmaking socket");
+            return;
+        }
+
+        if (matchmakingSocketRef.current?.connected) {
+            return;
+        }
+
+        const socket = io(BASE_URL, {
+            auth: {
+                token,
+            },
+            transports: ["websocket"],
+            forceNew: true,
+        });
+
+        matchmakingSocketRef.current = socket;
+
+        socket.on("connect", () => {
+            console.log("Matchmaking socket connected");
+        });
+
+        socket.on("disconnect", (reason) => {
+            console.log("Matchmaking socket disconnected:", reason);
+            setMatchmakingReady(false);
+        });
+
+        socket.on("socket_ready", (payload) => {
+            console.log("socket_ready", payload);
+            setMatchmakingReady(true);
+        });
+
+        socket.on("queue_waiting", (payload) => {
+            console.log("queue_waiting", payload);
+            setMatchState("waiting");
+        });
+
+        socket.on("match_found", (payload: { matchedUserId: string; roomId: string }) => {
+            console.log("match_found", payload);
+            setMatchState("matched");
+            setMatchedUserId(payload.matchedUserId);
+            setGatewayRoomId(payload.roomId);
+        });
+
+        socket.on("room_ready", (payload: { roomId: string }) => {
+            console.log("room_ready", payload);
+            setGatewayRoomId(payload.roomId);
+        });
     }
 
     async function consumeProducer(producerId: string) {
@@ -302,6 +364,12 @@ export default function VideoCall() {
     }
 
     async function stopCall() {
+        matchmakingSocketRef.current?.disconnect();
+        matchmakingSocketRef.current = null;
+        setMatchmakingReady(false);
+        setMatchState("idle");
+        setMatchedUserId(null);
+        setGatewayRoomId(null);
         startingRef.current = false;
         socketRef.current?.disconnect();
         socketRef.current = null;
@@ -382,7 +450,14 @@ export default function VideoCall() {
     }
 
     useEffect(() => {
+        connectMatchmakingGateway().catch((error) => {
+            console.error("connectMatchmakingGateway error", error);
+        });
+
         return () => {
+            matchmakingSocketRef.current?.disconnect();
+            matchmakingSocketRef.current = null;
+
             stopCall().catch(() => undefined);
         };
     }, []);
@@ -390,6 +465,22 @@ export default function VideoCall() {
     if (!started) {
         return (
             <SafeAreaView style={styles.startContainer}>
+                <Text style={styles.gatewayStatus}>
+                    Matchmaking socket: {matchmakingReady ? "connected" : "disconnected"}
+                </Text>
+                <Text style={styles.gatewayStatus}>Match state: {matchState}</Text>
+
+                {matchedUserId && (
+                    <Text style={styles.gatewayStatus}>
+                        Matched user: {matchedUserId}
+                    </Text>
+                )}
+
+                {gatewayRoomId && (
+                    <Text style={styles.gatewayStatus}>
+                        Gateway room: {gatewayRoomId}
+                    </Text>
+                )}
                 <Text style={styles.startTitle}>Ready for call</Text>
                 <Pressable style={styles.startButton} onPress={startCall}>
                     <Text style={styles.startButtonText}>Start video call</Text>
@@ -638,5 +729,10 @@ const styles = StyleSheet.create({
         color: "#111",
         fontSize: 16,
         fontWeight: "700",
+    },
+    gatewayStatus: {
+        color: "#cfcfcf",
+        fontSize: 14,
+        marginBottom: 6,
     },
 });
