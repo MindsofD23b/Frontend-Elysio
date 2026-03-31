@@ -17,12 +17,12 @@ registerGlobals();
 // made with chatgpt
 
 const BASE_URL = "https://elysio.jamiepoeffel.ch";
-const ROOM_ID = "test-room-fresh-2";
 
 export default function VideoCall() {
     const [started, setStarted] = useState(false);
     const [localUrl, setLocalUrl] = useState<string | null>(null);
     const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+    const [ROOM_ID, setROOM_ID] = useState<string | null>(null);
 
     const [isMuted, setIsMuted] = useState(false);
     const [isSpeakerOn, setIsSpeakerOn] = useState(true);
@@ -116,6 +116,7 @@ export default function VideoCall() {
             setMatchState("matched");
             setMatchedUserId(payload.matchedUserId);
             setGatewayRoomId(payload.roomId);
+            setROOM_ID(payload.roomId);
         });
 
         socket.on("room_ready", (payload: { roomId: string }) => {
