@@ -26,6 +26,23 @@ export default function PremiumScreen() {
 
     const plans: Plan[] = [
         {
+            title: "Free",
+            priceMain: "CHF 0",
+            per: "/month",
+            badge: "Current",
+            badgeBg: "#E67FC9",
+            accent: "#E67FC9",
+            filledButton: true,
+            buttonText: "Current Plan",
+            features: [
+                "Limited queues",
+                "Normal analytics",
+                "Less Dating Tips",
+                "3 Streak on Ice",
+            ],
+        },
+
+        {
             title: "Essential",
             priceMain: "CHF 9.95",
             per: "/month",
@@ -38,6 +55,7 @@ export default function PremiumScreen() {
                 "Unlimited queues",
                 "Access to improved analytics",
                 "Enable availability",
+                "5 Streak on Ice",
             ],
         },
         {
@@ -61,173 +79,165 @@ export default function PremiumScreen() {
     ];
 
     return (
-        <>
-            <Stack.Screen options={{ headerShown: false }} />
+        <BackWrapper>
+            <View style={styles.page}>
+                <Text style={styles.screenTitle}>Premium</Text>
 
-            <BackWrapper>
-                <View style={styles.page}>
-                    <Text style={styles.screenTitle}>Premium</Text>
+                <Text style={styles.subtitle}>
+                    Unlock exclusive features and benefits with Premium. Enjoy unlimited
+                    single queues, and many more features.
+                </Text>
 
-                    <Text style={styles.subtitle}>
-                        Unlock exclusive features and benefits with Premium. Enjoy
-                        unlimited single queues, and many more features.
-                    </Text>
+                <View style={styles.cardsWrap}>
+                    {plans.map((plan) => (
+                        <View
+                            key={plan.title}
+                            style={[
+                                styles.card,
+                                {
+                                    backgroundColor: "#131313",
+                                    shadowColor: plan.accent,
+                                },
+                            ]}
+                        >
+                            <View style={styles.cardTopRow}>
+                                <Text style={styles.planTitle}>{plan.title}</Text>
 
-                    <View style={styles.cardsWrap}>
-                        {plans.map((plan) => (
-                            <View
-                                key={plan.title}
-                                style={[
-                                    styles.card,
-                                    {
-                                        backgroundColor: "#131313",
-                                        shadowColor: plan.accent,
-                                    },
-                                ]}
-                            >
-                                <View style={styles.cardTopRow}>
-                                    <Text style={styles.planTitle}>{plan.title}</Text>
-
-                                    <View
-                                        style={[
-                                            styles.badge,
-                                            { backgroundColor: plan.badgeBg },
-                                        ]}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.badgeText,
-                                                {
-                                                    color:
-                                                        plan.title === "Premium"
-                                                            ? "#A9ABFF"
-                                                            : "#FFFFFF",
-                                                },
-                                            ]}
-                                        >
-                                            {plan.badge}
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.priceRow}>
-                                    <Text
-                                        style={[styles.priceMain, { color: plan.accent }]}
-                                    >
-                                        {plan.priceMain}
-                                    </Text>
-
-                                    {plan.priceDecimals ? (
-                                        <Text
-                                            style={[
-                                                styles.priceDecimals,
-                                                { color: plan.accent },
-                                            ]}
-                                        >
-                                            {plan.priceDecimals}
-                                        </Text>
-                                    ) : null}
-
-                                    {plan.oldPrice ? (
-                                        <View style={styles.oldPriceWrap}>
-                                            <Text
-                                                style={[
-                                                    styles.oldPrice,
-                                                    { color: plan.accent },
-                                                ]}
-                                            >
-                                                {plan.oldPrice}
-                                            </Text>
-                                            <View style={styles.strikeLine} />
-                                        </View>
-                                    ) : null}
-
-                                    <Text style={styles.perText}>{plan.per}</Text>
-                                </View>
-
-                                <Pressable
+                                <View
                                     style={[
-                                        styles.cta,
-                                        plan.filledButton
-                                            ? {
-                                                  backgroundColor: plan.accent,
-                                                  borderColor: plan.accent,
-                                              }
-                                            : {
-                                                  backgroundColor: "transparent",
-                                                  borderColor: plan.accent,
-                                              },
+                                        styles.badge,
+                                        { backgroundColor: plan.badgeBg },
                                     ]}
-                                    onPress={() => {}}
                                 >
                                     <Text
                                         style={[
-                                            styles.ctaText,
+                                            styles.badgeText,
                                             {
-                                                color: plan.filledButton
-                                                    ? "#FFFFFF"
-                                                    : plan.accent,
+                                                color:
+                                                    plan.title === "Premium"
+                                                        ? "#A9ABFF"
+                                                        : "#FFFFFF",
                                             },
                                         ]}
                                     >
-                                        {plan.buttonText}
+                                        {plan.badge}
                                     </Text>
-                                </Pressable>
-
-                                <View style={styles.featuresWrap}>
-                                    {plan.features.map((feature) => (
-                                        <View key={feature} style={styles.featureRow}>
-                                            <View
-                                                style={[
-                                                    styles.checkCircle,
-                                                    {
-                                                        backgroundColor: plan.accent,
-                                                        shadowColor: plan.accent,
-                                                    },
-                                                ]}
-                                            >
-                                                <Ionicons
-                                                    name="checkmark"
-                                                    size={13}
-                                                    color="#fff"
-                                                />
-                                            </View>
-
-                                            <Text style={styles.featureText}>
-                                                {feature}
-                                            </Text>
-                                        </View>
-                                    ))}
                                 </View>
                             </View>
-                        ))}
-                    </View>
 
-                    <Text style={styles.footerText}>
-                        By continuing, you agree to our{" "}
-                        <Text
-                            style={styles.linkPink}
-                            onPress={() =>
-                                Linking.openURL(
-                                    "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
-                                )
-                            }
-                        >
-                            Terms of Service
-                        </Text>{" "}
-                        and{" "}
-                        <Text
-                            style={styles.linkPink}
-                            onPress={() => Linking.openURL("DEINE_PRIVACY_URL")}
-                        >
-                            Privacy Policy
-                        </Text>
-                        . Subscription automatically renews unless auto-renew is turned
-                        off at least 24-hours before the end of the current period.
-                    </Text>
+                            <View style={styles.priceRow}>
+                                <Text style={[styles.priceMain, { color: plan.accent }]}>
+                                    {plan.priceMain}
+                                </Text>
+
+                                {plan.priceDecimals ? (
+                                    <Text
+                                        style={[
+                                            styles.priceDecimals,
+                                            { color: plan.accent },
+                                        ]}
+                                    >
+                                        {plan.priceDecimals}
+                                    </Text>
+                                ) : null}
+
+                                {plan.oldPrice ? (
+                                    <View style={styles.oldPriceWrap}>
+                                        <Text
+                                            style={[
+                                                styles.oldPrice,
+                                                { color: plan.accent },
+                                            ]}
+                                        >
+                                            {plan.oldPrice}
+                                        </Text>
+                                        <View style={styles.strikeLine} />
+                                    </View>
+                                ) : null}
+
+                                <Text style={styles.perText}>{plan.per}</Text>
+                            </View>
+
+                            <Pressable
+                                style={[
+                                    styles.cta,
+                                    plan.filledButton
+                                        ? {
+                                              backgroundColor: plan.accent,
+                                              borderColor: plan.accent,
+                                          }
+                                        : {
+                                              backgroundColor: "transparent",
+                                              borderColor: plan.accent,
+                                          },
+                                ]}
+                                onPress={() => {}}
+                            >
+                                <Text
+                                    style={[
+                                        styles.ctaText,
+                                        {
+                                            color: plan.filledButton
+                                                ? "#FFFFFF"
+                                                : plan.accent,
+                                        },
+                                    ]}
+                                >
+                                    {plan.buttonText}
+                                </Text>
+                            </Pressable>
+
+                            <View style={styles.featuresWrap}>
+                                {plan.features.map((feature) => (
+                                    <View key={feature} style={styles.featureRow}>
+                                        <View
+                                            style={[
+                                                styles.checkCircle,
+                                                {
+                                                    backgroundColor: plan.accent,
+                                                    shadowColor: plan.accent,
+                                                },
+                                            ]}
+                                        >
+                                            <Ionicons
+                                                name="checkmark"
+                                                size={13}
+                                                color="#fff"
+                                            />
+                                        </View>
+
+                                        <Text style={styles.featureText}>{feature}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    ))}
                 </View>
-            </BackWrapper>
-        </>
+
+                <Text style={styles.footerText}>
+                    By continuing, you agree to our{" "}
+                    <Text
+                        style={styles.linkPink}
+                        onPress={() =>
+                            Linking.openURL(
+                                "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
+                            )
+                        }
+                    >
+                        Terms of Service
+                    </Text>{" "}
+                    and{" "}
+                    <Text
+                        style={styles.linkPink}
+                        onPress={() => Linking.openURL("DEINE_PRIVACY_URL")}
+                    >
+                        Privacy Policy
+                    </Text>
+                    . Subscription automatically renews unless auto-renew is turned off at
+                    least 24-hours before the end of the current period.
+                </Text>
+            </View>
+        </BackWrapper>
     );
 }
 

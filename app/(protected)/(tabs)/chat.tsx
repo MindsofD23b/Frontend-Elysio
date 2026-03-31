@@ -35,7 +35,7 @@ export default function ChatScreen() {
         {
             id: "3",
             user: "Peter Parker",
-            text: "Sleep well 😴",
+            text: "Sleep well ",
             createdDate: "2025-09-02T23:30:00",
             avatar: "https://i.pravatar.cc/200?img=18",
         },

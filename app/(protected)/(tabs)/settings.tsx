@@ -160,7 +160,6 @@ const styles = StyleSheet.create({
     },
 
     title: {
-        paddingTop: 20,
         fontSize: 26,
         fontWeight: "800",
         textAlign: "center",

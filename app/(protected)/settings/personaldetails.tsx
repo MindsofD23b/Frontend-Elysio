@@ -1,11 +1,13 @@
+//Made with the help of ChatGPT.
+
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/app/theme/context";
 import { BtnText, Button } from "@/components/button";
-import Input from "@/components/input";
-import { router, Stack } from "expo-router";
+import Field from "@/components/field";
+import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Theme } from "@/app/theme/theme";
 
@@ -39,12 +41,11 @@ export default function PersonalDetails() {
             `${numbersOnly.slice(0, 2)}.${numbersOnly.slice(2, 4)}.${numbersOnly.slice(4, 8)}`,
         );
     }
+
     async function changePicture() {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-        if (!permission.granted) {
-            return;
-        }
+        if (!permission.granted) return;
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ["images"],
@@ -59,108 +60,72 @@ export default function PersonalDetails() {
     }
 
     return (
-        <>
-            <Stack.Screen options={{ headerShown: false }} />
+        <BackWrapper>
+            <Text style={[gs.h1, styles.title]}>Edit Profile</Text>
 
-            <BackWrapper>
-                <Text style={[gs.h1, styles.title]}>Edit Profile</Text>
-
-                <View style={styles.profileWrap}>
-                    <View>
-                        <Image source={{ uri: profileImage }} style={styles.avatar} />
-                        <Pressable
-                            style={[styles.editIcon, { backgroundColor: theme.primary }]}
-                            onPress={changePicture}
-                        >
-                            <Ionicons name="pencil" size={18} color="#fff" />
-                        </Pressable>
-                    </View>
-
-                    <Text style={[styles.name, { color: theme.text }]}>{fullName}</Text>
-                    <Text style={[styles.emailTop, { color: theme.text + "80" }]}>
-                        {email}
-                    </Text>
+            <View style={styles.profileWrap}>
+                <View>
+                    <Image source={{ uri: profileImage }} style={styles.avatar} />
+                    <Pressable
+                        style={[styles.editIcon, { backgroundColor: theme.primary }]}
+                        onPress={changePicture}
+                    >
+                        <Ionicons name="pencil" size={18} color="#fff" />
+                    </Pressable>
                 </View>
 
-                <View style={styles.form}>
-                    <Field
-                        label="Full Name"
-                        placeholder="Your Full Name"
-                        value={fullName}
-                        onChangeText={setFullName}
-                    />
+                <Text style={[styles.name, { color: theme.text }]}>{fullName}</Text>
+                <Text style={[styles.emailTop, { color: theme.text + "80" }]}>
+                    {email}
+                </Text>
+            </View>
 
-                    <Field
-                        label="Email Address"
-                        placeholder="Your Email"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoComplete="email"
-                    />
+            <View style={styles.form}>
+                <Field
+                    label="Full Name"
+                    placeholder="Your Full Name"
+                    value={fullName}
+                    onChangeText={setFullName}
+                />
 
-                    <Field
-                        label="Phone Number"
-                        placeholder="Your Phone Number"
-                        value={phone}
-                        onChangeText={setPhone}
-                        keyboardType="phone-pad"
-                        autoComplete="tel"
-                    />
+                <Field
+                    label="Email Address"
+                    placeholder="Your Email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoComplete="email"
+                />
 
-                    <Field
-                        label="Date of Birth"
-                        placeholder="dd.mm.yyyy"
-                        value={birthday}
-                        onChangeText={handleBirthdayChange}
-                        keyboardType="number-pad"
-                    />
+                <Field
+                    label="Phone Number"
+                    placeholder="Your Phone Number"
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                    autoComplete="tel"
+                />
 
-                    <Field
-                        label="Country"
-                        placeholder="Country"
-                        value={country}
-                        onChangeText={setCountry}
-                    />
-                </View>
+                <Field
+                    label="Date of Birth"
+                    placeholder="dd.mm.yyyy"
+                    value={birthday}
+                    onChangeText={handleBirthdayChange}
+                    keyboardType="number-pad"
+                />
 
-                <Button style={{ marginTop: "auto" }} onPress={() => router.back()}>
-                    <BtnText>Save and Exit</BtnText>
-                </Button>
-            </BackWrapper>
-        </>
-    );
-}
+                <Field
+                    label="Country"
+                    placeholder="Country"
+                    value={country}
+                    onChangeText={setCountry}
+                />
+            </View>
 
-function Field({
-    label,
-    placeholder,
-    value,
-    onChangeText,
-    keyboardType,
-    autoComplete,
-}: {
-    label: string;
-    placeholder: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    keyboardType?: "default" | "email-address" | "phone-pad" | "number-pad";
-    autoComplete?: "email" | "tel" | "off" | "username" | "current-password";
-}) {
-    const { theme } = useTheme();
-    const styles = makeStyles(theme);
-
-    return (
-        <View style={styles.inputWrap}>
-            <Text style={[styles.label, { color: theme.primary }]}>{label}</Text>
-            <Input
-                placeholder={placeholder}
-                value={value}
-                onChangeText={onChangeText}
-                keyboardType={keyboardType}
-                autoComplete={autoComplete}
-            />
-        </View>
+            <Button style={{ marginTop: "auto" }} onPress={() => router.back()}>
+                <BtnText>Save and Exit</BtnText>
+            </Button>
+        </BackWrapper>
     );
 }
 
@@ -208,17 +173,5 @@ const makeStyles = (theme: Theme) =>
             flex: 1,
             marginTop: 10,
             gap: 4,
-        },
-
-        inputWrap: {
-            width: "100%",
-        },
-
-        label: {
-            marginTop: 11,
-            fontSize: 14,
-            fontWeight: "600",
-            marginBottom: -7,
-            lineHeight: 12,
         },
     });
