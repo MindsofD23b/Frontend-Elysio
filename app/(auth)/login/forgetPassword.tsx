@@ -7,8 +7,7 @@ import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
-
-type Step = "email" | "code" | "newPassword" | "success";
+import { Step } from "@/types/login";
 
 export default function ForgotPassword() {
     const { gs, theme } = useTheme();
@@ -31,7 +30,7 @@ export default function ForgotPassword() {
     };
 
     const onSubmitEmail = () => {
-        if (!/^\S+@\S+\.\S+$/.test(email)) {
+        if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
             setError("Invalid email address");
             return;
         }
@@ -139,9 +138,9 @@ export default function ForgotPassword() {
                                 </Text>
                             )}
                             <Text
-                                onPress={() => simulate(() => {})}
+                                onPress={() => !loading && simulate(() => {})}
                                 style={{
-                                    color: theme.primary,
+                                    color: loading ? theme.base + "54" : theme.primary,
                                     fontSize: 13,
                                     textAlign: "right",
                                     marginTop: 12,
