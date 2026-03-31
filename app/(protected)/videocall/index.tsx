@@ -380,8 +380,23 @@ export default function VideoCall() {
                 },
             );
 
+            // Warten bis Socket wirklich connected ist
+            await new Promise<void>((resolve) => {
+                if (socket.connected) {
+                    resolve();
+                } else {
+                    socket.once("connect", () => resolve());
+                }
+            });
+
             await createSendTransportAndProduce(device, localStream);
             await consumeExistingProducers();
+
+            // Fallback: nochmal nach 2s konsumieren
+            // falls User B schon produziert hatte bevor wir im Socket-Room waren
+            setTimeout(() => {
+                consumeExistingProducers().catch(console.error);
+            }, 2000);
 
             setStarted(true);
         } catch (error) {
