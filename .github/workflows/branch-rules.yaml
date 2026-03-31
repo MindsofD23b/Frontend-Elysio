@@ -1,9 +1,6 @@
 name: name-check
 
 on:
-  push:
-    branches:
-      - '**'   
   pull_request:
     types: [opened, synchronize, reopened, edited]
 
