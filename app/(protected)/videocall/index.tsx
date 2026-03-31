@@ -101,9 +101,15 @@ export default function VideoCall() {
             setMatchmakingReady(false);
         });
 
-        socket.on("socket_ready", (payload) => {
+        socket.on("socket_ready", async (payload) => {
             console.log("socket_ready", payload);
             setMatchmakingReady(true);
+
+            try {
+                await activateMatchmaking();
+            } catch (error) {
+                console.error("activate after socket_ready failed", error);
+            }
         });
 
         socket.on("queue_waiting", (payload) => {
@@ -119,10 +125,16 @@ export default function VideoCall() {
             updateRoomId(payload.roomId);
         });
 
-        socket.on("room_ready", (payload: { roomId: string }) => {
+        socket.on("room_ready", async (payload: { roomId: string }) => {
             console.log("room_ready", payload);
             setGatewayRoomId(payload.roomId);
             updateRoomId(payload.roomId);
+
+            try {
+                await startCall();
+            } catch (error) {
+                console.error("startCall after room_ready failed", error);
+            }
         });
     }, []);
 
@@ -387,6 +399,81 @@ export default function VideoCall() {
         }
     }
 
+    async function activateMatchmaking() {
+        try {
+            const token = await AsyncStorage.getItem("token");
+
+            if (!token) {
+                Alert.alert("Auth", "No token found.");
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/matchmaking/activate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+            console.log("activateMatchmaking response", data);
+
+            if (!res.ok) {
+                throw new Error(data?.message ?? "Failed to activate matchmaking");
+            }
+
+            if (data.type === "waiting") {
+                setMatchState("waiting");
+            }
+
+            if (data.type === "matched") {
+                setMatchState("matched");
+                setMatchedUserId(data.matchedUserId ?? null);
+
+                if (data.roomId) {
+                    setGatewayRoomId(data.roomId);
+                    updateRoomId(data.roomId);
+                }
+            }
+        } catch (error) {
+            console.error("activateMatchmaking error", error);
+            Alert.alert("Matchmaking", "Could not activate matchmaking.");
+        }
+    }
+
+    async function deactivateMatchmaking() {
+        try {
+            const token = await AsyncStorage.getItem("token");
+
+            if (!token) {
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/matchmaking/deactivate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+            console.log("deactivateMatchmaking response", data);
+
+            if (!res.ok) {
+                throw new Error(data?.message ?? "Failed to deactivate matchmaking");
+            }
+
+            setMatchState("idle");
+            setMatchedUserId(null);
+            setGatewayRoomId(null);
+            roomIdRef.current = null;
+        } catch (error) {
+            console.error("deactivateMatchmaking error", error);
+        }
+    }
+
     const stopCall = useCallback(async () => {
         startingRef.current = false;
         socketRef.current?.disconnect();
@@ -482,14 +569,23 @@ export default function VideoCall() {
     }
 
     useEffect(() => {
-        connectMatchmakingGateway().catch((error) => {
-            console.error("connectMatchmakingGateway error", error);
+        const init = async () => {
+            try {
+                await connectMatchmakingGateway();
+            } catch (error) {
+                console.error("VideoCall init error", error);
+            }
+        };
+
+        init().catch((error) => {
+            console.error("init error", error);
         });
 
         return () => {
             matchmakingSocketRef.current?.disconnect();
             matchmakingSocketRef.current = null;
 
+            deactivateMatchmaking().catch(() => undefined);
             stopCall().catch(() => undefined);
         };
     }, [connectMatchmakingGateway, stopCall]);
