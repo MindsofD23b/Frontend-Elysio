@@ -480,7 +480,7 @@ export default function VideoCall() {
             setMatchState("idle");
             setMatchedUserId(null);
             setGatewayRoomId(null);
-            roomIdRef.current = null;
+            console.log("Matchmaking deactivated successfully");
         } catch (error) {
             console.error("deactivateMatchmaking error", error);
         }
@@ -493,6 +493,8 @@ export default function VideoCall() {
 
         try {
             const currentRoomId = getRoomIdOrThrow();
+            console.log("Leaving room", currentRoomId);
+
             await fetch(`${BASE_URL}/video/room/${currentRoomId}/leave`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
