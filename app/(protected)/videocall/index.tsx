@@ -356,6 +356,8 @@ export default function VideoCall() {
             await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
             deviceRef.current = device;
 
+            await createRecvTransport(device);
+
             const socket: Socket = io(BASE_URL, {
                 query: { peerId: peerIdRef.current, roomId: currentRoomId },
                 transports: ["websocket"],
@@ -378,13 +380,8 @@ export default function VideoCall() {
                 },
             );
 
-            await createRecvTransport(device);
             await createSendTransportAndProduce(device, localStream);
             await consumeExistingProducers();
-
-            setTimeout(async () => {
-                await consumeExistingProducers().catch(console.error);
-            }, 2000);
 
             setStarted(true);
         } catch (error) {
