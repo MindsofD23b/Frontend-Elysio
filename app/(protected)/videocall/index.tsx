@@ -382,6 +382,10 @@ export default function VideoCall() {
             await createSendTransportAndProduce(device, localStream);
             await consumeExistingProducers();
 
+            setTimeout(async () => {
+                await consumeExistingProducers().catch(console.error);
+            }, 2000);
+
             setStarted(true);
         } catch (error) {
             console.error("startCall error", error);
