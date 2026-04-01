@@ -142,9 +142,9 @@ export default function ForgotPassword() {
                                 </Text>
                             )}
                             <Text
-                                onPress={() => simulate(() => {})}
+                                onPress={() => !loading && simulate(() => {})}
                                 style={{
-                                    color: theme.primary,
+                                    color: loading ? theme.base + "54" : theme.primary,
                                     fontSize: 13,
                                     textAlign: "right",
                                     marginTop: 12,

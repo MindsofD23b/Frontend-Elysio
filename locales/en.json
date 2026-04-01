@@ -187,5 +187,18 @@
                 "passwordMismatch": "Passwords dont match"
             }
         }
+    },
+    "home": {},
+    "settings": {
+        "title": "Settings",
+        "personalDetails": "Personal Details",
+        "interests": "Interests",
+        "appearance": "Appearance",
+        "termsAndConditions": "Terms and Conditions",
+        "privacyPolicy": "Privacy & Policy",
+        "aboutUs": "About us",
+        "lightmode": "Lightmode",
+        "darkmode": "Darkmode",
+        "logOut": "Log Out"
     }
 }
