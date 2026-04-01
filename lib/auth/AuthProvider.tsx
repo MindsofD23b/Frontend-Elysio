@@ -18,7 +18,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const hydrateAuth = async () => {
             try {
-                const storedToken = await AsyncStorage.getItem("token");
+                const raw = await AsyncStorage.getItem("store_token");
+                const storedToken = raw ? JSON.parse(raw) : null;
                 setToken(storedToken);
             } catch (error) {
                 console.error("Failed to load auth token", error);
@@ -33,11 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (nextToken: string) => {
         setToken(nextToken);
-        await AsyncStorage.setItem("token", nextToken);
+        await AsyncStorage.setItem("store_token", JSON.stringify(nextToken));
     };
 
     const logout = async () => {
-        await AsyncStorage.removeItem("token");
+        await AsyncStorage.removeItem("store_token");
         setToken(null);
     };
 

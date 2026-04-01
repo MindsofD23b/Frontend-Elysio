@@ -4,5 +4,5 @@ export type Chat = {
     lastMessage: string;
     createdAt: string;
     updatedAt: string;
-    image: string;
+    image: string | null;
 };

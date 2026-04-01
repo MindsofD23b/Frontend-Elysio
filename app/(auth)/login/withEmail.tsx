@@ -13,7 +13,7 @@ type FormData = {
     password: string;
 };
 
-type LoginResponse = {
+export type LoginResponse = {
     token: string;
 };
 

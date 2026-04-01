@@ -1,10 +1,13 @@
+import { useFetch } from "@/hooks/useFetch";
+import { useStore } from "@/hooks/useStore";
 import { useTheme } from "@/lib/theme/context";
 import { Chat } from "@/types/chats";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowUp, ChevronLeft } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+    ActivityIndicator,
     Keyboard,
     KeyboardAvoidingView,
     Platform,
@@ -17,35 +20,69 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const messages = [
-    {
-        id: "1",
-        text: "Hey, how are you?",
-        createdAt: "2024-06-01T12:00:00Z",
-        senderId: "1",
-    },
-    {
-        id: "2",
-        text: "I'm good, thanks! How about you?",
-        createdAt: "2024-06-01T12:01:00Z",
-        senderId: "2",
-    },
-    {
-        id: "3",
-        text: "Doing well! Just working on a project.",
-        createdAt: "2024-06-01T12:02:00Z",
-        senderId: "1",
-    },
-];
+interface Message {
+    id: string;
+    senderId: string;
+    text: string;
+    createdAt: string;
+}
+
+interface RoomMessagesResponse {
+    messages: {
+        id: string;
+        roomId: string;
+        senderId: string;
+        type: string;
+        ciphertext: string;
+        iv: string;
+        authTag: string;
+        mediaUrl: string | null;
+        mediaDurationSec: number | null;
+        isDeleted: boolean;
+        createdAt: string;
+        encryptedKey: string;
+    }[];
+    hasMore: boolean;
+    nextCursor: string | null;
+}
 
 export default function ChatsScreen() {
-    const { _id, user: userRaw } = useLocalSearchParams<{ _id: string; user: string }>();
+    const { id, user: userRaw } = useLocalSearchParams<{ id: string; user: string }>();
     const user = JSON.parse(userRaw) as Chat;
     const [message, setMessage] = useState("");
+    const [messages, setMessages] = useState<Message[]>([]);
     const scrollRef = useRef<ScrollView>(null);
+    const [currentUserId] = useStore<string | null>("userId", null);
 
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
+
+    const fetchOptions = useMemo(
+        () => ({ method: "GET", headers: { "Content-Type": "application/json" } }),
+        [],
+    );
+
+    const [data, loading, , run] = useFetch<RoomMessagesResponse>(
+        `/chat/rooms/${id}/messages`,
+        fetchOptions,
+        { useCache: false },
+    );
+
+    useEffect(() => {
+        run();
+    }, [run]);
+
+    useEffect(() => {
+        if (!data) return;
+        setMessages(
+            data.messages.map((msg) => ({
+                id: msg.id,
+                senderId: msg.senderId,
+                text: msg.ciphertext,
+                createdAt: msg.createdAt,
+            })),
+        );
+    }, [data]);
 
     const sendMessage = () => {
         alert("Message sent: " + message);
@@ -79,7 +116,7 @@ export default function ChatsScreen() {
                         </Pressable>
                         <View style={{ width: 8 }} />
                         <Image
-                            source={{ uri: user.image }}
+                            source={{ uri: user.image || undefined }}
                             placeholder={
                                 "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
                             }
@@ -104,33 +141,35 @@ export default function ChatsScreen() {
                             {user.name}
                         </Text>
                     </View>
-                    <View
-                        style={{
-                            flex: 1,
-                            paddingTop: 12,
-                        }}
-                    >
-                        <ScrollView
-                            ref={scrollRef}
-                            style={{ flex: 1 }}
-                            onContentSizeChange={() =>
-                                scrollRef.current?.scrollToEnd({ animated: true })
-                            }
-                            contentContainerStyle={{
-                                flexDirection: "column",
-                                paddingHorizontal: 12,
-                                gap: 8,
-                                paddingBottom: 8,
-                            }}
-                        >
-                            {messages.map((msg) => (
-                                <Message
-                                    key={msg.id}
-                                    text={msg.text}
-                                    isOwn={msg.senderId === "1"}
-                                />
-                            ))}
-                        </ScrollView>
+                    <View style={{ flex: 1, paddingTop: 12 }}>
+                        {loading ? (
+                            <ActivityIndicator
+                                style={{ marginTop: 32 }}
+                                color={theme.primary}
+                            />
+                        ) : (
+                            <ScrollView
+                                ref={scrollRef}
+                                style={{ flex: 1 }}
+                                onContentSizeChange={() =>
+                                    scrollRef.current?.scrollToEnd({ animated: true })
+                                }
+                                contentContainerStyle={{
+                                    flexDirection: "column",
+                                    paddingHorizontal: 12,
+                                    gap: 8,
+                                    paddingBottom: 8,
+                                }}
+                            >
+                                {messages.map((msg) => (
+                                    <MessageBubble
+                                        key={msg.id}
+                                        text={msg.text}
+                                        isOwn={msg.senderId === currentUserId}
+                                    />
+                                ))}
+                            </ScrollView>
+                        )}
                     </View>
                     <View
                         style={{
@@ -170,9 +209,7 @@ export default function ChatsScreen() {
                                 alignItems: "center",
                                 justifyContent: "center",
                             }}
-                            onPress={() => {
-                                sendMessage();
-                            }}
+                            onPress={sendMessage}
                         >
                             <ArrowUp color={theme.white} size={18} />
                         </Pressable>
@@ -188,7 +225,7 @@ interface IMessageProps {
     isOwn?: boolean;
 }
 
-function Message({ text, isOwn }: IMessageProps) {
+function MessageBubble({ text, isOwn }: IMessageProps) {
     const { theme } = useTheme();
 
     return (

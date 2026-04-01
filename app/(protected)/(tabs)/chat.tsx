@@ -1,101 +1,90 @@
-import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 // TODO: switch back to FlashList after development build
 // import { FlashList } from "@shopify/flash-list";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { Chat } from "@/types/chats";
 import ChatComponent from "@/components/ChatComponent";
 import Input from "@/components/input";
 import { Theme } from "@/lib/theme/theme";
-
-const chats: Chat[] = [
-    {
-        id: "1",
-        name: "John Doe",
-        lastMessage: "Hey, how are you?",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: "2024-06-01T12:00:00Z",
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "2",
-        name: "Jane Smith",
-        lastMessage: "See you later!",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: new Date().toISOString(),
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "3",
-        name: "Jane Smith",
-        lastMessage: "See you later!",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: new Date().toISOString(),
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "4",
-        name: "Jane Smith",
-        lastMessage: "See you later!",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: new Date().toISOString(),
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "5",
-        name: "Jane Smith",
-        lastMessage: "See you later!",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: new Date().toISOString(),
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "6",
-        name: "Jane Smith",
-        lastMessage: "See you later!",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: new Date().toISOString(),
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "7",
-        name: "John Doe",
-        lastMessage: "Hey, how are you?",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: "2024-06-01T12:00:00Z",
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "8",
-        name: "John Doe",
-        lastMessage: "Hey, how are you?",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: "2024-06-01T12:00:00Z",
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "9",
-        name: "John Doe",
-        lastMessage: "Hey, how are you?",
-        createdAt: "2024-06-01T12:00:00Z",
-        updatedAt: "2024-06-01T12:00:00Z",
-        image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
-    },
-];
+import { useFetch } from "@/hooks/useFetch";
 
 export default function Index() {
     const { theme } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
+    const [chats, setChats] = useState<Chat[]>([]);
 
     const onRefresh = async () => {
         setRefreshing(true);
         setRefreshing(false);
     };
 
+    interface ChatResponse {
+        room: {
+            id: string;
+            userAId: string;
+            userBId: string;
+            createdAt: string;
+            updatedAt: string;
+        };
+        lastMessage: {
+            id: string;
+            roomId: string;
+            senderId: string;
+            type: string;
+            cyphertext: string;
+            iv: string;
+            authTag: string;
+            mediaUrl: string | null;
+            mediaDurationSec: number | null;
+            isDeleted: boolean;
+            createdAt: string;
+        } | null;
+        otherUser: {
+            id: string;
+            fullName: string;
+            avatar: string | null;
+        };
+    }
+
+    const fetchOptions = useMemo(
+        () => ({ method: "GET", headers: { "Content-Type": "application/json" } }),
+        [],
+    );
+
+    const [data, loading, _error, run] = useFetch<ChatResponse[]>(
+        "/chat/rooms",
+        fetchOptions,
+        { useCache: true },
+    );
+
     useEffect(() => {
-        orderChatsByUpdatedAt(chats);
-    }, [chats]);
+        run();
+    }, [run]);
+
+    useEffect(() => {
+        if (!data) return;
+        const mapped = data.map((chat) => ({
+            id: chat.room.id,
+            name: chat.otherUser.fullName,
+            lastMessage:
+                chat.lastMessage?.type === "text"
+                    ? chat.lastMessage.cyphertext
+                    : (chat.lastMessage?.cyphertext ?? ""),
+            createdAt: chat.room.createdAt,
+            updatedAt: chat.room.updatedAt,
+            image: chat.otherUser.avatar ?? "",
+        }));
+        setChats(orderChatsByUpdatedAt(mapped));
+    }, [data]);
 
     const [filteredChats, setFilteredChats] = useState<Chat[]>(chats);
 
@@ -111,6 +100,13 @@ export default function Index() {
             <View style={{ borderBottomColor: theme.base + "1A", borderBottomWidth: 1 }}>
                 <SearchBarComponent onSearch={onSearch} />
             </View>
+            {loading && (
+                <ActivityIndicator
+                    size={50}
+                    style={{ backgroundColor: theme.background }}
+                    color={theme.text}
+                />
+            )}
             {/*TODO: switch back to FlashList after development build
                 <FlashList
                     data={chats}
@@ -128,6 +124,20 @@ export default function Index() {
                     }
                 />
             */}
+
+            {!loading && filteredChats.length === 0 && (
+                <View
+                    style={{
+                        paddingTop: 32,
+                        alignItems: "center",
+                        backgroundColor: theme.background,
+                    }}
+                >
+                    <Text>
+                        No chats found. Start a new conversation by Joining a Call
+                    </Text>
+                </View>
+            )}
 
             <FlatList
                 data={filteredChats}
@@ -162,8 +172,8 @@ export default function Index() {
     );
 }
 
-function orderChatsByUpdatedAt(chats: Chat[]) {
-    return chats.sort(
+function orderChatsByUpdatedAt(chats: Chat[]): Chat[] {
+    return [...chats].sort(
         (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
 }
@@ -183,7 +193,7 @@ function SearchBarComponent({ onSearch }: ISearchBarComponent) {
         }, 400);
 
         return () => clearTimeout(timer);
-    }, [searchText]);
+    }, [searchText, onSearch]);
 
     return (
         <View style={styles.container}>
