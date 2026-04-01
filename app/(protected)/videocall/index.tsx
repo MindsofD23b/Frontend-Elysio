@@ -1,9 +1,10 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
 import * as mediasoupClient from "mediasoup-client";
 import { io, Socket } from "socket.io-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
     Ionicons,
     MaterialCommunityIcons,
@@ -16,12 +17,12 @@ registerGlobals();
 // made with chatgpt
 
 const BASE_URL = "https://elysio.jamiepoeffel.ch";
-const ROOM_ID = "test-room-fresh-2";
 
 export default function VideoCall() {
     const [started, setStarted] = useState(false);
     const [localUrl, setLocalUrl] = useState<string | null>(null);
     const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+    const roomIdRef = useRef<string | null>(null);
 
     const [isMuted, setIsMuted] = useState(false);
     const [isSpeakerOn, setIsSpeakerOn] = useState(true);
@@ -40,6 +41,13 @@ export default function VideoCall() {
     const consumingProducerIdsRef = useRef<Set<string>>(new Set());
     const consumersRef = useRef<Map<string, any>>(new Map());
     const remoteVideoStreamRef = useRef<any>(null);
+
+    const [matchmakingReady, setMatchmakingReady] = useState(false);
+    const [matchState, setMatchState] = useState<"idle" | "waiting" | "matched">("idle");
+    const [matchedUserId, setMatchedUserId] = useState<string | null>(null);
+    const [gatewayRoomId, setGatewayRoomId] = useState<string | null>(null);
+
+    const matchmakingSocketRef = useRef<Socket | null>(null);
 
     async function api(path: string, options?: RequestInit) {
         const url = `${BASE_URL}${path}`;
@@ -62,7 +70,62 @@ export default function VideoCall() {
         }
     }
 
-    async function consumeProducer(producerId: string) {
+    const connectMatchmakingGateway = useCallback(async () => {
+        const token = await AsyncStorage.getItem("token");
+
+        if (!token) {
+            console.log("No JWT token found for matchmaking socket");
+            return;
+        }
+
+        if (matchmakingSocketRef.current?.connected) {
+            return;
+        }
+
+        const socket = io(BASE_URL, {
+            auth: {
+                token,
+            },
+            transports: ["websocket"],
+            forceNew: true,
+        });
+
+        matchmakingSocketRef.current = socket;
+
+        socket.on("connect", () => {
+            console.log("Matchmaking socket connected");
+        });
+
+        socket.on("disconnect", (reason) => {
+            console.log("Matchmaking socket disconnected:", reason);
+            setMatchmakingReady(false);
+        });
+
+        socket.on("socket_ready", (payload) => {
+            console.log("socket_ready", payload);
+            setMatchmakingReady(true);
+        });
+
+        socket.on("queue_waiting", (payload) => {
+            console.log("queue_waiting", payload);
+            setMatchState("waiting");
+        });
+
+        socket.on("match_found", (payload: { matchedUserId: string; roomId: string }) => {
+            console.log("match_found", payload);
+            setMatchState("matched");
+            setMatchedUserId(payload.matchedUserId);
+            setGatewayRoomId(payload.roomId);
+            updateRoomId(payload.roomId);
+        });
+
+        socket.on("room_ready", (payload: { roomId: string }) => {
+            console.log("room_ready", payload);
+            setGatewayRoomId(payload.roomId);
+            updateRoomId(payload.roomId);
+        });
+    }, []);
+    const consumeProducer = useCallback(async (producerId: string) => {
         const recvTransport = recvTransportRef.current;
         const device = deviceRef.current;
 
@@ -72,9 +135,11 @@ export default function VideoCall() {
 
         consumingProducerIdsRef.current.add(producerId);
 
+        const currentRoomId = getRoomIdOrThrow();
+
         try {
             const consumerData = await api(
-                `/video/room/${ROOM_ID}/transport/${recvTransport.id}/consume`,
+                `/video/room/${currentRoomId}/transport/${recvTransport.id}/consume`,
                 {
                     method: "POST",
                     body: JSON.stringify({
@@ -95,7 +160,7 @@ export default function VideoCall() {
             consumersRef.current.set(consumer.id, consumer);
             consumedProducerIdsRef.current.add(producerId);
 
-            await api(`/video/room/${ROOM_ID}/consumer/${consumer.id}/resume`, {
+            await api(`/video/room/${currentRoomId}/consumer/${consumer.id}/resume`, {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
             });
@@ -112,14 +177,17 @@ export default function VideoCall() {
                     setRemoteUrl(url);
                 }, 300);
             }
+            consumingProducerIdsRef.current.delete(producerId);
         } catch (err) {
             consumingProducerIdsRef.current.delete(producerId);
             console.error("consumeProducer error", err);
         }
-    }
+    }, []);
 
-    async function createRecvTransportAndConsume(device: any) {
-        const transportInfo = await api(`/video/room/${ROOM_ID}/transport`, {
+    const createRecvTransport = useCallback(async (device: any) => {
+        const currentRoomId = getRoomIdOrThrow();
+
+        const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
             method: "POST",
             body: JSON.stringify({ peerId: peerIdRef.current }),
         });
@@ -145,8 +213,10 @@ export default function VideoCall() {
             "connect",
             async ({ dtlsParameters }: any, callback: any, errback: any) => {
                 try {
+                    const roomId = getRoomIdOrThrow();
+
                     await api(
-                        `/video/room/${ROOM_ID}/transport/${recvTransport.id}/connect`,
+                        `/video/room/${roomId}/transport/${recvTransport.id}/connect`,
                         {
                             method: "POST",
                             body: JSON.stringify({
@@ -155,15 +225,98 @@ export default function VideoCall() {
                             }),
                         },
                     );
+
                     callback();
                 } catch (err) {
                     errback(err);
                 }
             },
         );
+    }, []);
+
+    const createSendTransportAndProduce = useCallback(
+        async (device: any, localStream: any) => {
+            const currentRoomId = getRoomIdOrThrow();
+            const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
+                method: "POST",
+                body: JSON.stringify({ peerId: peerIdRef.current }),
+            });
+
+            const sendTransport = device.createSendTransport({
+                ...transportInfo,
+                iceServers: [
+                    {
+                        urls: [
+                            "turn:elysioturn.jamiepoeffel.ch:3478?transport=udp",
+                            "turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp",
+                            "turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp",
+                        ],
+                        username: "elysioturn",
+                        credential: "q9E811BDjLsK",
+                    },
+                ],
+            });
+
+            sendTransportRef.current = sendTransport;
+
+            sendTransport.on(
+                "connect",
+                async ({ dtlsParameters }: any, callback: any, errback: any) => {
+                    try {
+                        const currentRoomId = getRoomIdOrThrow();
+                        await api(
+                            `/video/room/${currentRoomId}/transport/${sendTransport.id}/connect`,
+                            {
+                                method: "POST",
+                                body: JSON.stringify({
+                                    peerId: peerIdRef.current,
+                                    dtlsParameters,
+                                }),
+                            },
+                        );
+                        callback();
+                    } catch (err) {
+                        errback(err);
+                    }
+                },
+            );
+
+            sendTransport.on(
+                "produce",
+                async ({ kind, rtpParameters }: any, callback: any, errback: any) => {
+                    try {
+                        const data = await api(
+                            `/video/room/${currentRoomId}/transport/${sendTransport.id}/produce`,
+                            {
+                                method: "POST",
+                                body: JSON.stringify({
+                                    peerId: peerIdRef.current,
+                                    kind,
+                                    rtpParameters,
+                                }),
+                            },
+                        );
+                        callback({ id: data.id });
+                    } catch (err) {
+                        errback(err);
+                    }
+                },
+            );
+
+            const audioTrack = localStream.getAudioTracks()[0];
+            const videoTrack = localStream.getVideoTracks()[0];
+
+            if (audioTrack) await sendTransport.produce({ track: audioTrack });
+            if (videoTrack) await sendTransport.produce({ track: videoTrack });
+        },
+        [],
+    );
+
+    const consumeExistingProducers = useCallback(async () => {
+        const currentRoomId = getRoomIdOrThrow();
 
         const producers = await api(
-            `/video/room/${ROOM_ID}/producers?peerId=${peerIdRef.current}`,
+            `/video/room/${currentRoomId}/producers?peerId=${peerIdRef.current}`,
             { method: "GET" },
         );
 
@@ -171,83 +324,18 @@ export default function VideoCall() {
             if (producer.peerId === peerIdRef.current) continue;
             await consumeProducer(producer.producerId);
         }
-    }
+    }, [consumeProducer]);
 
-    async function createSendTransportAndProduce(device: any, localStream: any) {
-        const transportInfo = await api(`/video/room/${ROOM_ID}/transport`, {
-            method: "POST",
-            body: JSON.stringify({ peerId: peerIdRef.current }),
-        });
-
-        const sendTransport = device.createSendTransport({
-            ...transportInfo,
-            iceServers: [
-                {
-                    urls: [
-                        "turn:elysioturn.jamiepoeffel.ch:3478?transport=udp",
-                        "turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp",
-                        "turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp",
-                    ],
-                    username: "elysioturn",
-                    credential: "q9E811BDjLsK",
-                },
-            ],
-        });
-
-        sendTransportRef.current = sendTransport;
-
-        sendTransport.on(
-            "connect",
-            async ({ dtlsParameters }: any, callback: any, errback: any) => {
-                try {
-                    await api(
-                        `/video/room/${ROOM_ID}/transport/${sendTransport.id}/connect`,
-                        {
-                            method: "POST",
-                            body: JSON.stringify({
-                                peerId: peerIdRef.current,
-                                dtlsParameters,
-                            }),
-                        },
-                    );
-                    callback();
-                } catch (err) {
-                    errback(err);
-                }
-            },
-        );
-
-        sendTransport.on(
-            "produce",
-            async ({ kind, rtpParameters }: any, callback: any, errback: any) => {
-                try {
-                    const data = await api(
-                        `/video/room/${ROOM_ID}/transport/${sendTransport.id}/produce`,
-                        {
-                            method: "POST",
-                            body: JSON.stringify({
-                                peerId: peerIdRef.current,
-                                kind,
-                                rtpParameters,
-                            }),
-                        },
-                    );
-                    callback({ id: data.id });
-                } catch (err) {
-                    errback(err);
-                }
-            },
-        );
-
-        const audioTrack = localStream.getAudioTracks()[0];
-        const videoTrack = localStream.getVideoTracks()[0];
-
-        if (audioTrack) await sendTransport.produce({ track: audioTrack });
-        if (videoTrack) await sendTransport.produce({ track: videoTrack });
-    }
-
-    async function startCall() {
+    const startCall = useCallback(async () => {
         if (startingRef.current || started) return;
+
+        const currentRoomId = roomIdRef.current;
+
+        if (!currentRoomId) {
+            Alert.alert("No room", "Room ID is missing.");
+            return;
+        }
+
         startingRef.current = true;
 
         try {
@@ -259,7 +347,7 @@ export default function VideoCall() {
             localStreamRef.current = localStream;
             setLocalUrl(localStream.toURL());
 
-            const joinData = await api(`/video/room/${ROOM_ID}/join`, {
+            const joinData = await api(`/video/room/${currentRoomId}/join`, {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
             });
@@ -268,10 +356,10 @@ export default function VideoCall() {
             await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
             deviceRef.current = device;
 
-            await createRecvTransportAndConsume(device);
+            await createRecvTransport(device);
 
             const socket: Socket = io(BASE_URL, {
-                query: { peerId: peerIdRef.current, roomId: ROOM_ID },
+                query: { peerId: peerIdRef.current, roomId: currentRoomId },
                 transports: ["websocket"],
                 forceNew: true,
             });
@@ -292,28 +380,144 @@ export default function VideoCall() {
                 },
             );
 
+            // Warten bis Socket wirklich connected ist
+            await new Promise<void>((resolve) => {
+                if (socket.connected) {
+                    resolve();
+                } else {
+                    socket.once("connect", () => resolve());
+                }
+            });
+
             await createSendTransportAndProduce(device, localStream);
+            await consumeExistingProducers();
+
+            // Fallback: nochmal nach 2s konsumieren
+            // falls User B schon produziert hatte bevor wir im Socket-Room waren
+            setTimeout(() => {
+                consumeExistingProducers().catch(console.error);
+            }, 2000);
 
             setStarted(true);
         } catch (error) {
             console.error("startCall error", error);
             startingRef.current = false;
         }
+    }, [
+        started,
+        consumeProducer,
+        createRecvTransport,
+        createSendTransportAndProduce,
+        consumeExistingProducers,
+    ]);
+
+    const activateMatchmaking = useCallback(async () => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+
+            if (!token) {
+                Alert.alert("Auth", "No token found.");
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/matchmaking/activate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+            console.log("activateMatchmaking response", data);
+
+            if (!res.ok) {
+                throw new Error(data?.message ?? "Failed to activate matchmaking");
+            }
+
+            if (data.type === "waiting") {
+                setMatchState("waiting");
+            }
+
+            if (data.type === "matched") {
+                setMatchState("matched");
+                setMatchedUserId(data.matchedUserId ?? null);
+
+                if (data.roomId) {
+                    setGatewayRoomId(data.roomId);
+                    updateRoomId(data.roomId);
+                }
+            }
+        } catch (error) {
+            console.error("activateMatchmaking error", error);
+            Alert.alert("Matchmaking", "Could not activate matchmaking.");
+        }
+    }, []);
+
+    async function deactivateMatchmaking() {
+        try {
+            const token = await AsyncStorage.getItem("token");
+
+            if (!token) {
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/matchmaking/deactivate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+            console.log("deactivateMatchmaking response", data);
+
+            if (!res.ok) {
+                throw new Error(data?.message ?? "Failed to deactivate matchmaking");
+            }
+
+            setMatchState("idle");
+            setMatchedUserId(null);
+            setGatewayRoomId(null);
+            console.log("Matchmaking deactivated successfully");
+        } catch (error) {
+            console.error("deactivateMatchmaking error", error);
+        }
     }
 
-    async function stopCall() {
+    const stopCall = useCallback(async () => {
         startingRef.current = false;
         socketRef.current?.disconnect();
         socketRef.current = null;
 
         try {
-            await fetch(`${BASE_URL}/video/room/${ROOM_ID}/leave`, {
+            const currentRoomId = getRoomIdOrThrow();
+            console.log("Leaving room", currentRoomId);
+
+            await fetch(`${BASE_URL}/video/room/${currentRoomId}/leave`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ peerId: peerIdRef.current }),
             });
         } catch (err) {
             console.error("leave error", err);
+        }
+
+        // Reset matchmaking state on backend BEFORE cleaning up local state
+        try {
+            const token = await AsyncStorage.getItem("token");
+            if (token) {
+                await fetch(`${BASE_URL}/matchmaking/deactivate`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            }
+        } catch (err) {
+            console.error("deactivate matchmaking error", err);
         }
 
         sendTransportRef.current?.close();
@@ -339,7 +543,11 @@ export default function VideoCall() {
         setLocalUrl(null);
         setRemoteUrl(null);
         setStarted(false);
-    }
+        setGatewayRoomId(null);
+        setMatchedUserId(null);
+        setMatchState("idle");
+        roomIdRef.current = null;
+    }, []);
 
     function toggleMute() {
         const stream = localStreamRef.current;
@@ -360,6 +568,19 @@ export default function VideoCall() {
 
         // Für echtes Routing auf Lautsprecher brauchst du auf iOS/Android meist:
         // react-native-incall-manager oder eine native Audio Route Lösung
+    }
+    function updateRoomId(nextRoomId: string) {
+        roomIdRef.current = nextRoomId;
+    }
+
+    function getRoomIdOrThrow(): string {
+        const currentRoomId = roomIdRef.current;
+
+        if (!currentRoomId) {
+            throw new Error("Room ID is missing");
+        }
+
+        return currentRoomId;
     }
 
     function handleLike() {
@@ -382,14 +603,61 @@ export default function VideoCall() {
     }
 
     useEffect(() => {
+        const init = async () => {
+            try {
+                await connectMatchmakingGateway();
+            } catch (error) {
+                console.error("VideoCall init error", error);
+            }
+        };
+
+        init().catch((error) => {
+            console.error("init error", error);
+        });
+
         return () => {
+            matchmakingSocketRef.current?.disconnect();
+            matchmakingSocketRef.current = null;
+
+            deactivateMatchmaking().catch(() => undefined);
             stopCall().catch(() => undefined);
         };
-    }, []);
+    }, [connectMatchmakingGateway, stopCall]);
+
+    useEffect(() => {
+        if (!matchmakingReady) return;
+        activateMatchmaking().catch((error) => {
+            console.error("activateMatchmaking effect error", error);
+        });
+    }, [matchmakingReady, activateMatchmaking]); // ← add activateMatchmaking
+
+    useEffect(() => {
+        if (!gatewayRoomId) return;
+        if (started || startingRef.current) return;
+        startCall().catch((error) => {
+            console.error("startCall effect error", error);
+        });
+    }, [gatewayRoomId, started, startCall]); // ← add startCall
 
     if (!started) {
         return (
             <SafeAreaView style={styles.startContainer}>
+                <Text style={styles.gatewayStatus}>
+                    Matchmaking socket: {matchmakingReady ? "connected" : "disconnected"}
+                </Text>
+                <Text style={styles.gatewayStatus}>Match state: {matchState}</Text>
+
+                {matchedUserId && (
+                    <Text style={styles.gatewayStatus}>
+                        Matched user: {matchedUserId}
+                    </Text>
+                )}
+
+                {gatewayRoomId && (
+                    <Text style={styles.gatewayStatus}>
+                        Gateway room: {gatewayRoomId}
+                    </Text>
+                )}
                 <Text style={styles.startTitle}>Ready for call</Text>
                 <Pressable style={styles.startButton} onPress={startCall}>
                     <Text style={styles.startButtonText}>Start video call</Text>
@@ -638,5 +906,10 @@ const styles = StyleSheet.create({
         color: "#111",
         fontSize: 16,
         fontWeight: "700",
+    },
+    gatewayStatus: {
+        color: "#cfcfcf",
+        fontSize: 14,
+        marginBottom: 6,
     },
 });
