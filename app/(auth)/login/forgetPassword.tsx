@@ -7,12 +7,13 @@ import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
 import { LucideMailbox } from "lucide-react-native";
+import { createT } from "@/i18n";
 
 type Step = "email" | "code" | "newPassword" | "success";
 
 export default function ForgotPassword() {
     const { gs, theme } = useTheme();
-
+    const t = createT("auth.forgotPassword");
     const [step, setStep] = useState<Step>("email");
     const [email, setEmail] = useState("");
     const [code, setCode] = useState("");
@@ -32,7 +33,7 @@ export default function ForgotPassword() {
 
     const onSubmitEmail = () => {
         if (!/^\S+@\S+\.\S+$/.test(email)) {
-            setError("Invalid email address");
+            setError(t("errors.invalidEmail"));
             return;
         }
         simulate(() => setStep("code"));
@@ -40,7 +41,7 @@ export default function ForgotPassword() {
 
     const onSubmitCode = () => {
         if (code.length < 5) {
-            setError("Please enter the full code");
+            setError(t("errors.codeToShort"));
             return;
         }
         simulate(() => setStep("newPassword"));
@@ -48,11 +49,11 @@ export default function ForgotPassword() {
 
     const onSubmitNewPassword = () => {
         if (newPassword.length < 6) {
-            setError("Password must be at least 6 characters");
+            setError(t("errors.passwordTooShort"));
             return;
         }
         if (newPassword !== confPassword) {
-            setError("Passwords dont match");
+            setError(t("errors.passwordMismatch"));
             return;
         }
         simulate(() => setStep("success"));
@@ -63,20 +64,22 @@ export default function ForgotPassword() {
             <View style={{ flex: 1, width: "100%", height: "100%" }}>
                 {step === "email" && (
                     <>
-                        <Text style={[gs.h1, { marginTop: 35 }]}>Forgot Password</Text>
+                        <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
                         <Text
                             style={[
                                 gs.bodyText,
                                 { marginTop: 10, color: theme.base + "54" },
                             ]}
                         >
-                            Enter your{" "}
-                            <Text style={{ fontWeight: "bold" }}>Email Address</Text> and
-                            we will send you a reset code.
+                            {t("subtitle")}{" "}
+                            <Text style={{ fontWeight: "bold" }}>
+                                {t("subtitleBold")}{" "}
+                            </Text>{" "}
+                            {t("subtitleSuffix")}
                         </Text>
                         <View style={{ marginTop: 30 }}>
                             <Input
-                                placeholder="Email"
+                                placeholder={t("emailPlaceholder")}
                                 keyboardType="email-address"
                                 onChangeText={setEmail}
                                 value={email}
@@ -95,14 +98,14 @@ export default function ForgotPassword() {
                             onPress={onSubmitEmail}
                             disabled={loading}
                         >
-                            {loading ? <Loader /> : <BtnText>Send Reset Code</BtnText>}
+                            {loading ? <Loader /> : <BtnText>{t("sendCode")}</BtnText>}
                         </Button>
                     </>
                 )}
 
                 {step === "code" && (
                     <>
-                        <Text style={[gs.h1, { marginTop: 35 }]}>Enter Code</Text>
+                        <Text style={[gs.h1, { marginTop: 35 }]}>{t("enterCode")}</Text>
                         <LucideMailbox
                             size={80}
                             color={theme.primary}
@@ -118,14 +121,14 @@ export default function ForgotPassword() {
                                 },
                             ]}
                         >
-                            We sent a reset code to{" "}
+                            {t("codeSentTo")}{" "}
                             <Text style={{ fontWeight: "bold", color: theme.primary }}>
                                 {email}
                             </Text>
                         </Text>
                         <View style={{ marginTop: 30 }}>
                             <Input
-                                placeholder="Enter code"
+                                placeholder={t("codePlaceholder")}
                                 keyboardType="phone-pad"
                                 onChangeText={setCode}
                                 value={code}
@@ -147,7 +150,7 @@ export default function ForgotPassword() {
                                     marginTop: 12,
                                 }}
                             >
-                                Resend code
+                                {t("resendCode")}
                             </Text>
                         </View>
                         <Button
@@ -155,27 +158,29 @@ export default function ForgotPassword() {
                             onPress={onSubmitCode}
                             disabled={loading}
                         >
-                            {loading ? <Loader /> : <BtnText>Verify Code</BtnText>}
+                            {loading ? <Loader /> : <BtnText>{t("verifyCode")}</BtnText>}
                         </Button>
                     </>
                 )}
 
                 {step === "newPassword" && (
                     <>
-                        <Text style={[gs.h1, { marginTop: 35 }]}>New Password</Text>
+                        <Text style={[gs.h1, { marginTop: 35 }]}>{t("newPassword")}</Text>
                         <Text
                             style={[
                                 gs.bodyText,
                                 { marginTop: 10, color: theme.base + "54" },
                             ]}
                         >
-                            Choose a{" "}
-                            <Text style={{ fontWeight: "bold" }}>strong password</Text>{" "}
-                            for your account.
+                            {t("newPasswordSubtitlePrefix")}{" "}
+                            <Text style={{ fontWeight: "bold" }}>
+                                {t("newPasswordSubtitleBold")}
+                            </Text>{" "}
+                            {t("newPasswordSubtitleSuffix")}
                         </Text>
                         <View style={{ marginTop: 30 }}>
                             <Input
-                                placeholder="New Password"
+                                placeholder={t("newPasswordPlaceholder")}
                                 secureTextEntry
                                 textContentType="newPassword"
                                 autoComplete="new-password"
@@ -183,7 +188,7 @@ export default function ForgotPassword() {
                                 value={newPassword}
                             />
                             <Input
-                                placeholder="Confirm Password"
+                                placeholder={t("confirmPasswordPlaceholder")}
                                 secureTextEntry
                                 textContentType="newPassword"
                                 autoComplete="new-password"
@@ -203,7 +208,11 @@ export default function ForgotPassword() {
                             onPress={onSubmitNewPassword}
                             disabled={loading}
                         >
-                            {loading ? <Loader /> : <BtnText>Reset Password</BtnText>}
+                            {loading ? (
+                                <Loader />
+                            ) : (
+                                <BtnText>{t("resetPassword")}</BtnText>
+                            )}
                         </Button>
                     </>
                 )}
@@ -223,7 +232,7 @@ export default function ForgotPassword() {
                                 { marginTop: 24, textAlign: "center", color: theme.text },
                             ]}
                         >
-                            Password Reset!
+                            {t("successTitle")}
                         </Text>
                         <Text
                             style={[
@@ -235,13 +244,13 @@ export default function ForgotPassword() {
                                 },
                             ]}
                         >
-                            Your password has been successfully reset.
+                            {t("successBody")}
                         </Text>
                         <Button
                             style={{ marginTop: 40, width: "100%" }}
                             onPress={() => router.replace("/login/withEmail")}
                         >
-                            <BtnText>Back to Login</BtnText>
+                            <BtnText>{t("backToLogin")}</BtnText>
                         </Button>
                     </View>
                 )}

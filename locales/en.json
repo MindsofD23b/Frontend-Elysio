@@ -153,6 +153,39 @@
             "lightmode": "Lightmode",
             "darkmode": "Darkmode",
             "logOut": "Log Out"
+        },
+        "forgotPassword": {
+            "title": "Forgot Password",
+            "subtitle": "Enter your",
+            "subtitleBold": "Email Address",
+            "subtitleSuffix": "and we will send you a reset code.",
+            "emailPlaceholder": "Email",
+            "sendCode": "Send Reset Code",
+
+            "enterCode": "Enter Code",
+            "codeSentTo": "We sent a reset code to",
+            "codePlaceholder": "Enter code",
+            "resendCode": "Resend code",
+            "verifyCode": "Verify Code",
+
+            "newPassword": "New Password",
+            "newPasswordSubtitlePrefix": "Choose a",
+            "newPasswordSubtitleSuffix": "for your account.",
+            "newPasswordSubtitleBold": "strong",
+            "newPasswordPlaceholder": "New Password",
+            "confirmPasswordPlaceholder": "Confirm Password",
+            "resetPassword": "Reset Password",
+
+            "successTitle": "Password Reset!",
+            "successBody": "Your password has been successfully reset.",
+            "backToLogin": "Back to Login",
+
+            "errors": {
+                "invalidEmail": "Invalid email address",
+                "codeToShort": "Please enter the full code",
+                "passwordTooShort": "Password must be at least 6 characters",
+                "passwordMismatch": "Passwords dont match"
+            }
         }
     }
 }
