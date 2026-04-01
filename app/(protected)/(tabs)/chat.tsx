@@ -16,6 +16,7 @@ import ChatComponent from "@/components/ChatComponent";
 import Input from "@/components/input";
 import { Theme } from "@/lib/theme/theme";
 import { useFetch } from "@/hooks/useFetch";
+import { decryptMessage } from "@/services/chat-crypto.client";
 
 export default function Index() {
     const { theme } = useTheme();
@@ -47,6 +48,7 @@ export default function Index() {
             mediaDurationSec: number | null;
             isDeleted: boolean;
             createdAt: string;
+            encryptedKey: string | null;
         } | null;
         otherUser: {
             id: string;
@@ -72,21 +74,33 @@ export default function Index() {
 
     useEffect(() => {
         if (!data) return;
-        const mapped = data.map((chat) => ({
-            id: chat.room.id,
-            name: chat.otherUser.fullName,
-            lastMessage:
-                chat.lastMessage?.type === "text"
-                    ? chat.lastMessage.cyphertext
-                    : (chat.lastMessage?.cyphertext ?? ""),
-            createdAt: chat.room.createdAt,
-            updatedAt: chat.room.updatedAt,
-            image: chat.otherUser.avatar ?? "",
-        }));
-        setChats(orderChatsByUpdatedAt(mapped));
+        Promise.all(
+            data.map(async (chat) => ({
+                id: chat.room.id,
+                name: chat.otherUser.fullName,
+                lastMessage:
+                    chat.lastMessage?.type === "text"
+                        ? chat.lastMessage.cyphertext
+                        : ((await decryptMessage({
+                              ciphertext: chat.lastMessage?.cyphertext ?? "",
+                              iv: chat.lastMessage?.iv ?? "",
+                              authTag: chat.lastMessage?.authTag ?? "",
+                              encryptedKey: chat.lastMessage?.mediaUrl ?? "",
+                          })) ?? "[Unable to decrypt message]"),
+                createdAt: chat.room.createdAt,
+                updatedAt: chat.room.updatedAt,
+                image: chat.otherUser.avatar ?? "",
+            })),
+        ).then((mapped) => {
+            setChats(orderChatsByUpdatedAt(mapped));
+        });
     }, [data]);
 
-    const [filteredChats, setFilteredChats] = useState<Chat[]>(chats);
+    const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
+
+    useEffect(() => {
+        setFilteredChats(chats);
+    }, [chats]);
 
     const onSearch = (text: string) => {
         const filtered = chats.filter((chat) =>
