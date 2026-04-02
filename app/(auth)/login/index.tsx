@@ -5,13 +5,13 @@ import { HomeIcon } from "lucide-react-native";
 import { StyleSheet, Text, View, useColorScheme } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
-import i18n from "@/i18n";
+import { createT } from "@/i18n";
 
 export default function Login() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();
-    const t = (key: string) => i18n.t(`auth.login.${key}`);
+    const t = createT("auth.login");
 
     // useEffect(() => {
     //     router.prefetch("/login/withEmail");
@@ -32,7 +32,7 @@ export default function Login() {
             </Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
                 <Button onPress={() => router.push("/(auth)/login/withEmail")}>
-                    <BtnText>Continue with Email</BtnText>
+                    <BtnText>{t("continueWithEmail")}</BtnText>
                 </Button>
                 <Button
                     variante="outline"
@@ -103,7 +103,7 @@ export default function Login() {
                         }
                         transition={1000}
                     />
-                    <BtnText style={{ color: theme.text }}>Google</BtnText>
+                    <BtnText style={{ color: theme.text }}>{t("google")}</BtnText>
                 </Button>
                 <Button
                     variante="outline"
@@ -129,7 +129,7 @@ export default function Login() {
                             transition={1000}
                         />
                     )}
-                    <BtnText style={{ color: theme.text }}>Apple</BtnText>
+                    <BtnText style={{ color: theme.text }}>{t("apple")}</BtnText>
                 </Button>
             </View>
 
