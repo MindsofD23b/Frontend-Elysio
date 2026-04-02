@@ -1,12 +1,11 @@
-import { useFetch } from "@/hooks/useFetch";
-import { useStore } from "@/hooks/useStore";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useTheme } from "@/lib/theme/context";
 import { Chat } from "@/types/chats";
 import { decryptMessage, encryptMessage } from "@/services/chat-crypto.client";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowUp, ChevronLeft } from "lucide-react-native";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -18,6 +17,7 @@ import {
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 interface Message {
     id: string;
@@ -53,37 +53,92 @@ type RoomKeysResponse = {
 export default function ChatsScreen() {
     const { id, user: userRaw } = useLocalSearchParams<{ id: string; user: string }>();
     const user = JSON.parse(userRaw) as Chat;
-    const [message, setMessage] = useState("");
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [sending, setSending] = useState(false);
-    const scrollRef = useRef<ScrollView>(null);
-    const [token] = useStore<string | null>("token", null);
 
+    const [message, setMessage] = useState("");
+    const [sending, setSending] = useState(false);
+    const [decryptedMessages, setDecryptedMessages] = useState<Message[]>([]);
+
+    const scrollRef = useRef<ScrollView>(null);
+    const { token } = useAuth();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
 
-    const base = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
-
-    const fetchOptions = useMemo(
-        () => ({ method: "GET", headers: { "Content-Type": "application/json" } }),
+    const messagesRequest = useMemo<RequestInit>(
+        () => ({
+            method: "GET",
+        }),
         [],
     );
 
-    const [, loading, , run] = useFetch<RoomMessagesResponse>(
+    const messagesOptions = useMemo(
+        () => ({
+            manual: true,
+            useCache: false,
+        }),
+        [],
+    );
+    const [, loading, _error, run] = useAuthFetch<RoomMessagesResponse>(
         `/chat/rooms/${id}/messages`,
-        fetchOptions,
-        { useCache: false },
+        messagesRequest,
+        messagesOptions,
     );
 
-    // Nachrichten entschlüsseln sobald sie geladen sind
-    useEffect(() => {
-        async function decryptMessages() {
+    const roomKeysRequest = useMemo<RequestInit>(
+        () => ({
+            method: "GET",
+        }),
+        [],
+    );
+
+    const roomKeysOptions = useMemo(
+        () => ({
+            manual: true,
+            useCache: false,
+        }),
+        [],
+    );
+
+    const sendMessageRequest = useMemo<RequestInit>(
+        () => ({
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        }),
+        [],
+    );
+
+    const sendMessageOptions = useMemo(
+        () => ({
+            manual: true,
+            useCache: false,
+        }),
+        [],
+    );
+
+    const [, , , runFetchRoomKeys] = useAuthFetch<RoomKeysResponse>(
+        `/chat/rooms/${id}/keys`,
+        roomKeysRequest,
+        roomKeysOptions,
+    );
+
+    const [, , , runSendMessage] = useAuthFetch<{
+        id: string;
+        senderId: string;
+        createdAt: string;
+    }>(`/chat/rooms/${id}/messages`, sendMessageRequest, sendMessageOptions);
+
+    const loadMessages = useCallback(async () => {
+        try {
             const data = await run();
+
             const decrypted = await Promise.all(
                 data.messages.map(async (msg) => {
                     let text = "[Encrypted message]";
 
-                    if (msg.encryptedKey) {
+                    if (msg.type !== "text") {
+                        text = "Voice message";
+                    } else if (msg.encryptedKey) {
                         try {
                             text = await decryptMessage({
                                 ciphertext: msg.ciphertext,
@@ -96,12 +151,6 @@ export default function ChatsScreen() {
                         }
                     }
 
-                    console.log("Decrypted message:", {
-                        id: msg.id,
-                        text,
-                        senderId: msg.senderId,
-                    });
-
                     return {
                         id: msg.id,
                         senderId: msg.senderId,
@@ -110,19 +159,23 @@ export default function ChatsScreen() {
                     };
                 }),
             );
-            setMessages(
+
+            setDecryptedMessages(
                 decrypted.sort(
                     (a, b) =>
                         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
                 ),
             );
+        } catch (err) {
+            console.error("loadMessages error", err);
         }
+    }, [run]);
 
+    useEffect(() => {
         if (!token) return;
-        decryptMessages();
-    }, [token]);
+        loadMessages();
+    }, [token, loadMessages]);
 
-    // ─── Nachricht senden ────────────────────────────────────────────────────
     const sendMessage = async () => {
         const text = message.trim();
         if (!text || sending) return;
@@ -131,31 +184,16 @@ export default function ChatsScreen() {
         setMessage("");
 
         try {
-            const keysRes = await fetch(`${base}/chat/rooms/${id}/keys`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const recipients: RoomKeysResponse = await keysRes.json();
+            const recipients = await runFetchRoomKeys();
             const validRecipients = recipients.filter((r) => r.publicKey);
 
             const payload = await encryptMessage(text, validRecipients);
-            console.log("Payload:", JSON.stringify(payload));
 
-            const res = await fetch(`${base}/chat/rooms/${id}/messages`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+            const sent = await runSendMessage({
                 body: JSON.stringify(payload),
             });
 
-            const resText = await res.text(); // ← neu
-            console.log("Server:", res.status, resText); // ← neu
-
-            if (!res.ok) throw new Error("Send failed");
-            const sent = JSON.parse(resText); // ← statt res.json()
-
-            setMessages((prev) => [
+            setDecryptedMessages((prev) => [
                 ...prev,
                 {
                     id: sent.id,
@@ -165,15 +203,12 @@ export default function ChatsScreen() {
                 },
             ]);
         } catch (e: unknown) {
-            console.error("Send error:", (e as Error).message);
-            setMessage(text); // Text zurücksetzen bei Fehler
+            console.error("Send error:", e);
+            setMessage(text);
         } finally {
             setSending(false);
         }
     };
-
-    console.log("Rendering chat with messages:", messages);
-    console.log("User:", user);
 
     return (
         <KeyboardAvoidingView
@@ -182,7 +217,6 @@ export default function ChatsScreen() {
             keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom : 25}
         >
             <View style={{ flex: 1 }}>
-                {/* Header */}
                 <View
                     style={{
                         flexDirection: "row",
@@ -226,7 +260,6 @@ export default function ChatsScreen() {
                     </Text>
                 </View>
 
-                {/* Nachrichten */}
                 <View style={{ flex: 1, paddingTop: 12 }}>
                     {loading ? (
                         <ActivityIndicator
@@ -247,8 +280,8 @@ export default function ChatsScreen() {
                                 paddingBottom: 12,
                             }}
                         >
-                            {messages.map((msg, i) => {
-                                const next = messages[i + 1];
+                            {decryptedMessages.map((msg, i) => {
+                                const next = decryptedMessages[i + 1];
                                 const sameMinute =
                                     next &&
                                     next.senderId === msg.senderId &&
@@ -262,6 +295,7 @@ export default function ChatsScreen() {
                                         new Date(msg.createdAt).getHours() &&
                                     new Date(next.createdAt).getMinutes() ===
                                         new Date(msg.createdAt).getMinutes();
+
                                 return (
                                     <MessageBubble
                                         key={msg.id}
@@ -276,7 +310,6 @@ export default function ChatsScreen() {
                     )}
                 </View>
 
-                {/* Input */}
                 <View
                     style={{
                         borderTopWidth: 1,

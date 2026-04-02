@@ -679,7 +679,7 @@ export default function VideoCall() {
             remoteVideoStreamRef.current = null;
             roomIdRef.current = null;
         };
-    }, [connectMatchmakingGateway]);
+    }, [connectMatchmakingGateway, stopCall]);
 
     useEffect(() => {
         if (!matchmakingReady) return;
