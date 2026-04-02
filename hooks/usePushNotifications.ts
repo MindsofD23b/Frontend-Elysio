@@ -21,18 +21,6 @@ Notifications.setNotificationHandler({
 export interface PushNotificationState {
     notification?: Notifications.Notification;
     expoPushToken?: Notifications.ExpoPushToken;
-    sendTestNotification: () => Promise<void>;
-}
-
-export async function sendTestNotification(): Promise<void> {
-    await Notifications.scheduleNotificationAsync({
-        content: {
-            title: "Test Notification",
-            body: "Push notifications are working!",
-            data: { test: true },
-        },
-        trigger: null,
-    });
 }
 
 export const usePushNotifications = (): PushNotificationState => {
@@ -63,7 +51,6 @@ export const usePushNotifications = (): PushNotificationState => {
         }
 
         if (finalStatus !== "granted") {
-            alert("[ERROR] Failed to get push token for push notification!");
             return;
         }
 
@@ -106,5 +93,5 @@ export const usePushNotifications = (): PushNotificationState => {
         };
     }, [registerForPushNotificationsAsync]);
 
-    return { expoPushToken, notification, sendTestNotification };
+    return { expoPushToken, notification };
 };
