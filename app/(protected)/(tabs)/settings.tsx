@@ -55,7 +55,7 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    href="/settings/interests"
                 />
                 <MenuRow
                     icon={Globe}

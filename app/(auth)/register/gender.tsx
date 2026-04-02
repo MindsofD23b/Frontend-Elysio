@@ -1,7 +1,7 @@
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mars, Venus } from "lucide-react-native";
@@ -44,44 +44,54 @@ export default function Gender() {
     };
 
     return (
-        <BackWrapper>
-            <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
+        <>
+            <Stack.Screen options={{ headerShown: false }} />
+            <BackWrapper>
+                <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
 
-            <Text
-                style={[
-                    gs.bodyText,
-                    { marginTop: 10, color: theme.base + "54", textAlign: "left" },
-                ]}
-            >
-                {t("body")} <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
-            </Text>
-
-            <View style={styles.cardsArea}>
-                <Pressable
-                    style={[styles.card, getCardStyle("male")]}
-                    onPress={() => setSelected("male")}
+                <Text
+                    style={[
+                        gs.bodyText,
+                        { marginTop: 10, color: theme.base + "54", textAlign: "left" },
+                    ]}
                 >
-                    <Mars size={36} color={getLabelColor("male")} />
-                    <Text style={[styles.cardText, { color: getLabelColor("male") }]}>
-                        {t("male")}
-                    </Text>
-                </Pressable>
+                    {t("body")}{" "}
+                    <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
+                </Text>
 
-                <Pressable
-                    style={[styles.card, getCardStyle("female")]}
-                    onPress={() => setSelected("female")}
+                <View style={styles.cardsArea}>
+                    <Pressable
+                        style={[styles.card, getCardStyle("male")]}
+                        onPress={() => setSelected("male")}
+                    >
+                        <Mars size={36} color={getLabelColor("male")} />
+                        <Text style={[styles.cardText, { color: getLabelColor("male") }]}>
+                            {t("male")}
+                        </Text>
+                    </Pressable>
+
+                    <Pressable
+                        style={[styles.card, getCardStyle("female")]}
+                        onPress={() => setSelected("female")}
+                    >
+                        <Venus size={36} color={getLabelColor("female")} />
+                        <Text
+                            style={[styles.cardText, { color: getLabelColor("female") }]}
+                        >
+                            {t("female")}
+                        </Text>
+                    </Pressable>
+                </View>
+
+                <Button
+                    style={{ marginTop: "auto" }}
+                    onPress={onSubmit}
+                    disabled={!selected}
                 >
-                    <Venus size={36} color={getLabelColor("female")} />
-                    <Text style={[styles.cardText, { color: getLabelColor("female") }]}>
-                        {t("female")}
-                    </Text>
-                </Pressable>
-            </View>
-
-            <Button style={{ marginTop: "auto" }} onPress={onSubmit} disabled={!selected}>
-                <BtnText>{t("continue")}</BtnText>
-            </Button>
-        </BackWrapper>
+                    <BtnText>{t("continue")}</BtnText>
+                </Button>
+            </BackWrapper>
+        </>
     );
 }
 

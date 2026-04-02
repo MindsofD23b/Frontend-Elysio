@@ -1,6 +1,6 @@
 import { Redirect, Stack } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export default function ProtectedLayout() {
     const { isAuthenticated, isLoading } = useAuth();
@@ -17,5 +17,12 @@ export default function ProtectedLayout() {
         return <Redirect href="/login" />;
     }
 
-    return <Stack screenOptions={{ headerShown: false }} />;
+    return (
+        <Stack
+            screenOptions={{
+                headerShown: false,
+                contentStyle: StyleSheet.flatten({ flex: 1 }),
+            }}
+        />
+    );
 }

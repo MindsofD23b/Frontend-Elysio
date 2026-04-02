@@ -9,6 +9,7 @@ import { router, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type FieldProps = {
     label: string;
@@ -61,6 +62,7 @@ export default function PersonalDetails() {
 
     const [fullName, setFullName] = useState("Lara Gut");
     const [email, setEmail] = useState("lara.gut@example.com");
+    const [password, setPassword] = useState("********");
     const [phone, setPhone] = useState("+41 79 123 45 67");
     const [country, setCountry] = useState("Switzerland");
     const [birthday, setBirthday] = useState("14.02.2002");
@@ -104,64 +106,85 @@ export default function PersonalDetails() {
             <Stack.Screen options={{ headerShown: false }} />
 
             <BackWrapper>
-                <Text style={[gs.h1, styles.title]}>Edit Profile</Text>
-
-                <View style={styles.profileWrap}>
-                    <View>
-                        <Image source={{ uri: profileImage }} style={styles.avatar} />
-                        <Pressable
-                            style={[styles.editIcon, { backgroundColor: theme.primary }]}
-                        >
-                            <Ionicons name="pencil" size={18} color="#fff" />
-                        </Pressable>
-                    </View>
-                    <Text style={[styles.name, { color: theme.text }]}>{fullName}</Text>
-                    <Text style={[styles.emailTop, { color: theme.text + "80" }]}>
-                        {email}
+                <KeyboardAwareScrollView
+                    contentContainerStyle={styles.page}
+                    showsVerticalScrollIndicator={false}
+                    enableOnAndroid={true}
+                    extraScrollHeight={20}
+                >
+                    <Text style={[gs.h1, styles.title, { marginTop: 2 }]}>
+                        Edit Profile
                     </Text>
-                </View>
 
-                <View style={styles.form}>
-                    <Field
-                        label="Full Name"
-                        placeholder="Your Full Name"
-                        value={fullName}
-                        onChangeText={setFullName}
-                    />
-                    <Field
-                        label="Email Address"
-                        placeholder="Your Email"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoComplete="email"
-                    />
-                    <Field
-                        label="Phone Number"
-                        placeholder="Your Phone Number"
-                        value={phone}
-                        onChangeText={setPhone}
-                        keyboardType="phone-pad"
-                        autoComplete="tel"
-                    />
-                    <Field
-                        label="Date of Birth"
-                        placeholder="dd.mm.yyyy"
-                        value={birthday}
-                        onChangeText={handleBirthdayChange}
-                        keyboardType="phone-pad"
-                    />
-                    <Field
-                        label="Country"
-                        placeholder="Country"
-                        value={country}
-                        onChangeText={setCountry}
-                    />
-                </View>
+                    <View style={styles.profileWrap}>
+                        <View>
+                            <Image source={{ uri: profileImage }} style={styles.avatar} />
+                            <Pressable
+                                style={[
+                                    styles.editIcon,
+                                    { backgroundColor: theme.primary },
+                                ]}
+                            >
+                                <Ionicons name="pencil" size={18} color="#fff" />
+                            </Pressable>
+                        </View>
+                        <Text style={[styles.name, { color: theme.text }]}>
+                            {fullName}
+                        </Text>
+                        <Text style={[styles.emailTop, { color: theme.text + "80" }]}>
+                            {email}
+                        </Text>
+                    </View>
 
-                <Button style={{ marginTop: "auto" }} onPress={() => router.back()}>
-                    <BtnText>Save and Exit</BtnText>
-                </Button>
+                    <View style={styles.form}>
+                        <Field
+                            label="Full Name"
+                            placeholder="Your Full Name"
+                            value={fullName}
+                            onChangeText={setFullName}
+                        />
+                        <Field
+                            label="Email Address"
+                            placeholder="Your Email"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoComplete="email"
+                        />
+                        <Field
+                            label="Password"
+                            placeholder="Your Password"
+                            value={password}
+                            onChangeText={setPassword}
+                            autoComplete="current-password"
+                        />
+                        <Field
+                            label="Phone Number"
+                            placeholder="Your Phone Number"
+                            value={phone}
+                            onChangeText={setPhone}
+                            keyboardType="phone-pad"
+                            autoComplete="tel"
+                        />
+                        <Field
+                            label="Date of Birth"
+                            placeholder="dd.mm.yyyy"
+                            value={birthday}
+                            onChangeText={handleBirthdayChange}
+                            keyboardType="phone-pad"
+                        />
+                        <Field
+                            label="Country"
+                            placeholder="Country"
+                            value={country}
+                            onChangeText={setCountry}
+                        />
+                    </View>
+
+                    <Button style={{ marginTop: 20 }} onPress={() => router.back()}>
+                        <BtnText>Save and Exit</BtnText>
+                    </Button>
+                </KeyboardAwareScrollView>
             </BackWrapper>
         </>
     );
@@ -169,6 +192,12 @@ export default function PersonalDetails() {
 
 const makeStyles = () =>
     StyleSheet.create({
+        page: {
+            width: "100%",
+            paddingTop: 2,
+            paddingBottom: 24,
+        },
+
         title: { marginTop: -25, textAlign: "center" },
         profileWrap: { alignItems: "center", marginTop: 20 },
         avatar: { width: 130, height: 130, borderRadius: 24 },

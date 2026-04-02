@@ -1,4 +1,4 @@
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
@@ -38,7 +38,7 @@ export default function RootLayout() {
                 <BaseTheme>
                     <SafeAreaProvider>
                         <SafeAreaWrapper>
-                            <Slot />
+                            <Stack screenOptions={{ headerShown: false }} />
                         </SafeAreaWrapper>
                     </SafeAreaProvider>
                 </BaseTheme>
