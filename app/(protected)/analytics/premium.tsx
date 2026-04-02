@@ -1,6 +1,8 @@
 import BackWrapper from "@/components/backwrapper";
+import { useTheme } from "@/lib/theme/context";
 import { Stack } from "expo-router";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Theme } from "@/lib/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 type Plan = {
@@ -18,7 +20,8 @@ type Plan = {
 };
 
 export default function PremiumScreen() {
-    const styles = makeStyles();
+    const { theme } = useTheme();
+    const styles = makeStyles(theme);
 
     const plans: Plan[] = [
         {
@@ -26,8 +29,8 @@ export default function PremiumScreen() {
             priceMain: "CHF 0",
             per: "/month",
             badge: "Current",
-            badgeBg: "#E67FC9",
-            accent: "#E67FC9",
+            badgeBg: theme.planFree,
+            accent: theme.planFree,
             filledButton: true,
             buttonText: "Current Plan",
             features: [
@@ -42,8 +45,8 @@ export default function PremiumScreen() {
             priceMain: "CHF 9.95",
             per: "/month",
             badge: "POPULAR",
-            badgeBg: "#EC136A",
-            accent: "#EC136A",
+            badgeBg: theme.planEssential,
+            accent: theme.planEssential,
             filledButton: true,
             buttonText: "Get Essential",
             features: [
@@ -60,8 +63,8 @@ export default function PremiumScreen() {
             oldPrice: "35.95",
             per: "/month",
             badge: "Save 25%",
-            badgeBg: "#9B4DCA",
-            accent: "#9B4DCA",
+            badgeBg: theme.planPremium,
+            accent: theme.planPremium,
             filledButton: true,
             buttonText: "Get Premium",
             features: [
@@ -95,7 +98,7 @@ export default function PremiumScreen() {
                                 style={[
                                     styles.card,
                                     {
-                                        backgroundColor: "#131313",
+                                        backgroundColor: theme.cardBgDeep,
                                         shadowColor: plan.accent,
                                     },
                                 ]}
@@ -111,9 +114,7 @@ export default function PremiumScreen() {
                                         <Text
                                             style={[
                                                 styles.badgeText,
-                                                {
-                                                    color: "#FFFFFF",
-                                                },
+                                                { color: theme.white },
                                             ]}
                                         >
                                             {plan.badge}
@@ -173,7 +174,7 @@ export default function PremiumScreen() {
                                             styles.ctaText,
                                             {
                                                 color: plan.filledButton
-                                                    ? "#FFFFFF"
+                                                    ? theme.white
                                                     : plan.accent,
                                             },
                                         ]}
@@ -197,7 +198,7 @@ export default function PremiumScreen() {
                                                 <Ionicons
                                                     name="checkmark"
                                                     size={13}
-                                                    color="#fff"
+                                                    color={theme.white}
                                                 />
                                             </View>
                                             <Text style={styles.featureText}>
@@ -238,7 +239,7 @@ export default function PremiumScreen() {
     );
 }
 
-const makeStyles = () =>
+const makeStyles = (theme: Theme) =>
     StyleSheet.create({
         page: {
             width: "100%",
@@ -384,5 +385,5 @@ const makeStyles = () =>
             fontWeight: "800",
         },
 
-        linkPink: { color: "#CE0093", fontWeight: "900" },
+        linkPink: { color: theme.planEssential, fontWeight: "900" },
     });

@@ -4,23 +4,17 @@ import { useTheme } from "@/lib/theme/context";
 import { Check, Clock, Flame, Heart, Snowflake } from "lucide-react-native";
 
 const DAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
-const TODAY_INDEX = 4; // FR
-const FREEZE_INDEX = 1; // TU
-const LINE_START = 2; // WE
-const LINE_END = 4; // FR
-const SINGLE_DONE = [0]; // MO
+const TODAY_INDEX = 4;
+const FREEZE_INDEX = 1;
+const LINE_START = 2;
+const LINE_END = 4;
+const SINGLE_DONE = [0];
 
 const HOUR_LABELS = ["6", "9", "12", "15", "18", "21", "24"];
 const BAR_VALUES = [12, 22, 38, 28, 52, 90, 35];
 const PEAK_INDEX = 5;
 
-const INTERESTS = [
-    { label: "MUSIC", color: "#fc8a92" },
-    { label: "GAMING", color: "#c8a4ff" },
-    { label: "TRAVEL", color: "#DA9AB4" },
-];
-
-const FREEZE_COLOR = "#6BBFDF";
+const DAYS_LEN = 7;
 
 export default function Index() {
     const router = useRouter();
@@ -51,25 +45,31 @@ export default function Index() {
             {/* ── Stats Row ── */}
             <View style={s.statsRow}>
                 <View style={s.statCard}>
-                    <View style={[s.statIconCircle, { backgroundColor: "#7c72b0" }]}>
+                    <View
+                        style={[s.statIconCircle, { backgroundColor: theme.matchColor }]}
+                    >
                         <Heart color={theme.white} size={18} />
                     </View>
                     <Text style={s.statLabel}>Mutual Interests</Text>
-                    <Text style={[s.statValue, { color: "#9B8FDD" }]}>
+                    <Text style={[s.statValue, { color: theme.matchValue }]}>
                         64%{" "}
-                        <Text style={[s.statUnit, { color: "#9B8FDD" }]}>
+                        <Text style={[s.statUnit, { color: theme.matchValue }]}>
                             MATCH SCORE
                         </Text>
                     </Text>
                 </View>
                 <View style={s.statCard}>
-                    <View style={[s.statIconCircle, { backgroundColor: "#d9430e" }]}>
+                    <View
+                        style={[s.statIconCircle, { backgroundColor: theme.waitColor }]}
+                    >
                         <Clock color={theme.white} size={18} />
                     </View>
                     <Text style={s.statLabel}>Average waiting time</Text>
-                    <Text style={[s.statValue, { color: "#d9430e" }]}>
+                    <Text style={[s.statValue, { color: theme.waitColor }]}>
                         6.32{" "}
-                        <Text style={[s.statUnit, { color: "#d9430e" }]}>SECONDS</Text>
+                        <Text style={[s.statUnit, { color: theme.waitColor }]}>
+                            SECONDS
+                        </Text>
                     </Text>
                 </View>
             </View>
@@ -84,11 +84,8 @@ export default function Index() {
                     </View>
                 </View>
 
-                {/* The pill line sits BEHIND the circles — absolute positioned */}
                 <View style={s.daysContainer}>
-                    {/* Background connector pill from LINE_START to LINE_END */}
                     <View style={s.pillTrack} pointerEvents="none" />
-
                     <View style={s.daysRow}>
                         {DAYS.map((label, i) => {
                             const isFreeze = i === FREEZE_INDEX;
@@ -98,8 +95,7 @@ export default function Index() {
                             const isInactive = !isFreeze && !isSingleDone && !isInLine;
 
                             let circleStyle: object[] = [s.dayCircle];
-                            let iconColor = "#3b3a3b";
-                            let IconComp = <Check size={14} color={iconColor} />;
+                            let IconComp = <Check size={14} color="#3b3a3b" />;
 
                             if (isSingleDone) {
                                 circleStyle = [s.dayCircle, s.doneCircle];
@@ -108,10 +104,12 @@ export default function Index() {
                                 );
                             } else if (isFreeze) {
                                 circleStyle = [s.dayCircle, s.freezeCircle];
-                                IconComp = <Snowflake size={14} color={FREEZE_COLOR} />;
+                                IconComp = (
+                                    <Snowflake size={14} color={theme.freezeColor} />
+                                );
                             } else if (isToday) {
                                 circleStyle = [s.dayCircle, s.todayCircle];
-                                IconComp = <Check size={14} color="#fff" />;
+                                IconComp = <Check size={14} color={theme.white} />;
                             } else if (isInLine) {
                                 circleStyle = [s.dayCircle, s.lineCircle];
                                 IconComp = (
@@ -128,7 +126,7 @@ export default function Index() {
                                         style={[
                                             s.dayLabel,
                                             isToday && { color: theme.primary },
-                                            isFreeze && { color: FREEZE_COLOR },
+                                            isFreeze && { color: theme.freezeColor },
                                         ]}
                                     >
                                         {label}
@@ -156,7 +154,7 @@ export default function Index() {
                                             height: barH,
                                             backgroundColor: isPeak
                                                 ? theme.primary + "CC"
-                                                : "#3A3A3A",
+                                                : theme.barInactive,
                                             shadowColor: isPeak
                                                 ? theme.primary
                                                 : "transparent",
@@ -187,7 +185,11 @@ export default function Index() {
             <View style={s.interestsCard}>
                 <Text style={s.sectionTitle}>Top Match Interests</Text>
                 <View style={s.tagsRow}>
-                    {INTERESTS.map((item, i) => (
+                    {[
+                        { label: "MUSIC", color: theme.interestMusic },
+                        { label: "GAMING", color: theme.interestGaming },
+                        { label: "TRAVEL", color: theme.interestTravel },
+                    ].map((item, i) => (
                         <View key={i} style={[s.tag, { borderColor: item.color + "77" }]}>
                             <Text style={[s.tagText, { color: item.color }]}>
                                 {item.label}
@@ -200,13 +202,11 @@ export default function Index() {
     );
 }
 
-const DAYS_LEN = 7;
-
 const makeStyles = (theme: any) =>
     StyleSheet.create({
         root: {
             flex: 1,
-            backgroundColor: "#141414",
+            backgroundColor: theme.rootBg,
             paddingHorizontal: 14,
             paddingTop: 18,
             paddingBottom: 10,
@@ -219,31 +219,33 @@ const makeStyles = (theme: any) =>
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            backgroundColor: "#EC136A0A",
+            backgroundColor: theme.primary + "0A",
             borderWidth: 1,
-            borderColor: "#EC136A33",
+            borderColor: theme.primary + "33",
         },
-        premiumTextCol: {
-            flex: 1,
-            marginRight: 10,
-        },
+        premiumTextCol: { flex: 1, marginRight: 10 },
         premiumEyebrow: {
             fontSize: 9,
             fontWeight: "800",
-            color: "#EC136A",
+            color: theme.primary,
             letterSpacing: 1.2,
             marginBottom: 3,
         },
-        premiumTitle: { color: "#fff", fontWeight: "800", fontSize: 15, lineHeight: 20 },
-        premiumSub: { color: "#ffffff55", fontSize: 11, marginTop: 4 },
+        premiumTitle: {
+            color: theme.white,
+            fontWeight: "800",
+            fontSize: 15,
+            lineHeight: 20,
+        },
+        premiumSub: { color: theme.white + "55", fontSize: 11, marginTop: 4 },
         premiumBtn: {
-            backgroundColor: "#EC136A",
+            backgroundColor: theme.primary,
             borderRadius: 20,
             paddingVertical: 9,
             paddingHorizontal: 16,
         },
         premiumBtnText: {
-            color: "#fff",
+            color: theme.white,
             fontWeight: "700",
             fontSize: 13,
             textAlign: "center",
@@ -252,7 +254,7 @@ const makeStyles = (theme: any) =>
         statsRow: { flexDirection: "row", gap: 10 },
         statCard: {
             flex: 1,
-            backgroundColor: "#1E1E1E",
+            backgroundColor: theme.cardBg,
             borderRadius: 14,
             padding: 12,
             gap: 6,
@@ -269,19 +271,17 @@ const makeStyles = (theme: any) =>
         statUnit: { fontWeight: "600", fontSize: 11 },
 
         streakCard: {
-            backgroundColor: "#1E1E1E",
+            backgroundColor: theme.cardBg,
             borderRadius: 14,
             padding: 14,
             gap: 12,
         },
         streakHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-        streakTitle: { color: "#fff", fontWeight: "800", fontSize: 17 },
+        streakTitle: { color: theme.white, fontWeight: "800", fontSize: 17 },
         streakSub: { color: "#aaa", fontSize: 12 },
 
-        // container holds pill track + days row together
         daysContainer: { position: "relative" },
 
-        // connect pill
         pillTrack: {
             position: "absolute",
             top: 0,
@@ -293,18 +293,14 @@ const makeStyles = (theme: any) =>
             zIndex: 0,
         },
 
-        daysRow: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            zIndex: 1,
-        },
+        daysRow: { flexDirection: "row", justifyContent: "space-between", zIndex: 1 },
         dayWrapper: { alignItems: "center", gap: 4, flex: 1 },
 
         dayCircle: {
             width: 34,
             height: 34,
             borderRadius: 17,
-            backgroundColor: "#222",
+            backgroundColor: theme.circleBg,
             alignItems: "center",
             justifyContent: "center",
         },
@@ -313,42 +309,37 @@ const makeStyles = (theme: any) =>
             borderWidth: 1.5,
             borderColor: theme.primary + "55",
         },
-        todayCircle: {
-            backgroundColor: theme.primary,
-        },
+        todayCircle: { backgroundColor: theme.primary },
         freezeCircle: {
-            backgroundColor: FREEZE_COLOR + "22",
+            backgroundColor: theme.freezeColor + "22",
             borderWidth: 1.5,
-            borderColor: FREEZE_COLOR + "66",
+            borderColor: theme.freezeColor + "66",
         },
-        // circles that sit on the pill (WE, TH) — transparent so pill shows through
-        lineCircle: {
-            backgroundColor: "transparent",
-        },
+        lineCircle: { backgroundColor: "transparent" },
 
         dayLabel: { color: "#555", fontSize: 10 },
 
         chartCard: {
-            backgroundColor: "#1E1E1E",
+            backgroundColor: theme.cardBg,
             borderRadius: 14,
             padding: 14,
             gap: 8,
             flex: 1,
         },
-        sectionTitle: { color: "#fff", fontWeight: "700", fontSize: 14, marginBottom: 2 },
-        barsRow: {
-            flexDirection: "row",
-            alignItems: "flex-end",
-            gap: 6,
-            flex: 1,
+        sectionTitle: {
+            color: theme.white,
+            fontWeight: "700",
+            fontSize: 14,
+            marginBottom: 2,
         },
+        barsRow: { flexDirection: "row", alignItems: "flex-end", gap: 6, flex: 1 },
         barCol: { flex: 1, alignItems: "center", gap: 4, justifyContent: "flex-end" },
-        bar: { width: "99%", borderRadius: 6 },
+        bar: { width: "60%", borderRadius: 6 },
         barLabel: { color: "#555", fontSize: 9 },
         chartNote: { color: "#666", fontSize: 11, lineHeight: 15, marginTop: 2 },
 
         interestsCard: {
-            backgroundColor: "#1E1E1E",
+            backgroundColor: theme.cardBg,
             borderRadius: 14,
             padding: 14,
             gap: 10,
