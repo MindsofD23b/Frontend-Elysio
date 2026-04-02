@@ -1,4 +1,4 @@
-import { getToken } from "@/hooks/useStore";
+import { get_token } from "@/hooks/useStore";
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
@@ -6,7 +6,7 @@ export async function api<T = unknown>(
     route: string,
     requestInit: RequestInit = {},
 ): Promise<T> {
-    const token = getToken();
+    const token = get_token();
 
     console.log(token);
 

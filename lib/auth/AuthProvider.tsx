@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initCrypto } from "@/services/chat-crypto.client";
+import { set_token } from "@/hooks/useStore";
 
 type AuthContextType = {
     token: string | null;
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (nextToken: string) => {
         setToken(nextToken);
-        await AsyncStorage.setItem("token", nextToken);
+        set_token(nextToken);
         console.log("Calling initCrypto..."); // ← neu
         await initCrypto("https://elysio.jamiepoeffel.ch", nextToken);
         console.log("initCrypto done"); // ← neu
