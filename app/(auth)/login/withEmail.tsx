@@ -7,6 +7,7 @@ import { useState } from "react";
 import { router } from "expo-router";
 import { useFetch } from "@/hooks/useFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { createT } from "@/i18n";
 
 type FormData = {
     email: string;
@@ -26,6 +27,7 @@ type FormErrors = {
 export default function WithEmail() {
     const { gs, theme } = useTheme();
     const { login: saveLogin } = useAuth();
+    const t = createT("auth.login.withEmail");
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -49,11 +51,11 @@ export default function WithEmail() {
         const nextErrors: FormErrors = {};
 
         if (!/^\S+@\S+\.\S+$/.test(data.email.trim())) {
-            nextErrors.email = { message: "Invalid email address" };
+            nextErrors.email = { message: t("errors.invalidEmail") };
         }
 
         if (!data.password.trim()) {
-            nextErrors.password = { message: "Password is required" };
+            nextErrors.password = { message: t("errors.passwordRequired") };
         }
 
         setErrors(nextErrors);
@@ -72,7 +74,7 @@ export default function WithEmail() {
 
             if (!response?.token) {
                 setErrors({
-                    general: { message: "Login failed. No token received." },
+                    general: { message: t("errors.loginFailed") },
                 });
                 return;
             }
@@ -82,7 +84,7 @@ export default function WithEmail() {
         } catch (err) {
             setErrors({
                 general: {
-                    message: err instanceof Error ? err.message : "Login failed",
+                    message: err instanceof Error ? err.message : t("errors.loginFailed"),
                 },
             });
         }
@@ -98,16 +100,16 @@ export default function WithEmail() {
                     height: "100%",
                 }}
             >
-                <Text style={[gs.h1, { marginTop: 35 }]}>Login with Email</Text>
+                <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
 
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
-                    Please enter your{" "}
-                    <Text style={{ fontWeight: "bold" }}>Credentials</Text>
+                    {t("body")}{" "}
+                    <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
                 </Text>
 
                 <View style={{ width: "100%", marginTop: 30 }}>
                     <Input
-                        placeholder="Email"
+                        placeholder={t("emailPlaceholder")}
                         keyboardType="email-address"
                         onChangeText={(text) => {
                             setEmail(text);
@@ -132,7 +134,7 @@ export default function WithEmail() {
                     )}
 
                     <Input
-                        placeholder="Password"
+                        placeholder={t("passwordPlaceholder")}
                         secureTextEntry
                         onChangeText={(text) => {
                             setPassword(text);
@@ -164,9 +166,20 @@ export default function WithEmail() {
                         <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
                             {fetchError instanceof Error
                                 ? fetchError.message
-                                : "Something went wrong"}
+                                : t("errors.loginFailed")}
                         </Text>
                     )}
+                    <Text
+                        onPress={() => router.push("../login/forgot-password")}
+                        style={{
+                            color: theme.primary,
+                            fontSize: 13,
+                            textAlign: "right",
+                            marginTop: 8,
+                        }}
+                    >
+                        {t("forgotPassword")}
+                    </Text>
                 </View>
 
                 <Button
@@ -174,7 +187,7 @@ export default function WithEmail() {
                     onPress={() => onSubmit({ email, password })}
                     disabled={loading}
                 >
-                    {loading ? <Loader /> : <BtnText>Login</BtnText>}
+                    {loading ? <Loader /> : <BtnText>{t("login")}</BtnText>}
                 </Button>
             </View>
         </BackWrapper>
