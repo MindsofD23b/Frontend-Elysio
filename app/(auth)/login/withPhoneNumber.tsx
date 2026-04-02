@@ -6,11 +6,13 @@ import Input from "@/components/input";
 import { useEffect, useState } from "react";
 import { parseIncompletePhoneNumber } from "libphonenumber-js";
 import { router } from "expo-router";
-
+import { createT } from "@/i18n";
 type FormData = {
     tel: string;
     password: string;
 };
+
+const t = createT("auth.login.withPhoneNumber");
 
 export default function WithPhoneNumber() {
     useEffect(() => {
@@ -18,7 +20,6 @@ export default function WithPhoneNumber() {
     }, []);
 
     const { gs, theme } = useTheme();
-
     const [tel, setTel] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -34,7 +35,10 @@ export default function WithPhoneNumber() {
 
         console.log("Parsed phone number:", parsed);
         if (!parsed || parsed.toString().length < 5) {
-            setErrors((prev) => ({ ...prev, tel: { message: "Invalid phone number" } }));
+            setErrors((prev) => ({
+                ...prev,
+                tel: { message: t("errors.invalidPhone") },
+            }));
             return;
         }
 
@@ -57,18 +61,16 @@ export default function WithPhoneNumber() {
                         height: "100%",
                     }}
                 >
-                    <Text style={[gs.h1, { marginTop: 35 }]}>
-                        Login with Phone Number
-                    </Text>
+                    <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
                     <Text
                         style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}
                     >
-                        Please enter your{" "}
-                        <Text style={{ fontWeight: "bold" }}>Credentials</Text>
+                        {t("body")}{" "}
+                        <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
                     </Text>
                     <View style={{ width: "100%", marginTop: 30 }}>
                         <Input
-                            placeholder="+41 79 123 45 67"
+                            placeholder={t("phonePlaceholder")}
                             textContentType="telephoneNumber"
                             keyboardType="phone-pad"
                             autoComplete="tel"
@@ -81,7 +83,7 @@ export default function WithPhoneNumber() {
                             </Text>
                         )}
                         <Input
-                            placeholder="Password"
+                            placeholder={t("passwordPlaceholder")}
                             secureTextEntry={true}
                             textContentType="password"
                             autoComplete="current-password"
@@ -94,7 +96,7 @@ export default function WithPhoneNumber() {
                             </Text>
                         )}
                         <Text
-                            onPress={() => router.push("/(auth)/login/forgetPassword")}
+                            onPress={() => router.push("../login/forgot-password")}
                             style={{
                                 color: theme.primary,
                                 fontSize: 13,
@@ -102,7 +104,7 @@ export default function WithPhoneNumber() {
                                 marginTop: 8,
                             }}
                         >
-                            Forgot Password?
+                            {t("forgotPassword")}
                         </Text>
                     </View>
                     <Button
@@ -110,7 +112,7 @@ export default function WithPhoneNumber() {
                         onPress={() => onSubmit({ tel, password })}
                         disabled={loading}
                     >
-                        {loading ? <Loader /> : <BtnText>Login</BtnText>}
+                        {loading ? <Loader /> : <BtnText>{t("login")}</BtnText>}
                     </Button>
                 </View>
             </BackWrapper>

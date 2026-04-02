@@ -6,7 +6,7 @@ export default function LoginLayout() {
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="withEmail" options={{ headerShown: false }} />
             <Stack.Screen name="withPhoneNumber" options={{ headerShown: false }} />
-            <Stack.Screen name="forgetPassword" options={{ headerShown: false }} />
+            <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
         </Stack>
     );
 }

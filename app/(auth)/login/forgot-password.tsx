@@ -142,9 +142,9 @@ export default function ForgotPassword() {
                                 </Text>
                             )}
                             <Text
-                                onPress={() => !loading && simulate(() => {})}
+                                onPress={() => simulate(() => {})}
                                 style={{
-                                    color: loading ? theme.base + "54" : theme.primary,
+                                    color: theme.primary,
                                     fontSize: 13,
                                     textAlign: "right",
                                     marginTop: 12,
@@ -248,7 +248,7 @@ export default function ForgotPassword() {
                         </Text>
                         <Button
                             style={{ marginTop: 40, width: "100%" }}
-                            onPress={() => router.replace("/login/withEmail")}
+                            onPress={() => router.replace("/(auth)/login/withEmail")}
                         >
                             <BtnText>{t("backToLogin")}</BtnText>
                         </Button>

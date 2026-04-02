@@ -6,7 +6,7 @@ import { Href, router } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
 
-const t = createT("settings");
+const t = createT("auth.settings");
 
 export default function SettingsScreen() {
     const { gs, theme } = useTheme();
