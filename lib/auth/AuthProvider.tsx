@@ -19,7 +19,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const hydrateAuth = async () => {
             try {
-                const storedToken = await AsyncStorage.getItem("token");
+                const raw = await AsyncStorage.getItem("store_token");
+                const storedToken = raw ? JSON.parse(raw) : null;
                 setToken(storedToken);
 
                 if (storedToken) {
