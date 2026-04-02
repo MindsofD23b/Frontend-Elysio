@@ -38,7 +38,9 @@
                 "forgotPassword": "Forgot Password?",
                 "login": "Login",
                 "errors": {
-                    "invalidPhone": "Invalid phone number"
+                    "invalidPhone": "Invalid phone number",
+                    "passwordRequired": "Password is required",
+                    "loginFailed": "Login failed"
                 }
             }
         },
