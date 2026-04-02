@@ -7,15 +7,15 @@ import {
     View,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { Chat } from "@/types/chats";
 import ChatComponent from "@/components/ChatComponent";
 import { Theme } from "@/lib/theme/theme";
-import { useStore } from "@/hooks/useStore";
 import { decryptMessage } from "@/services/chat-crypto.client";
 import { Search } from "lucide-react-native";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 const base = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
@@ -24,7 +24,7 @@ export default function Index() {
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(true);
-    const [token] = useStore<string | null>("token", null);
+    const { token } = useAuth();
 
     interface ChatResponse {
         room: {
@@ -55,16 +55,19 @@ export default function Index() {
         };
     }
 
-    async function loadChats() {
+    const loadChats = useCallback(async () => {
+        if (!token) return;
+
         setLoading(true);
         try {
             const res = await fetch(`${base}/chat/rooms`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token ?? ""}`,
+                    Authorization: `Bearer ${token}`,
                 },
             });
+
             if (!res.ok) throw new Error("Failed to fetch chats");
             const data: ChatResponse[] = await res.json();
 
@@ -106,12 +109,12 @@ export default function Index() {
                     };
                 }),
             );
+
             setChats(orderChatsByUpdatedAt(mapped));
         } finally {
             setLoading(false);
         }
-    }
-
+    }, [token]);
     const onRefresh = async () => {
         setRefreshing(true);
         await loadChats();
@@ -119,9 +122,8 @@ export default function Index() {
     };
 
     useEffect(() => {
-        if (!token) return;
         loadChats();
-    }, [token]);
+    }, [loadChats]);
 
     const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
 
