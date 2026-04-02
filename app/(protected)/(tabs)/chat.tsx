@@ -1,13 +1,5 @@
-import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    View,
-} from "react-native";
-// TODO: switch back to FlashList after development build
-// import { FlashList } from "@shopify/flash-list";
+import { ActivityIndicator, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
@@ -41,7 +33,7 @@ export default function Index() {
             roomId: string;
             senderId: string;
             type: string;
-            cyphertext: string;
+            ciphertext: string;
             iv: string;
             authTag: string;
             mediaUrl: string | null;
@@ -80,9 +72,9 @@ export default function Index() {
                 name: chat.otherUser.fullName,
                 lastMessage:
                     chat.lastMessage?.type === "text"
-                        ? chat.lastMessage.cyphertext
+                        ? chat.lastMessage.ciphertext
                         : ((await decryptMessage({
-                              ciphertext: chat.lastMessage?.cyphertext ?? "",
+                              ciphertext: chat.lastMessage?.ciphertext ?? "",
                               iv: chat.lastMessage?.iv ?? "",
                               authTag: chat.lastMessage?.authTag ?? "",
                               encryptedKey: chat.lastMessage?.mediaUrl ?? "",
@@ -121,23 +113,6 @@ export default function Index() {
                     color={theme.text}
                 />
             )}
-            {/*TODO: switch back to FlashList after development build
-                <FlashList
-                    data={chats}
-                    renderItem={({ item }) => (
-                        <ChatComponent chat={item} href={`/chats/${item.id}` as Href} />
-                    )}
-                    keyExtractor={(item) => item.id}
-                    estimatedItemSize={80}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            tintColor={theme.text}
-                        />
-                    }
-                />
-            */}
 
             {!loading && filteredChats.length === 0 && (
                 <View
@@ -152,19 +127,14 @@ export default function Index() {
                     </Text>
                 </View>
             )}
-
-            <FlatList
-                data={filteredChats}
-                style={{
-                    height: "86%",
-                    backgroundColor: theme.background,
-                }}
+            <FlashList
+                data={chats}
                 renderItem={({ item }) => (
                     <ChatComponent
                         chat={item}
                         onPress={() => {
                             router.push({
-                                pathname: `/chats/[id]`,
+                                pathname: "/chats/[id]",
                                 params: {
                                     id: item.id,
                                     user: JSON.stringify(item),
@@ -174,6 +144,8 @@ export default function Index() {
                     />
                 )}
                 keyExtractor={(item) => item.id}
+                estimatedItemSize={80}
+                style={{ backgroundColor: theme.background, height: "100%" }}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
