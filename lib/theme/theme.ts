@@ -16,7 +16,7 @@ export const colors = {
         background: "#1E1E1E",
         primary: "#ec136a",
         secondary: "#8F1E4B",
-        accent: "#EC136A",
+        accent: "#DA9AB4",
         text: "#EAE6E7",
         base: "#FFFFFF",
         dbase: "#000000",

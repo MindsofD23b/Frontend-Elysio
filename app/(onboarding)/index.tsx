@@ -1,7 +1,9 @@
+import { Redirect } from "expo-router";
+
 export default function Onboarding() {
     return (
         <>
-            <div>Onboarding Page</div>
+            <Redirect href="/(protected)/(tabs)" />
         </>
     );
 }
