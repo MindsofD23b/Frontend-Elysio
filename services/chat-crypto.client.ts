@@ -8,23 +8,32 @@ const PUBLIC_KEY_STORE_KEY = "chat_public_key";
 // ─── 1. Init (einmal nach Login) ─────────────────────────────────────────────
 
 export async function initCrypto(apiBaseUrl: string, authToken: string): Promise<void> {
-    const existing = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
-    if (existing) return;
+    let publicKey: string;
 
-    const keys = await RSA.generateKeys(2048);
-    await SecureStore.setItemAsync(PRIVATE_KEY_STORE_KEY, keys.private);
-    await SecureStore.setItemAsync(PUBLIC_KEY_STORE_KEY, keys.public);
+    const existingPrivate = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
+    const existingPublic = await SecureStore.getItemAsync(PUBLIC_KEY_STORE_KEY);
 
+    if (existingPrivate && existingPublic) {
+        // Keys lokal vorhanden → immer nochmal hochladen (idempotent)
+        publicKey = existingPublic;
+    } else {
+        // Neues Keypair generieren
+        const keys = await RSA.generateKeys(2048);
+        await SecureStore.setItemAsync(PRIVATE_KEY_STORE_KEY, keys.private);
+        await SecureStore.setItemAsync(PUBLIC_KEY_STORE_KEY, keys.public);
+        publicKey = keys.public;
+    }
+
+    // Public Key immer hochladen – Server macht einfach UPDATE
     await fetch(`${apiBaseUrl}/users/me/public-key`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ publicKey: keys.public }),
+        body: JSON.stringify({ publicKey }),
     });
 }
-
 // ─── 2. Nachricht verschlüsseln ──────────────────────────────────────────────
 
 export interface EncryptedPayload {

@@ -122,19 +122,15 @@ export default function ChatsScreen() {
         setMessage("");
 
         try {
-            // 1. Public Keys der Room-Teilnehmer holen
             const keysRes = await fetch(`${base}/chat/rooms/${id}/keys`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const recipients: RoomKeysResponse = await keysRes.json();
-
-            // Nur Empfänger mit vorhandenem Public Key
             const validRecipients = recipients.filter((r) => r.publicKey);
 
-            // 2. Nachricht verschlüsseln
             const payload = await encryptMessage(text, validRecipients);
+            console.log("Payload:", JSON.stringify(payload)); // ← neu
 
-            // 3. An Server schicken
             const res = await fetch(`${base}/chat/rooms/${id}/messages`, {
                 method: "POST",
                 headers: {
@@ -144,10 +140,12 @@ export default function ChatsScreen() {
                 body: JSON.stringify(payload),
             });
 
-            if (!res.ok) throw new Error("Send failed");
+            const resText = await res.text(); // ← neu
+            console.log("Server:", res.status, resText); // ← neu
 
-            // 4. Optimistisch zur Liste hinzufügen
-            const sent = await res.json();
+            if (!res.ok) throw new Error("Send failed");
+            const sent = JSON.parse(resText); // ← statt res.json()
+
             setMessages((prev) => [
                 ...prev,
                 {
@@ -159,7 +157,7 @@ export default function ChatsScreen() {
             ]);
         } catch (e) {
             console.error("Send error:", e);
-            setMessage(text); // Text zurücksetzen bei Fehler
+            setMessage(text);
         } finally {
             setSending(false);
         }
