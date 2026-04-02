@@ -39,7 +39,7 @@ export default function Register() {
                 href="/(auth)/login"
                 style={{ color: theme.text, fontSize: 14, textAlign: "center" }}
             >
-                {t("alreadyHaveAccount")}
+                {t("alreadyHaveAccount")}{" "}
                 <Text style={{ color: theme.primary }}>{t("account")}</Text>
             </Link>
 
