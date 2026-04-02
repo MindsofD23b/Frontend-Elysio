@@ -158,7 +158,7 @@ export default function ChatsScreen() {
                 },
             ]);
         } catch (e) {
-            console.error("Send error:", e);
+            console.error("Send error:", (e as Error).message);
             setMessage(text); // Text zurücksetzen bei Fehler
         } finally {
             setSending(false);

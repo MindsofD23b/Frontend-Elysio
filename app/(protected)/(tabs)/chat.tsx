@@ -1,22 +1,21 @@
 import {
     ActivityIndicator,
-    FlatList,
     RefreshControl,
     StyleSheet,
     Text,
+    TextInput,
     View,
 } from "react-native";
-// TODO: switch back to FlashList after development build
-// import { FlashList } from "@shopify/flash-list";
+import { FlashList } from "@shopify/flash-list";
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { Chat } from "@/types/chats";
 import ChatComponent from "@/components/ChatComponent";
-import Input from "@/components/input";
 import { Theme } from "@/lib/theme/theme";
 import { useFetch } from "@/hooks/useFetch";
 import { decryptMessage } from "@/services/chat-crypto.client";
+import { Search } from "lucide-react-native";
 
 export default function Index() {
     const { theme } = useTheme();
@@ -128,7 +127,7 @@ export default function Index() {
     };
 
     return (
-        <View>
+        <View style={{ flex: 1 }}>
             <View style={{ borderBottomColor: theme.base + "1A", borderBottomWidth: 1 }}>
                 <SearchBarComponent onSearch={onSearch} />
             </View>
@@ -139,23 +138,6 @@ export default function Index() {
                     color={theme.text}
                 />
             )}
-            {/*TODO: switch back to FlashList after development build
-                <FlashList
-                    data={chats}
-                    renderItem={({ item }) => (
-                        <ChatComponent chat={item} href={`/chats/${item.id}` as Href} />
-                    )}
-                    keyExtractor={(item) => item.id}
-                    estimatedItemSize={80}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            tintColor={theme.text}
-                        />
-                    }
-                />
-            */}
 
             {!loading && filteredChats.length === 0 && (
                 <View
@@ -171,35 +153,35 @@ export default function Index() {
                 </View>
             )}
 
-            <FlatList
-                data={filteredChats}
-                style={{
-                    height: "86%",
-                    backgroundColor: theme.background,
-                }}
-                renderItem={({ item }) => (
-                    <ChatComponent
-                        chat={item}
-                        onPress={() => {
-                            router.push({
-                                pathname: `/chats/[id]`,
-                                params: {
-                                    id: item.id,
-                                    user: JSON.stringify(item),
-                                },
-                            });
-                        }}
-                    />
-                )}
-                keyExtractor={(item) => item.id}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={theme.text}
-                    />
-                }
-            />
+            <View style={{ flex: 1, width: "100%", backgroundColor: theme.background }}>
+                <FlashList
+                    data={filteredChats}
+                    contentContainerStyle={{ backgroundColor: theme.background }}
+                    renderItem={({ item }) => (
+                        <ChatComponent
+                            chat={item}
+                            onPress={() => {
+                                router.push({
+                                    pathname: "/chats/[id]",
+                                    params: {
+                                        id: item.id,
+                                        user: JSON.stringify(item),
+                                    },
+                                });
+                            }}
+                        />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    estimatedItemSize={80}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={theme.text}
+                        />
+                    }
+                />
+            </View>
         </View>
     );
 }
@@ -229,11 +211,16 @@ function SearchBarComponent({ onSearch }: ISearchBarComponent) {
 
     return (
         <View style={styles.container}>
-            <Input
-                placeholder="Search chats..."
-                onChangeText={setSearchText}
-                value={searchText}
-            />
+            <View style={styles.inputContainer}>
+                <Search size={20} color={theme.grayscale} style={{ marginBottom: -2 }} />
+                <TextInput
+                    placeholder="Search"
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    style={styles.input}
+                    placeholderTextColor={theme.grayscale}
+                />
+            </View>
         </View>
     );
 }
@@ -244,4 +231,13 @@ const makeStyles = (theme: Theme) =>
             padding: 16,
             backgroundColor: theme.background,
         },
+        inputContainer: {
+            backgroundColor: theme.base + "1A",
+            color: theme.text,
+            padding: 8,
+            borderRadius: 8,
+            flexDirection: "row",
+            gap: 8,
+        },
+        input: {},
     });
