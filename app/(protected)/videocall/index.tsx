@@ -49,6 +49,8 @@ export default function VideoCall() {
 
     const matchmakingSocketRef = useRef<Socket | null>(null);
 
+    const stopTracksRef = useRef<() => void>(() => {});
+
     const [, , , _activateMatchmakingRequest] = useAuthFetch<{
         type: "waiting" | "matched";
         matchedUserId?: string;
@@ -468,6 +470,9 @@ export default function VideoCall() {
     }, []);
 
     const stopCall = useCallback(async () => {
+        localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
+        localStreamRef.current = null;
+
         startingRef.current = false;
         socketRef.current?.disconnect();
         socketRef.current = null;
@@ -492,11 +497,8 @@ export default function VideoCall() {
 
         sendTransportRef.current?.close();
         recvTransportRef.current?.close();
-        localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
-
         sendTransportRef.current = null;
         recvTransportRef.current = null;
-        localStreamRef.current = null;
         remoteStreamRef.current = new MediaStream();
 
         consumersRef.current.forEach((consumer) => {
@@ -579,18 +581,17 @@ export default function VideoCall() {
         const callSocket = socketRef.current;
         const sendTransport = sendTransportRef.current;
         const recvTransport = recvTransportRef.current;
-        const localStream = localStreamRef.current;
         const consumers = consumersRef.current;
         const consumedProducerIds = consumedProducerIdsRef.current;
         const consumingProducerIds = consumingProducerIdsRef.current;
 
         return () => {
+            stopTracksRef.current();
             stopCall();
             matchmakingSocket?.disconnect();
             callSocket?.disconnect();
             sendTransport?.close();
             recvTransport?.close();
-            localStream?.getTracks()?.forEach((t: any) => t.stop());
             consumers.forEach((consumer) => {
                 try {
                     consumer.close();
@@ -624,6 +625,12 @@ export default function VideoCall() {
             console.error("startCall effect error", error);
         });
     }, [gatewayRoomId, started, startCall]);
+
+    useEffect(() => {
+        stopTracksRef.current = () => {
+            localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
+        };
+    });
 
     if (!started) {
         return (
