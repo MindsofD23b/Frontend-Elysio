@@ -1,24 +1,30 @@
-import { ActivityIndicator, RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+    ActivityIndicator,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { Chat } from "@/types/chats";
 import ChatComponent from "@/components/ChatComponent";
-import Input from "@/components/input";
 import { Theme } from "@/lib/theme/theme";
-import { useFetch } from "@/hooks/useFetch";
 import { decryptMessage } from "@/services/chat-crypto.client";
+import { Search } from "lucide-react-native";
+import { useAuth } from "@/lib/auth/AuthProvider";
+
+const base = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
 export default function Index() {
     const { theme } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
-
-    const onRefresh = async () => {
-        setRefreshing(true);
-        setRefreshing(false);
-    };
+    const [loading, setLoading] = useState(true);
+    const { token } = useAuth();
 
     interface ChatResponse {
         room: {
@@ -49,44 +55,75 @@ export default function Index() {
         };
     }
 
-    const fetchOptions = useMemo(
-        () => ({ method: "GET", headers: { "Content-Type": "application/json" } }),
-        [],
-    );
+    const loadChats = useCallback(async () => {
+        if (!token) return;
 
-    const [data, loading, _error, run] = useFetch<ChatResponse[]>(
-        "/chat/rooms",
-        fetchOptions,
-        { useCache: true },
-    );
+        setLoading(true);
+        try {
+            const res = await fetch(`${base}/chat/rooms`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
-    useEffect(() => {
-        run();
-    }, [run]);
+            if (!res.ok) throw new Error("Failed to fetch chats");
+            const data: ChatResponse[] = await res.json();
 
-    useEffect(() => {
-        if (!data) return;
-        Promise.all(
-            data.map(async (chat) => ({
-                id: chat.room.id,
-                name: chat.otherUser.fullName,
-                lastMessage:
-                    chat.lastMessage?.type === "text"
-                        ? chat.lastMessage.ciphertext
-                        : ((await decryptMessage({
-                              ciphertext: chat.lastMessage?.ciphertext ?? "",
-                              iv: chat.lastMessage?.iv ?? "",
-                              authTag: chat.lastMessage?.authTag ?? "",
-                              encryptedKey: chat.lastMessage?.mediaUrl ?? "",
-                          })) ?? "[Unable to decrypt message]"),
-                createdAt: chat.room.createdAt,
-                updatedAt: chat.room.updatedAt,
-                image: chat.otherUser.avatar ?? "",
-            })),
-        ).then((mapped) => {
+            const mapped = await Promise.all(
+                data.map(async (chat) => {
+                    let lastMessageText = "";
+
+                    if (!chat.lastMessage) {
+                        lastMessageText = "";
+                    } else if (chat.lastMessage.type !== "text") {
+                        lastMessageText = "🎤 Voice message";
+                    } else if (!chat.lastMessage.encryptedKey) {
+                        lastMessageText = "[Encrypted message]";
+                    } else {
+                        try {
+                            lastMessageText = await decryptMessage({
+                                ciphertext: chat.lastMessage.ciphertext,
+                                iv: chat.lastMessage.iv,
+                                authTag: chat.lastMessage.authTag,
+                                encryptedKey: chat.lastMessage.encryptedKey,
+                            });
+                        } catch {
+                            lastMessageText = "[Unable to decrypt]";
+                        }
+                    }
+
+                    return {
+                        id: chat.room.id,
+                        otherUser: {
+                            id: chat.otherUser.id,
+                            fullName: chat.otherUser.fullName,
+                            avatar: chat.otherUser.avatar,
+                        },
+                        name: chat.otherUser.fullName,
+                        lastMessage: lastMessageText,
+                        createdAt: chat.room.createdAt,
+                        updatedAt: chat.room.updatedAt,
+                        image: chat.otherUser.avatar ?? "",
+                    };
+                }),
+            );
+
             setChats(orderChatsByUpdatedAt(mapped));
-        });
-    }, [data]);
+        } finally {
+            setLoading(false);
+        }
+    }, [token]);
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadChats();
+        setRefreshing(false);
+    };
+
+    useEffect(() => {
+        loadChats();
+    }, [loadChats]);
 
     const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
 
@@ -102,7 +139,7 @@ export default function Index() {
     };
 
     return (
-        <View>
+        <View style={{ flex: 1 }}>
             <View style={{ borderBottomColor: theme.base + "1A", borderBottomWidth: 1 }}>
                 <SearchBarComponent onSearch={onSearch} />
             </View>
@@ -127,33 +164,36 @@ export default function Index() {
                     </Text>
                 </View>
             )}
-            <FlashList
-                data={chats}
-                renderItem={({ item }) => (
-                    <ChatComponent
-                        chat={item}
-                        onPress={() => {
-                            router.push({
-                                pathname: "/chats/[id]",
-                                params: {
-                                    id: item.id,
-                                    user: JSON.stringify(item),
-                                },
-                            });
-                        }}
-                    />
-                )}
-                keyExtractor={(item) => item.id}
-                estimatedItemSize={80}
-                style={{ backgroundColor: theme.background, height: "100%" }}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={theme.text}
-                    />
-                }
-            />
+
+            <View style={{ flex: 1, width: "100%", backgroundColor: theme.background }}>
+                <FlashList
+                    data={filteredChats}
+                    contentContainerStyle={{ backgroundColor: theme.background }}
+                    renderItem={({ item }) => (
+                        <ChatComponent
+                            chat={item}
+                            onPress={() => {
+                                router.push({
+                                    pathname: "/chats/[id]",
+                                    params: {
+                                        id: item.id,
+                                        user: JSON.stringify(item),
+                                    },
+                                });
+                            }}
+                        />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    estimatedItemSize={80}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={theme.text}
+                        />
+                    }
+                />
+            </View>
         </View>
     );
 }
@@ -183,11 +223,16 @@ function SearchBarComponent({ onSearch }: ISearchBarComponent) {
 
     return (
         <View style={styles.container}>
-            <Input
-                placeholder="Search chats..."
-                onChangeText={setSearchText}
-                value={searchText}
-            />
+            <View style={styles.inputContainer}>
+                <Search size={20} color={theme.grayscale} style={{ marginBottom: -2 }} />
+                <TextInput
+                    placeholder="Search"
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    style={styles.input}
+                    placeholderTextColor={theme.grayscale}
+                />
+            </View>
         </View>
     );
 }
@@ -198,4 +243,13 @@ const makeStyles = (theme: Theme) =>
             padding: 16,
             backgroundColor: theme.background,
         },
+        inputContainer: {
+            backgroundColor: theme.base + "1A",
+            color: theme.text,
+            padding: 8,
+            borderRadius: 8,
+            flexDirection: "row",
+            gap: 8,
+        },
+        input: {},
     });

@@ -20,7 +20,7 @@ export function useFetch<S>(
     const [loading, setLoading] = useState(!(options?.manual ?? false));
     const [error, setError] = useState<Error | null>(null);
 
-    const [token] = useStore<string | null>("token", null);
+    const [token, , , tokenLoaded] = useStore<string | null>("token", null);
 
     const isCached =
         options?.useCache !== false &&
@@ -48,7 +48,6 @@ export function useFetch<S>(
                     ...overrideObj,
                     headers: finalHeaders,
                 };
-
                 const req = await fetch(base + route, finalObj);
 
                 const text = await req.text();
@@ -87,6 +86,9 @@ export function useFetch<S>(
     );
 
     useEffect(() => {
+        if (!tokenLoaded) return;
+        if (!token) return;
+
         if (options?.manual) {
             setLoading(false);
             return;
@@ -98,7 +100,7 @@ export function useFetch<S>(
         }
 
         run();
-    }, [isCached, run, options?.manual]);
+    }, [isCached, run, options?.manual, tokenLoaded, token]);
 
     return [fetchData?.data ?? null, loading, error, run] as const;
 }

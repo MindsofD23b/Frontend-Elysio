@@ -39,11 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (nextToken: string) => {
         setToken(nextToken);
-        await AsyncStorage.setItem("store_token", JSON.stringify(nextToken));
+        await AsyncStorage.setItem("token", nextToken);
+        console.log("Calling initCrypto..."); // ← neu
+        await initCrypto("https://elysio.jamiepoeffel.ch", nextToken);
+        console.log("initCrypto done"); // ← neu
     };
 
     const logout = async () => {
-        await AsyncStorage.removeItem("store_token");
+        await AsyncStorage.clear();
         setToken(null);
     };
 
