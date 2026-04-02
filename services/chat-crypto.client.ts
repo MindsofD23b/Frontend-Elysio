@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { RSA } from "react-native-rsa-native";
 import AesGcmCrypto from "react-native-aes-gcm-crypto";
+import * as Crypto from "expo-crypto";
 
 const PRIVATE_KEY_STORE_KEY = "chat_private_key";
 const PUBLIC_KEY_STORE_KEY = "chat_public_key";
@@ -46,8 +47,8 @@ export async function encryptMessage(
     plainText: string,
     recipients: { userId: string; publicKey: string }[],
 ): Promise<EncryptedPayload> {
-    const aesKeyBytes = Array.from(crypto.getRandomValues(new Uint8Array(32)));
-    const aesKeyBase64 = btoa(String.fromCharCode(...aesKeyBytes));
+    const keyBytes = Crypto.getRandomValues(new Uint8Array(32));
+    const aesKeyBase64 = bytesToBase64(keyBytes);
 
     const encrypted = await AesGcmCrypto.encrypt(plainText, false, aesKeyBase64);
 
@@ -89,4 +90,12 @@ export async function decryptMessage(msg: {
     );
 
     return plainText;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return global.btoa(binary);
 }
