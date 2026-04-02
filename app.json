@@ -2,7 +2,7 @@
     "expo": {
         "name": "Elysio",
         "slug": "elysio",
-        "version": "1.0.0",
+        "version": "0.0.1",
         "orientation": "portrait",
         "icon": "./assets/images/ios-light.png",
         "scheme": "elysio",
@@ -29,7 +29,7 @@
             ],
             "edgeToEdgeEnabled": true,
             "predictiveBackGestureEnabled": false,
-            "package": "com.jamie123456789.elysio"
+            "package": "com.mindsofd23b.elysio"
         },
         "web": {
             "output": "static",

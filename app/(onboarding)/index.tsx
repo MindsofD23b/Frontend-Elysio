@@ -2,7 +2,7 @@ import { Redirect } from "expo-router";
 import { sendTestNotification } from "@/hooks/usePushNotifications";
 import { useEffect, useState } from "react";
 
-export default function Onboarding() {
+export default function OnboardingScreen() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
