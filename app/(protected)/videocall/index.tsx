@@ -532,6 +532,22 @@ export default function VideoCall() {
             console.error("deactivate matchmaking error", err);
         }
 
+        // Reset matchmaking state on backend BEFORE cleaning up local state
+        try {
+            const token = await AsyncStorage.getItem("token");
+            if (token) {
+                await fetch(`${BASE_URL}/matchmaking/deactivate`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            }
+        } catch (err) {
+            console.error("deactivate matchmaking error", err);
+        }
+
         sendTransportRef.current?.close();
         recvTransportRef.current?.close();
         localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
@@ -560,6 +576,7 @@ export default function VideoCall() {
         setMatchState("idle");
         roomIdRef.current = null;
     }, []);
+  
     function toggleMute() {
         const stream = localStreamRef.current;
         if (!stream) return;

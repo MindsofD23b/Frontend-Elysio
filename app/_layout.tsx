@@ -6,8 +6,17 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+function AppContent() {
+    const { expoPushToken } = usePushNotifications();
+
+    console.log("Token:", expoPushToken?.data);
+
+    return <Slot />;
+}
 
 export default function RootLayout() {
     const [appIsReady, setAppIsReady] = useState(false);
@@ -38,7 +47,7 @@ export default function RootLayout() {
                 <BaseTheme>
                     <SafeAreaProvider>
                         <SafeAreaWrapper>
-                            <Slot />
+                            <AppContent />
                         </SafeAreaWrapper>
                     </SafeAreaProvider>
                 </BaseTheme>
