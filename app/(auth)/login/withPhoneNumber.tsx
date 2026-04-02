@@ -4,12 +4,16 @@ import { Text, View } from "react-native";
 import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
 import { useEffect, useState } from "react";
-import { parseIncompletePhoneNumber } from "libphonenumber-js";
+import { parsePhoneNumber } from "libphonenumber-js";
 import { router } from "expo-router";
 import { createT } from "@/i18n";
-type FormData = {
-    tel: string;
-    password: string;
+import { usePublicFetch } from "@/hooks/usePublicFetch";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { LoginResponse } from "./withEmail";
+type FormErrors = {
+    tel?: { message: string };
+    password?: { message: string };
+    general?: { message: string };
 };
 
 const t = createT("auth.login.withPhoneNumber");
@@ -20,34 +24,69 @@ export default function WithPhoneNumber() {
     }, []);
 
     const { gs, theme } = useTheme();
+    const { login: saveLogin } = useAuth();
     const [tel, setTel] = useState("");
     const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<{
-        tel?: { message: string };
-        password?: { message: string };
-    }>({});
+    const [errors, setErrors] = useState<FormErrors>({});
 
-    const onSubmit = (data: FormData) => {
-        console.log("Validating phone number:", data.tel);
+    const [, loading, fetchError, loginRequest] = usePublicFetch<LoginResponse>(
+        "/auth/login",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        },
+        {
+            manual: true,
+            useCache: false,
+        },
+    );
 
-        const parsed = parseIncompletePhoneNumber(data.tel);
+    const onSubmit = async () => {
+        const nextErrors: FormErrors = {};
 
-        console.log("Parsed phone number:", parsed);
-        if (!parsed || parsed.toString().length < 5) {
-            setErrors((prev) => ({
-                ...prev,
-                tel: { message: t("errors.invalidPhone") },
-            }));
-            return;
+        let parsed;
+        try {
+            parsed = parsePhoneNumber(tel);
+        } catch {
+            parsed = null;
         }
 
-        setLoading(true);
-        console.log(data);
-        setTimeout(() => {
-            setLoading(false);
-            router.push("/(protected)/(tabs)");
-        }, 2000);
+        if (!parsed || !parsed.isValid()) {
+            nextErrors.tel = { message: t("errors.invalidPhone") };
+        }
+
+        if (!password.trim()) {
+            nextErrors.password = { message: t("errors.passwordRequired") };
+        }
+
+        setErrors(nextErrors);
+        if (Object.keys(nextErrors).length > 0) return;
+
+        try {
+            const response = await loginRequest({
+                body: JSON.stringify({
+                    phonePrefix: "+" + parsed!.countryCallingCode,
+                    phoneNumber: parsed!.nationalNumber,
+                    password,
+                }),
+            });
+
+            if (!response?.token) {
+                setErrors({ general: { message: t("errors.loginFailed") } });
+                return;
+            }
+
+            await saveLogin(response.token);
+            router.replace("/(protected)/(tabs)");
+        } catch (err) {
+            setErrors({
+                general: {
+                    message: err instanceof Error ? err.message : t("errors.loginFailed"),
+                },
+            });
+        }
     };
 
     return (
@@ -75,7 +114,16 @@ export default function WithPhoneNumber() {
                             keyboardType="phone-pad"
                             autoComplete="tel"
                             value={tel}
-                            onChangeText={setTel}
+                            onChangeText={(text) => {
+                                setTel(text);
+                                if (errors.tel || errors.general) {
+                                    setErrors((prev) => ({
+                                        ...prev,
+                                        tel: undefined,
+                                        general: undefined,
+                                    }));
+                                }
+                            }}
                         />
                         {errors.tel && (
                             <Text style={{ color: "red", fontSize: 12 }}>
@@ -88,11 +136,32 @@ export default function WithPhoneNumber() {
                             textContentType="password"
                             autoComplete="current-password"
                             value={password}
-                            onChangeText={setPassword}
+                            onChangeText={(text) => {
+                                setPassword(text);
+                                if (errors.password || errors.general) {
+                                    setErrors((prev) => ({
+                                        ...prev,
+                                        password: undefined,
+                                        general: undefined,
+                                    }));
+                                }
+                            }}
                         />
                         {errors.password && (
                             <Text style={{ color: "red", fontSize: 12 }}>
                                 {errors.password.message}
+                            </Text>
+                        )}
+                        {errors.general && (
+                            <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
+                                {errors.general.message}
+                            </Text>
+                        )}
+                        {!errors.general && fetchError && (
+                            <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
+                                {fetchError instanceof Error
+                                    ? fetchError.message
+                                    : t("errors.loginFailed")}
                             </Text>
                         )}
                         <Text
@@ -109,7 +178,7 @@ export default function WithPhoneNumber() {
                     </View>
                     <Button
                         style={{ marginTop: "auto", marginBottom: 0 }}
-                        onPress={() => onSubmit({ tel, password })}
+                        onPress={onSubmit}
                         disabled={loading}
                     >
                         {loading ? <Loader /> : <BtnText>{t("login")}</BtnText>}
