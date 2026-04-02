@@ -7,25 +7,24 @@ import {
     View,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { Chat } from "@/types/chats";
 import ChatComponent from "@/components/ChatComponent";
 import { Theme } from "@/lib/theme/theme";
-import { useFetch } from "@/hooks/useFetch";
+import { useStore } from "@/hooks/useStore";
 import { decryptMessage } from "@/services/chat-crypto.client";
 import { Search } from "lucide-react-native";
+
+const base = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
 export default function Index() {
     const { theme } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
-
-    const onRefresh = async () => {
-        setRefreshing(true);
-        setRefreshing(false);
-    };
+    const [loading, setLoading] = useState(true);
+    const [token] = useStore<string | null>("token", null);
 
     interface ChatResponse {
         room: {
@@ -56,62 +55,73 @@ export default function Index() {
         };
     }
 
-    const fetchOptions = useMemo(
-        () => ({ method: "GET", headers: { "Content-Type": "application/json" } }),
-        [],
-    );
+    async function loadChats() {
+        setLoading(true);
+        try {
+            const res = await fetch(`${base}/chat/rooms`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token ?? ""}`,
+                },
+            });
+            if (!res.ok) throw new Error("Failed to fetch chats");
+            const data: ChatResponse[] = await res.json();
 
-    const [data, loading, _error] = useFetch<ChatResponse[]>(
-        "/chat/rooms",
-        fetchOptions,
-        { useCache: true },
-    );
+            const mapped = await Promise.all(
+                data.map(async (chat) => {
+                    let lastMessageText = "";
 
-    // useEffect(() => {
-    //     run();
-    // }, [run]);
+                    if (!chat.lastMessage) {
+                        lastMessageText = "";
+                    } else if (chat.lastMessage.type !== "text") {
+                        lastMessageText = "🎤 Voice message";
+                    } else if (!chat.lastMessage.encryptedKey) {
+                        lastMessageText = "[Encrypted message]";
+                    } else {
+                        try {
+                            lastMessageText = await decryptMessage({
+                                ciphertext: chat.lastMessage.ciphertext,
+                                iv: chat.lastMessage.iv,
+                                authTag: chat.lastMessage.authTag,
+                                encryptedKey: chat.lastMessage.encryptedKey,
+                            });
+                        } catch {
+                            lastMessageText = "[Unable to decrypt]";
+                        }
+                    }
+
+                    return {
+                        id: chat.room.id,
+                        otherUser: {
+                            id: chat.otherUser.id,
+                            fullName: chat.otherUser.fullName,
+                            avatar: chat.otherUser.avatar,
+                        },
+                        name: chat.otherUser.fullName,
+                        lastMessage: lastMessageText,
+                        createdAt: chat.room.createdAt,
+                        updatedAt: chat.room.updatedAt,
+                        image: chat.otherUser.avatar ?? "",
+                    };
+                }),
+            );
+            setChats(orderChatsByUpdatedAt(mapped));
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadChats();
+        setRefreshing(false);
+    };
 
     useEffect(() => {
-        if (!data) return;
-
-        Promise.all(
-            data.map(async (chat) => {
-                let lastMessageText = "";
-
-                if (!chat.lastMessage) {
-                    lastMessageText = "";
-                } else if (chat.lastMessage.type !== "text") {
-                    // Voice/Media – kein Text
-                    lastMessageText = "🎤 Voice message";
-                } else if (!chat.lastMessage.encryptedKey) {
-                    // Kein Key für diesen User (sollte nicht passieren)
-                    lastMessageText = "[Encrypted message]";
-                } else {
-                    try {
-                        lastMessageText = await decryptMessage({
-                            ciphertext: chat.lastMessage.ciphertext, // war: cyphertext (Tippfehler!)
-                            iv: chat.lastMessage.iv,
-                            authTag: chat.lastMessage.authTag,
-                            encryptedKey: chat.lastMessage.encryptedKey,
-                        });
-                    } catch {
-                        lastMessageText = "[Unable to decrypt]";
-                    }
-                }
-
-                return {
-                    id: chat.room.id,
-                    name: chat.otherUser.fullName,
-                    lastMessage: lastMessageText,
-                    createdAt: chat.room.createdAt,
-                    updatedAt: chat.room.updatedAt,
-                    image: chat.otherUser.avatar ?? "",
-                };
-            }),
-        ).then((mapped) => {
-            setChats(orderChatsByUpdatedAt(mapped));
-        });
-    }, [data]);
+        if (!token) return;
+        loadChats();
+    }, [token]);
 
     const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
 

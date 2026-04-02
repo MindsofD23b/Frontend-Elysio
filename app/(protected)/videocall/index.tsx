@@ -655,6 +655,7 @@ export default function VideoCall() {
         const consumingProducerIds = consumingProducerIdsRef.current;
 
         return () => {
+            stopCall();
             matchmakingSocket?.disconnect();
             callSocket?.disconnect();
 
