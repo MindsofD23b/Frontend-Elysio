@@ -9,7 +9,7 @@ interface ChatComponentProps {
     chat: Chat;
     onPress: () => void;
 }
-
+// Design made with Pinterest and ChatGPT
 export default function ChatComponent({ chat, onPress }: ChatComponentProps) {
     const { theme } = useTheme();
     const styles = makeStyles(theme);

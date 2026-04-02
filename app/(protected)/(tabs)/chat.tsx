@@ -16,9 +16,86 @@ import ChatComponent from "@/components/ChatComponent";
 import { Theme } from "@/lib/theme/theme";
 import { decryptMessage } from "@/services/chat-crypto.client";
 import { Heart, MessageCircleMore, Search } from "lucide-react-native";
-import { useAuth } from "@/lib/auth/AuthProvider";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
-const base = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
+// Design made with Pinterest and ChatGPT
+interface ChatResponse {
+    room: {
+        id: string;
+        userAId: string;
+        userBId: string;
+        createdAt: string;
+        updatedAt: string;
+    };
+    lastMessage: {
+        id: string;
+        roomId: string;
+        senderId: string;
+        type: string;
+        ciphertext: string;
+        iv: string;
+        authTag: string;
+        mediaUrl: string | null;
+        mediaDurationSec: number | null;
+        isDeleted: boolean;
+        createdAt: string;
+        encryptedKey: string | null;
+    } | null;
+    otherUser: {
+        id: string;
+        fullName: string;
+        avatar: string | null;
+    };
+}
+
+function orderChatsByUpdatedAt(chats: Chat[]): Chat[] {
+    return [...chats].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
+}
+
+async function mapChatResponses(data: ChatResponse[]): Promise<Chat[]> {
+    const mapped = await Promise.all(
+        data.map(async (chat) => {
+            let lastMessageText = "";
+
+            if (!chat.lastMessage) {
+                lastMessageText = "";
+            } else if (chat.lastMessage.type !== "text") {
+                lastMessageText = "🎤 Voice message";
+            } else if (!chat.lastMessage.encryptedKey) {
+                lastMessageText = "[Encrypted message]";
+            } else {
+                try {
+                    lastMessageText = await decryptMessage({
+                        ciphertext: chat.lastMessage.ciphertext,
+                        iv: chat.lastMessage.iv,
+                        authTag: chat.lastMessage.authTag,
+                        encryptedKey: chat.lastMessage.encryptedKey,
+                    });
+                } catch {
+                    lastMessageText = "[Unable to decrypt]";
+                }
+            }
+
+            return {
+                id: chat.room.id,
+                otherUser: {
+                    id: chat.otherUser.id,
+                    fullName: chat.otherUser.fullName,
+                    avatar: chat.otherUser.avatar,
+                },
+                name: chat.otherUser.fullName,
+                lastMessage: lastMessageText,
+                createdAt: chat.room.createdAt,
+                updatedAt: chat.room.updatedAt,
+                image: chat.otherUser.avatar ?? "",
+            };
+        }),
+    );
+
+    return orderChatsByUpdatedAt(mapped);
+}
 
 export default function Index() {
     const { theme } = useTheme();
@@ -26,126 +103,33 @@ export default function Index() {
 
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
-    const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState("");
-    const { token } = useAuth();
 
-    interface ChatResponse {
-        room: {
-            id: string;
-            userAId: string;
-            userBId: string;
-            createdAt: string;
-            updatedAt: string;
-        };
-        lastMessage: {
-            id: string;
-            roomId: string;
-            senderId: string;
-            type: string;
-            ciphertext: string;
-            iv: string;
-            authTag: string;
-            mediaUrl: string | null;
-            mediaDurationSec: number | null;
-            isDeleted: boolean;
-            createdAt: string;
-            encryptedKey: string | null;
-        } | null;
-        otherUser: {
-            id: string;
-            fullName: string;
-            avatar: string | null;
-        };
-    }
-
-    const loadChats = useCallback(async () => {
-        if (!token) {
-            setChats([]);
-            setLoading(false);
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            const res = await fetch(`${base}/chat/rooms`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!res.ok) {
-                throw new Error("Failed to fetch chats");
-            }
-
-            const data: ChatResponse[] = await res.json();
-
-            const mapped = await Promise.all(
-                data.map(async (chat) => {
-                    let lastMessageText = "";
-
-                    if (!chat.lastMessage) {
-                        lastMessageText = "";
-                    } else if (chat.lastMessage.type !== "text") {
-                        lastMessageText = "🎤 Voice message";
-                    } else if (!chat.lastMessage.encryptedKey) {
-                        lastMessageText = "[Encrypted message]";
-                    } else {
-                        try {
-                            lastMessageText = await decryptMessage({
-                                ciphertext: chat.lastMessage.ciphertext,
-                                iv: chat.lastMessage.iv,
-                                authTag: chat.lastMessage.authTag,
-                                encryptedKey: chat.lastMessage.encryptedKey,
-                            });
-                        } catch {
-                            lastMessageText = "[Unable to decrypt]";
-                        }
-                    }
-
-                    return {
-                        id: chat.room.id,
-                        otherUser: {
-                            id: chat.otherUser.id,
-                            fullName: chat.otherUser.fullName,
-                            avatar: chat.otherUser.avatar,
-                        },
-                        name: chat.otherUser.fullName,
-                        lastMessage: lastMessageText,
-                        createdAt: chat.room.createdAt,
-                        updatedAt: chat.room.updatedAt,
-                        image: chat.otherUser.avatar ?? "",
-                    };
-                }),
-            );
-
-            setChats(orderChatsByUpdatedAt(mapped));
-        } catch (error) {
-            console.error("Failed to load chats", error);
-            setChats([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [token]);
-
-    const onRefresh = async () => {
-        setRefreshing(true);
-        await loadChats();
-        setRefreshing(false);
-    };
+    const [rawData, loading, , run] = useAuthFetch<ChatResponse[]>(
+        "/chat/rooms",
+        { method: "GET" },
+        { cacheKey: "chat:rooms" },
+    );
 
     useEffect(() => {
-        loadChats();
-    }, [loadChats]);
+        if (!rawData) return;
+        mapChatResponses(rawData)
+            .then(setChats)
+            .catch(() => {});
+    }, [rawData]);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            const data = await run();
+            if (data) setChats(await mapChatResponses(data));
+        } catch {}
+        setRefreshing(false);
+    }, [run]);
 
     const filteredChats = useMemo(() => {
         const value = searchText.trim().toLowerCase();
-
         if (!value) return chats;
-
         return chats.filter((chat) => chat.name.toLowerCase().includes(value));
     }, [chats, searchText]);
 
@@ -194,7 +178,6 @@ export default function Index() {
                                     setSearchText("");
                                     return;
                                 }
-
                                 router.push("/videocall");
                             }}
                         />
@@ -209,12 +192,6 @@ export default function Index() {
                 />
             )}
         </View>
-    );
-}
-
-function orderChatsByUpdatedAt(chats: Chat[]): Chat[] {
-    return [...chats].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
 }
 
@@ -277,8 +254,16 @@ function EmptyChatsState({ isSearching, onPrimaryPress }: EmptyChatsStateProps) 
                     ]}
                 />
 
-                <View style={[styles.backBubble, { backgroundColor: theme.base }]}>
-                    <MessageCircleMore size={28} color="#FFFFFF" strokeWidth={2.1} />
+                <View
+                    style={[
+                        styles.backBubble,
+                        {
+                            backgroundColor: theme.background,
+                            shadowColor: theme.primary,
+                        },
+                    ]}
+                >
+                    <MessageCircleMore size={30} color={theme.white} strokeWidth={2.2} />
                 </View>
 
                 <View
@@ -286,19 +271,16 @@ function EmptyChatsState({ isSearching, onPrimaryPress }: EmptyChatsStateProps) 
                         styles.frontBubble,
                         {
                             backgroundColor: theme.background,
-                            borderColor: theme.base,
+                            borderColor: theme.primary,
                         },
                     ]}
                 >
-                    <Heart
-                        size={24}
-                        color={theme.base}
-                        fill={theme.base}
-                        strokeWidth={2.1}
-                    />
+                    <Heart size={28} color={theme.primary} strokeWidth={2.4} />
                 </View>
 
-                <View style={[styles.shadow, { backgroundColor: theme.base + "12" }]} />
+                <View
+                    style={[styles.shadow, { backgroundColor: theme.primary + "12" }]}
+                />
             </View>
 
             <Text style={styles.emptyTitle}>
@@ -308,12 +290,12 @@ function EmptyChatsState({ isSearching, onPrimaryPress }: EmptyChatsStateProps) 
             <Text style={styles.emptySubtitle}>
                 {isSearching
                     ? "Zu deiner Suche konnten wir keine Unterhaltung finden. Versuche es mit einem anderen Namen."
-                    : "Hier erscheinen deine Matches und Nachrichten. Starte einen neuen Kontakt und bringe das erste Gespräch ins Rollen."}
+                    : "Hier erscheinen deine Matches und Nachrichten. Starte einen neuen Kontakt und bringe das erste Gespraech ins Rollen."}
             </Text>
 
             <Pressable style={styles.emptyButton} onPress={onPrimaryPress}>
                 <Text style={styles.emptyButtonText}>
-                    {isSearching ? "Suche zurücksetzen" : "Neue Leute entdecken"}
+                    {isSearching ? "Suche zuruecksetzen" : "Neue Leute entdecken"}
                 </Text>
             </Pressable>
         </View>
@@ -387,7 +369,7 @@ const makeStyles = (theme: Theme) =>
             justifyContent: "center",
             alignItems: "center",
             borderWidth: 5,
-            borderColor: theme.base,
+            borderColor: theme.primary,
         },
         frontBubble: {
             position: "absolute",
@@ -414,20 +396,20 @@ const makeStyles = (theme: Theme) =>
         dotOne: {
             width: 10,
             height: 10,
-            left: 18,
-            top: 48,
+            left: 22,
+            top: 86,
         },
         dotTwo: {
             width: 16,
             height: 16,
-            right: 20,
-            top: 26,
+            right: 40,
+            top: 22,
         },
         dotThree: {
             width: 12,
             height: 12,
-            right: 54,
-            top: 86,
+            right: 58,
+            top: 118,
         },
         emptyTitle: {
             color: theme.text,

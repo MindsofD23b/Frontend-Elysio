@@ -4,7 +4,7 @@ import { Chat } from "@/types/chats";
 import { decryptMessage, encryptMessage } from "@/services/chat-crypto.client";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowUp, ChevronLeft } from "lucide-react-native";
+import { ArrowUp, ChevronLeft, Heart, MessageCircleMore } from "lucide-react-native";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
     ActivityIndicator,
@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth/AuthProvider";
-
+// Design made with Pinterest and ChatGPT
 interface Message {
     id: string;
     senderId: string;
@@ -62,6 +62,16 @@ export default function ChatsScreen() {
     const { token } = useAuth();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
+
+    const inputRef = useRef<TextInput>(null);
+
+    const startConversation = useCallback(() => {
+        const firstName = user.name?.split(" ")[0] ?? user.name ?? "";
+        setMessage(`Hey ${firstName} 👋`);
+        requestAnimationFrame(() => {
+            inputRef.current?.focus();
+        });
+    }, [user.name]);
 
     const messagesRequest = useMemo<RequestInit>(
         () => ({
@@ -266,6 +276,11 @@ export default function ChatsScreen() {
                             style={{ marginTop: 32 }}
                             color={theme.primary}
                         />
+                    ) : decryptedMessages.length === 0 ? (
+                        <EmptyMessagesState
+                            name={user.name}
+                            onPress={startConversation}
+                        />
                     ) : (
                         <ScrollView
                             ref={scrollRef}
@@ -322,6 +337,7 @@ export default function ChatsScreen() {
                     }}
                 >
                     <TextInput
+                        ref={inputRef}
                         placeholder="Type a message..."
                         placeholderTextColor={theme.base + "66"}
                         multiline
@@ -360,7 +376,162 @@ export default function ChatsScreen() {
         </KeyboardAvoidingView>
     );
 }
+function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => void }) {
+    const { theme } = useTheme();
+    const firstName = name?.split(" ")[0] ?? name;
 
+    return (
+        <View
+            style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                paddingHorizontal: 28,
+                paddingBottom: 48,
+                backgroundColor: theme.background,
+            }}
+        >
+            <View
+                style={{
+                    width: 230,
+                    height: 180,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 24,
+                    position: "relative",
+                }}
+            >
+                <View
+                    style={{
+                        position: "absolute",
+                        top: 22,
+                        right: 40,
+                        width: 16,
+                        height: 16,
+                        borderRadius: 999,
+                        backgroundColor: theme.primary + "14",
+                    }}
+                />
+                <View
+                    style={{
+                        position: "absolute",
+                        top: 86,
+                        left: 22,
+                        width: 10,
+                        height: 10,
+                        borderRadius: 999,
+                        backgroundColor: theme.primary + "10",
+                    }}
+                />
+                <View
+                    style={{
+                        position: "absolute",
+                        top: 118,
+                        right: 58,
+                        width: 12,
+                        height: 12,
+                        borderRadius: 999,
+                        backgroundColor: theme.primary + "12",
+                    }}
+                />
+
+                <View
+                    style={{
+                        position: "absolute",
+                        width: 96,
+                        height: 96,
+                        borderRadius: 999,
+                        backgroundColor: theme.primary,
+                        right: 34,
+                        top: 42,
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <MessageCircleMore color={theme.white} size={30} strokeWidth={2.2} />
+                </View>
+
+                <View
+                    style={{
+                        position: "absolute",
+                        width: 112,
+                        height: 112,
+                        borderRadius: 999,
+                        backgroundColor: theme.background,
+                        borderWidth: 6,
+                        borderColor: theme.primary,
+                        left: 34,
+                        top: 18,
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <Heart color={theme.primary} size={28} strokeWidth={2.4} />
+                </View>
+
+                <View
+                    style={{
+                        position: "absolute",
+                        bottom: 6,
+                        width: 96,
+                        height: 12,
+                        borderRadius: 999,
+                        backgroundColor: theme.primary + "12",
+                    }}
+                />
+            </View>
+
+            <Text
+                style={{
+                    color: theme.text,
+                    fontSize: 28,
+                    fontWeight: "800",
+                    textAlign: "center",
+                    marginBottom: 12,
+                }}
+            >
+                No messages yet
+            </Text>
+
+            <Text
+                style={{
+                    color: theme.grayscale,
+                    fontSize: 15,
+                    lineHeight: 24,
+                    textAlign: "center",
+                    maxWidth: 320,
+                    marginBottom: 28,
+                }}
+            >
+                Start the conversation with {firstName}. A simple hello can turn into
+                something special.
+            </Text>
+
+            <Pressable
+                onPress={onPress}
+                style={{
+                    minWidth: 220,
+                    backgroundColor: theme.primary,
+                    paddingVertical: 15,
+                    paddingHorizontal: 24,
+                    borderRadius: 16,
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <Text
+                    style={{
+                        color: theme.white,
+                        fontSize: 16,
+                        fontWeight: "700",
+                    }}
+                >
+                    Say hi
+                </Text>
+            </Pressable>
+        </View>
+    );
+}
 function MessageBubble({
     text,
     time,
