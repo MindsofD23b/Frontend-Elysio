@@ -11,6 +11,7 @@ export const colors = {
         black: "#000000",
         card: "#000000" + "15",
         cardAccent: "#000000" + "2A",
+        grayscale: "#9CA3AF",
     },
     dark: {
         background: "#1E1E1E",
@@ -24,6 +25,7 @@ export const colors = {
         black: "#000000",
         card: "#FFFFFF" + "15",
         cardAccent: "#FFFFFF" + "2A",
+        grayscale: "#9CA3AF",
     },
 };
 

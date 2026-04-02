@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { initCrypto } from "@/services/chat-crypto.client";
 
 type AuthContextType = {
     token: string | null;
@@ -20,6 +21,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const storedToken = await AsyncStorage.getItem("token");
                 setToken(storedToken);
+
+                if (storedToken) {
+                    await initCrypto("https://elysio.jamiepoeffel.ch", storedToken);
+                }
             } catch (error) {
                 console.error("Failed to load auth token", error);
                 setToken(null);
@@ -34,10 +39,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = async (nextToken: string) => {
         setToken(nextToken);
         await AsyncStorage.setItem("token", nextToken);
+        console.log("Calling initCrypto..."); // ← neu
+        await initCrypto("https://elysio.jamiepoeffel.ch", nextToken);
+        console.log("initCrypto done"); // ← neu
     };
 
     const logout = async () => {
-        await AsyncStorage.removeItem("token");
+        await AsyncStorage.clear();
         setToken(null);
     };
 
