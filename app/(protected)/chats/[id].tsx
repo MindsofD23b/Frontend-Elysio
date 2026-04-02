@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { io, Socket } from "socket.io-client";
 // Design made with Pinterest and ChatGPT
 interface Message {
     id: string;
@@ -50,6 +51,8 @@ type RoomKeysResponse = {
     publicKey: string;
 }[];
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://elysio.jamiepoeffel.ch";
+
 export default function ChatsScreen() {
     const { id, user: userRaw } = useLocalSearchParams<{ id: string; user: string }>();
     const user = JSON.parse(userRaw) as Chat;
@@ -65,6 +68,8 @@ export default function ChatsScreen() {
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const inputRef = useRef<TextInput>(null);
+
+    const socketRef = useRef<Socket | null>(null);
 
     const startConversation = useCallback(() => {
         const firstName = user.name?.split(" ")[0] ?? user.name ?? "";
@@ -189,6 +194,57 @@ export default function ChatsScreen() {
         setHasLoadedOnce(false);
         loadMessages();
     }, [token, loadMessages]);
+
+    useEffect(() => {
+        if (!token || !id) return;
+
+        const socket = io(`${API_URL}/chat`, {
+            auth: { token },
+            transports: ["websocket"],
+        });
+
+        socketRef.current = socket;
+
+        socket.on("connect", () => {
+            socket.emit("join_room", { roomId: id });
+        });
+
+        socket.on("new_message", async (msg) => {
+            if (msg.senderId === user.otherUser.id) return;
+
+            const myKey = msg.encryptedKeys.find(
+                (k: { userId: string }) => k.userId !== user.otherUser.id,
+            );
+
+            let text = "[Encrypted message]";
+            if (myKey) {
+                try {
+                    text = await decryptMessage({
+                        ciphertext: msg.ciphertext,
+                        iv: msg.iv,
+                        authTag: msg.authTag,
+                        encryptedKey: myKey.encryptedKey,
+                    });
+                } catch {
+                    text = "[Unable to decrypt]";
+                }
+            }
+
+            setDecryptedMessages((prev) => [
+                ...prev,
+                {
+                    id: msg.id,
+                    senderId: msg.senderId,
+                    text,
+                    createdAt: msg.createdAt,
+                },
+            ]);
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, [token, id]);
 
     const sendMessage = async () => {
         const text = message.trim();
