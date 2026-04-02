@@ -19,8 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const hydrateAuth = async () => {
             try {
-                const raw = await AsyncStorage.getItem("store_token");
-                const storedToken = raw ? JSON.parse(raw) : null;
+                const storedToken = await AsyncStorage.getItem("token");
                 setToken(storedToken);
 
                 if (storedToken) {
@@ -39,15 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (nextToken: string) => {
         setToken(nextToken);
-        await AsyncStorage.setItem("store_token", JSON.stringify(nextToken));
+        await AsyncStorage.setItem("token", nextToken);
         console.log("Calling initCrypto..."); // ← neu
         await initCrypto("https://elysio.jamiepoeffel.ch", nextToken);
         console.log("initCrypto done"); // ← neu
     };
 
     const logout = async () => {
+        await AsyncStorage.removeItem("token");
         await AsyncStorage.removeItem("store_token");
-        await AsyncStorage.removeItem("store_userId"); // ← neu
+        await AsyncStorage.removeItem("userId");
         setToken(null);
     };
 

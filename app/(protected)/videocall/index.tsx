@@ -51,7 +51,6 @@ export default function VideoCall() {
 
     async function api(path: string, options?: RequestInit) {
         const url = `${BASE_URL}${path}`;
-        console.log("API REQUEST:", url, options?.method ?? "GET");
 
         try {
             const res = await fetch(url, {
@@ -94,6 +93,11 @@ export default function VideoCall() {
 
         socket.on("connect", () => {
             console.log("Matchmaking socket connected");
+        });
+
+        socket.on("connect_error", (err) => {
+            console.log("Matchmaking connect_error:", err.message);
+            console.log("Matchmaking connect_error data:", err);
         });
 
         socket.on("disconnect", (reason) => {
@@ -413,12 +417,20 @@ export default function VideoCall() {
 
     const activateMatchmaking = useCallback(async () => {
         try {
+            console.log("Get ALl KEys");
+            const keys = await AsyncStorage.getAllKeys();
+            console.log(keys);
+            // if (keys.length > 0) {
+            //     await AsyncStorage.multiRemove(keys);
+            // }
             const token = await AsyncStorage.getItem("token");
 
             if (!token) {
                 Alert.alert("Auth", "No token found.");
                 return;
             }
+            const decoded = parseJwt(token);
+            console.log("activateMatchmaking decoded JWT", decoded);
 
             const res = await fetch(`${BASE_URL}/matchmaking/activate`, {
                 method: "POST",
@@ -454,57 +466,59 @@ export default function VideoCall() {
         }
     }, []);
 
-    async function deactivateMatchmaking() {
-        try {
-            const token = await AsyncStorage.getItem("token");
+    // async function deactivateMatchmaking() {
+    //     try {
+    //         const token = await AsyncStorage.getItem("token");
 
-            if (!token) {
-                return;
-            }
+    //         if (!token) {
+    //             return;
+    //         }
 
-            const res = await fetch(`${BASE_URL}/matchmaking/deactivate`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+    //         const res = await fetch(`${BASE_URL}/matchmaking/deactivate`, {
+    //             method: "POST",
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //                 Authorization: `Bearer ${token}`,
+    //             },
+    //         });
 
-            const data = await res.json();
-            console.log("deactivateMatchmaking response", data);
+    //         const data = await res.json();
+    //         console.log("deactivateMatchmaking response", data);
 
-            if (!res.ok) {
-                throw new Error(data?.message ?? "Failed to deactivate matchmaking");
-            }
+    //         if (!res.ok) {
+    //             throw new Error(data?.message ?? "Failed to deactivate matchmaking");
+    //         }
 
-            setMatchState("idle");
-            setMatchedUserId(null);
-            setGatewayRoomId(null);
-            console.log("Matchmaking deactivated successfully");
-        } catch (error) {
-            console.error("deactivateMatchmaking error", error);
-        }
-    }
+    //         setMatchState("idle");
+    //         setMatchedUserId(null);
+    //         setGatewayRoomId(null);
+    //         console.log("Matchmaking deactivated successfully");
+    //     } catch (error) {
+    //         console.error("deactivateMatchmaking error", error);
+    //     }
+    // }
 
     const stopCall = useCallback(async () => {
         startingRef.current = false;
         socketRef.current?.disconnect();
         socketRef.current = null;
 
-        try {
-            const currentRoomId = getRoomIdOrThrow();
-            console.log("Leaving room", currentRoomId);
+        const currentRoomId = roomIdRef.current;
 
-            await fetch(`${BASE_URL}/video/room/${currentRoomId}/leave`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ peerId: peerIdRef.current }),
-            });
-        } catch (err) {
-            console.error("leave error", err);
+        if (currentRoomId) {
+            try {
+                console.log("Leaving room", currentRoomId);
+
+                await fetch(`${BASE_URL}/video/room/${currentRoomId}/leave`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ peerId: peerIdRef.current }),
+                });
+            } catch (err) {
+                console.error("leave error", err);
+            }
         }
 
-        // Reset matchmaking state on backend BEFORE cleaning up local state
         try {
             const token = await AsyncStorage.getItem("token");
             if (token) {
@@ -602,6 +616,22 @@ export default function VideoCall() {
         );
     }
 
+    function parseJwt(token: string) {
+        try {
+            const base64Url = token.split(".")[1];
+            const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split("")
+                    .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join(""),
+            );
+            return JSON.parse(jsonPayload);
+        } catch {
+            return null;
+        }
+    }
+
     useEffect(() => {
         const init = async () => {
             try {
@@ -615,14 +645,43 @@ export default function VideoCall() {
             console.error("init error", error);
         });
 
-        return () => {
-            matchmakingSocketRef.current?.disconnect();
-            matchmakingSocketRef.current = null;
+        const matchmakingSocket = matchmakingSocketRef.current;
+        const callSocket = socketRef.current;
+        const sendTransport = sendTransportRef.current;
+        const recvTransport = recvTransportRef.current;
+        const localStream = localStreamRef.current;
+        const consumers = consumersRef.current;
+        const consumedProducerIds = consumedProducerIdsRef.current;
+        const consumingProducerIds = consumingProducerIdsRef.current;
 
-            deactivateMatchmaking().catch(() => undefined);
-            stopCall().catch(() => undefined);
+        return () => {
+            matchmakingSocket?.disconnect();
+            callSocket?.disconnect();
+
+            sendTransport?.close();
+            recvTransport?.close();
+            localStream?.getTracks()?.forEach((t: any) => t.stop());
+
+            consumers.forEach((consumer) => {
+                try {
+                    consumer.close();
+                } catch {}
+            });
+
+            consumers.clear();
+            consumedProducerIds.clear();
+            consumingProducerIds.clear();
+
+            matchmakingSocketRef.current = null;
+            socketRef.current = null;
+            sendTransportRef.current = null;
+            recvTransportRef.current = null;
+            localStreamRef.current = null;
+            remoteStreamRef.current = new MediaStream();
+            remoteVideoStreamRef.current = null;
+            roomIdRef.current = null;
         };
-    }, [connectMatchmakingGateway, stopCall]);
+    }, [connectMatchmakingGateway]);
 
     useEffect(() => {
         if (!matchmakingReady) return;
