@@ -1,4 +1,4 @@
-// import { getLocales } from "expo-localization";
+import { getLocales } from "expo-localization";
 import { I18n } from "i18n-js";
 // all language files made by claud ai
 import en from "./locales/en.json";
@@ -41,7 +41,7 @@ const i18n = new I18n({
     en,
 });
 
-const supported = ["en", "de", "fr", "es"];
+const supported = ["en"];
 let deviceLocale = "en";
 try {
     deviceLocale = getLocales()[0]?.languageCode ?? "en";
