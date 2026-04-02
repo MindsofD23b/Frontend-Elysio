@@ -5,7 +5,7 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
-import { useFetch } from "@/hooks/useFetch";
+import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
 
@@ -33,7 +33,7 @@ export default function WithEmail() {
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState<FormErrors>({});
 
-    const [, loading, fetchError, loginRequest] = useFetch<LoginResponse>(
+    const [, loading, fetchError, loginRequest] = usePublicFetch<LoginResponse>(
         "/auth/login",
         {
             method: "POST",
