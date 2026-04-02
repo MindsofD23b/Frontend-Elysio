@@ -6,15 +6,9 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
-
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppContent() {
-    const { expoPushToken } = usePushNotifications();
-
-    console.log("Token:", expoPushToken?.data);
-
     return <Slot />;
 }
 

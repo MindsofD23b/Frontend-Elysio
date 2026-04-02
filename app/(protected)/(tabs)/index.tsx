@@ -15,6 +15,8 @@ import { router } from "expo-router";
 import { canCall } from "@/lib/premium/canCall";
 import { CONSTANTS, PlanType } from "@/lib/constants";
 import { Heart } from "lucide-react-native";
+import { get } from "@/utils/store";
+import { addDeviceToken } from "@/utils/addDeviceToken";
 // TODO: Implement plan based constants
 const user = {
     plan: PlanType.FREE,
@@ -140,6 +142,14 @@ export default function Index() {
 
     const SPEED_L = 7000;
     const SPEED_R = 9000;
+
+    useEffect(() => {
+        async function run() {
+            const deviceToken = await get("expo-push-token");
+            await addDeviceToken(deviceToken);
+        }
+        run();
+    }, []);
 
     useEffect(() => {
         let cancelledL = false;
