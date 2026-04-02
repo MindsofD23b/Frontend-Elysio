@@ -62,6 +62,7 @@ export default function ChatsScreen() {
     const { token } = useAuth();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const inputRef = useRef<TextInput>(null);
 
@@ -178,11 +179,14 @@ export default function ChatsScreen() {
             );
         } catch (err) {
             console.error("loadMessages error", err);
+        } finally {
+            setHasLoadedOnce(true);
         }
     }, [run]);
-
     useEffect(() => {
         if (!token) return;
+
+        setHasLoadedOnce(false);
         loadMessages();
     }, [token, loadMessages]);
 
@@ -271,7 +275,7 @@ export default function ChatsScreen() {
                 </View>
 
                 <View style={{ flex: 1, paddingTop: 12 }}>
-                    {loading ? (
+                    {!hasLoadedOnce || loading ? (
                         <ActivityIndicator
                             style={{ marginTop: 32 }}
                             color={theme.primary}
