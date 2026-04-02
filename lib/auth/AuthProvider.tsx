@@ -40,10 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = async (nextToken: string) => {
         setToken(nextToken);
         await AsyncStorage.setItem("store_token", JSON.stringify(nextToken));
+
+        const payload = JSON.parse(atob(nextToken.split(".")[1]));
+        await AsyncStorage.setItem("store_userId", JSON.stringify(payload.sub));
     };
 
     const logout = async () => {
         await AsyncStorage.removeItem("store_token");
+        await AsyncStorage.removeItem("store_userId"); // ← neu
         setToken(null);
     };
 

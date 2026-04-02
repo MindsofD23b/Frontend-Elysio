@@ -41,7 +41,7 @@ export default function Index() {
             roomId: string;
             senderId: string;
             type: string;
-            cyphertext: string;
+            ciphertext: string;
             iv: string;
             authTag: string;
             mediaUrl: string | null;
@@ -62,35 +62,53 @@ export default function Index() {
         [],
     );
 
-    const [data, loading, _error, run] = useFetch<ChatResponse[]>(
+    const [data, loading, _error] = useFetch<ChatResponse[]>(
         "/chat/rooms",
         fetchOptions,
         { useCache: true },
     );
 
-    useEffect(() => {
-        run();
-    }, [run]);
+    // useEffect(() => {
+    //     run();
+    // }, [run]);
 
     useEffect(() => {
         if (!data) return;
+
         Promise.all(
-            data.map(async (chat) => ({
-                id: chat.room.id,
-                name: chat.otherUser.fullName,
-                lastMessage:
-                    chat.lastMessage?.type === "text"
-                        ? chat.lastMessage.cyphertext
-                        : ((await decryptMessage({
-                              ciphertext: chat.lastMessage?.cyphertext ?? "",
-                              iv: chat.lastMessage?.iv ?? "",
-                              authTag: chat.lastMessage?.authTag ?? "",
-                              encryptedKey: chat.lastMessage?.mediaUrl ?? "",
-                          })) ?? "[Unable to decrypt message]"),
-                createdAt: chat.room.createdAt,
-                updatedAt: chat.room.updatedAt,
-                image: chat.otherUser.avatar ?? "",
-            })),
+            data.map(async (chat) => {
+                let lastMessageText = "";
+
+                if (!chat.lastMessage) {
+                    lastMessageText = "";
+                } else if (chat.lastMessage.type !== "text") {
+                    // Voice/Media – kein Text
+                    lastMessageText = "🎤 Voice message";
+                } else if (!chat.lastMessage.encryptedKey) {
+                    // Kein Key für diesen User (sollte nicht passieren)
+                    lastMessageText = "[Encrypted message]";
+                } else {
+                    try {
+                        lastMessageText = await decryptMessage({
+                            ciphertext: chat.lastMessage.ciphertext, // war: cyphertext (Tippfehler!)
+                            iv: chat.lastMessage.iv,
+                            authTag: chat.lastMessage.authTag,
+                            encryptedKey: chat.lastMessage.encryptedKey,
+                        });
+                    } catch {
+                        lastMessageText = "[Unable to decrypt]";
+                    }
+                }
+
+                return {
+                    id: chat.room.id,
+                    name: chat.otherUser.fullName,
+                    lastMessage: lastMessageText,
+                    createdAt: chat.room.createdAt,
+                    updatedAt: chat.room.updatedAt,
+                    image: chat.otherUser.avatar ?? "",
+                };
+            }),
         ).then((mapped) => {
             setChats(orderChatsByUpdatedAt(mapped));
         });

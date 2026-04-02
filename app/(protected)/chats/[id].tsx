@@ -2,6 +2,7 @@ import { useFetch } from "@/hooks/useFetch";
 import { useStore } from "@/hooks/useStore";
 import { useTheme } from "@/lib/theme/context";
 import { Chat } from "@/types/chats";
+import { decryptMessage, encryptMessage } from "@/services/chat-crypto.client";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowUp, ChevronLeft } from "lucide-react-native";
@@ -40,53 +41,128 @@ interface RoomMessagesResponse {
         mediaDurationSec: number | null;
         isDeleted: boolean;
         createdAt: string;
-        encryptedKey: string;
+        encryptedKey: string | null;
     }[];
     hasMore: boolean;
     nextCursor: string | null;
 }
+
+type RoomKeysResponse = {
+    userId: string;
+    publicKey: string;
+}[];
 
 export default function ChatsScreen() {
     const { id, user: userRaw } = useLocalSearchParams<{ id: string; user: string }>();
     const user = JSON.parse(userRaw) as Chat;
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState<Message[]>([]);
+    const [sending, setSending] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
     const [currentUserId] = useStore<string | null>("userId", null);
+    const [token] = useStore<string | null>("token", null);
 
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
 
+    const base = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
+
+    // ─── Nachrichten laden ───────────────────────────────────────────────────
     const fetchOptions = useMemo(
         () => ({ method: "GET", headers: { "Content-Type": "application/json" } }),
         [],
     );
 
-    const [data, loading, , run] = useFetch<RoomMessagesResponse>(
+    const [data, loading] = useFetch<RoomMessagesResponse>(
         `/chat/rooms/${id}/messages`,
         fetchOptions,
         { useCache: false },
     );
 
-    useEffect(() => {
-        run();
-    }, [run]);
-
+    // Nachrichten entschlüsseln sobald sie geladen sind
     useEffect(() => {
         if (!data) return;
-        setMessages(
-            data.messages.map((msg) => ({
-                id: msg.id,
-                senderId: msg.senderId,
-                text: msg.ciphertext,
-                createdAt: msg.createdAt,
-            })),
-        );
+
+        Promise.all(
+            data.messages.map(async (msg) => {
+                let text = "[Encrypted message]";
+
+                if (msg.encryptedKey) {
+                    try {
+                        text = await decryptMessage({
+                            ciphertext: msg.ciphertext,
+                            iv: msg.iv,
+                            authTag: msg.authTag,
+                            encryptedKey: msg.encryptedKey,
+                        });
+                    } catch {
+                        text = "[Unable to decrypt]";
+                    }
+                }
+
+                return {
+                    id: msg.id,
+                    senderId: msg.senderId,
+                    text,
+                    createdAt: msg.createdAt,
+                };
+            }),
+        ).then((decrypted) => {
+            // Server gibt DESC zurück → umkehren für chronologische Anzeige
+            setMessages(decrypted.reverse());
+        });
     }, [data]);
 
-    const sendMessage = () => {
-        alert("Message sent: " + message);
+    // ─── Nachricht senden ────────────────────────────────────────────────────
+    const sendMessage = async () => {
+        const text = message.trim();
+        if (!text || sending) return;
+
+        setSending(true);
         setMessage("");
+
+        try {
+            // 1. Public Keys der Room-Teilnehmer holen
+            const keysRes = await fetch(`${base}/chat/rooms/${id}/keys`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const recipients: RoomKeysResponse = await keysRes.json();
+
+            // Nur Empfänger mit vorhandenem Public Key
+            const validRecipients = recipients.filter((r) => r.publicKey);
+
+            // 2. Nachricht verschlüsseln
+            const payload = await encryptMessage(text, validRecipients);
+
+            // 3. An Server schicken
+            const res = await fetch(`${base}/chat/rooms/${id}/messages`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) throw new Error("Send failed");
+
+            // 4. Optimistisch zur Liste hinzufügen
+            const sent = await res.json();
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: sent.id,
+                    senderId: sent.senderId,
+                    text,
+                    createdAt: sent.createdAt,
+                },
+            ]);
+        } catch (e) {
+            console.error("Send error:", e);
+            setMessage(text); // Text zurücksetzen bei Fehler
+        } finally {
+            setSending(false);
+        }
     };
 
     return (
@@ -97,6 +173,7 @@ export default function ChatsScreen() {
         >
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={{ flex: 1 }}>
+                    {/* Header */}
                     <View
                         style={{
                             flexDirection: "row",
@@ -117,9 +194,7 @@ export default function ChatsScreen() {
                         <View style={{ width: 8 }} />
                         <Image
                             source={{ uri: user.image || undefined }}
-                            placeholder={
-                                "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
-                            }
+                            placeholder="|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
                             contentFit="cover"
                             transition={500}
                             style={{
@@ -141,6 +216,8 @@ export default function ChatsScreen() {
                             {user.name}
                         </Text>
                     </View>
+
+                    {/* Nachrichten */}
                     <View style={{ flex: 1, paddingTop: 12 }}>
                         {loading ? (
                             <ActivityIndicator
@@ -171,6 +248,8 @@ export default function ChatsScreen() {
                             </ScrollView>
                         )}
                     </View>
+
+                    {/* Input */}
                     <View
                         style={{
                             borderTopWidth: 1,
@@ -187,9 +266,7 @@ export default function ChatsScreen() {
                             placeholderTextColor={theme.base + "66"}
                             multiline
                             value={message}
-                            onChangeText={(text) => {
-                                setMessage(text);
-                            }}
+                            onChangeText={setMessage}
                             style={{
                                 flex: 1,
                                 maxHeight: 120,
@@ -205,13 +282,20 @@ export default function ChatsScreen() {
                                 height: 32,
                                 marginLeft: 8,
                                 borderRadius: 999,
-                                backgroundColor: theme.primary,
+                                backgroundColor: sending
+                                    ? theme.base + "66"
+                                    : theme.primary,
                                 alignItems: "center",
                                 justifyContent: "center",
                             }}
                             onPress={sendMessage}
+                            disabled={sending}
                         >
-                            <ArrowUp color={theme.white} size={18} />
+                            {sending ? (
+                                <ActivityIndicator size={14} color={theme.white} />
+                            ) : (
+                                <ArrowUp color={theme.white} size={18} />
+                            )}
                         </Pressable>
                     </View>
                 </View>
@@ -220,12 +304,7 @@ export default function ChatsScreen() {
     );
 }
 
-interface IMessageProps {
-    text: string;
-    isOwn?: boolean;
-}
-
-function MessageBubble({ text, isOwn }: IMessageProps) {
+function MessageBubble({ text, isOwn }: { text: string; isOwn?: boolean }) {
     const { theme } = useTheme();
 
     return (
