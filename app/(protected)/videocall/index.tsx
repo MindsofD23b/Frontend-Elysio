@@ -507,8 +507,6 @@ export default function VideoCall() {
 
         if (currentRoomId) {
             try {
-                console.log("Leaving room", currentRoomId);
-
                 await fetch(`${BASE_URL}/video/room/${currentRoomId}/leave`, {
                     method: "DELETE",
                     headers: { "Content-Type": "application/json" },
@@ -562,7 +560,6 @@ export default function VideoCall() {
         setMatchState("idle");
         roomIdRef.current = null;
     }, []);
-
     function toggleMute() {
         const stream = localStreamRef.current;
         if (!stream) return;
