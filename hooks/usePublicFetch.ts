@@ -13,7 +13,7 @@ type CachedData<S> = {
     ttl: number;
     created_at: number;
 };
-
+// made with Pinterest and ChatGPT
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
 export function usePublicFetch<S>(

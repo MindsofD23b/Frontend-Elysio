@@ -1,5 +1,6 @@
 import {
     ActivityIndicator,
+    Pressable,
     RefreshControl,
     StyleSheet,
     Text,
@@ -7,168 +8,146 @@ import {
     View,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { Chat } from "@/types/chats";
 import ChatComponent from "@/components/ChatComponent";
 import { Theme } from "@/lib/theme/theme";
 import { decryptMessage } from "@/services/chat-crypto.client";
-import { Search } from "lucide-react-native";
-import { useAuth } from "@/lib/auth/AuthProvider";
+import { Heart, MessageCircleMore, Search } from "lucide-react-native";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
-const base = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
+// Design made with Pinterest and ChatGPT
+interface ChatResponse {
+    room: {
+        id: string;
+        userAId: string;
+        userBId: string;
+        createdAt: string;
+        updatedAt: string;
+    };
+    lastMessage: {
+        id: string;
+        roomId: string;
+        senderId: string;
+        type: string;
+        ciphertext: string;
+        iv: string;
+        authTag: string;
+        mediaUrl: string | null;
+        mediaDurationSec: number | null;
+        isDeleted: boolean;
+        createdAt: string;
+        encryptedKey: string | null;
+    } | null;
+    otherUser: {
+        id: string;
+        fullName: string;
+        avatar: string | null;
+    };
+}
+
+function orderChatsByUpdatedAt(chats: Chat[]): Chat[] {
+    return [...chats].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
+}
+
+async function mapChatResponses(data: ChatResponse[]): Promise<Chat[]> {
+    const mapped = await Promise.all(
+        data.map(async (chat) => {
+            let lastMessageText = "";
+
+            if (!chat.lastMessage) {
+                lastMessageText = "";
+            } else if (chat.lastMessage.type !== "text") {
+                lastMessageText = "🎤 Voice message";
+            } else if (!chat.lastMessage.encryptedKey) {
+                lastMessageText = "[Encrypted message]";
+            } else {
+                try {
+                    lastMessageText = await decryptMessage({
+                        ciphertext: chat.lastMessage.ciphertext,
+                        iv: chat.lastMessage.iv,
+                        authTag: chat.lastMessage.authTag,
+                        encryptedKey: chat.lastMessage.encryptedKey,
+                    });
+                } catch {
+                    lastMessageText = "[Unable to decrypt]";
+                }
+            }
+
+            return {
+                id: chat.room.id,
+                otherUser: {
+                    id: chat.otherUser.id,
+                    fullName: chat.otherUser.fullName,
+                    avatar: chat.otherUser.avatar,
+                },
+                name: chat.otherUser.fullName,
+                lastMessage: lastMessageText,
+                createdAt: chat.room.createdAt,
+                updatedAt: chat.room.updatedAt,
+                image: chat.otherUser.avatar ?? "",
+            };
+        }),
+    );
+
+    return orderChatsByUpdatedAt(mapped);
+}
 
 export default function Index() {
     const { theme } = useTheme();
+    const styles = makeStyles(theme);
+
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
-    const [loading, setLoading] = useState(true);
-    const { token } = useAuth();
+    const [searchText, setSearchText] = useState("");
 
-    interface ChatResponse {
-        room: {
-            id: string;
-            userAId: string;
-            userBId: string;
-            createdAt: string;
-            updatedAt: string;
-        };
-        lastMessage: {
-            id: string;
-            roomId: string;
-            senderId: string;
-            type: string;
-            ciphertext: string;
-            iv: string;
-            authTag: string;
-            mediaUrl: string | null;
-            mediaDurationSec: number | null;
-            isDeleted: boolean;
-            createdAt: string;
-            encryptedKey: string | null;
-        } | null;
-        otherUser: {
-            id: string;
-            fullName: string;
-            avatar: string | null;
-        };
-    }
+    const [rawData, loading, , run] = useAuthFetch<ChatResponse[]>(
+        "/chat/rooms",
+        { method: "GET" },
+        { cacheKey: "chat:rooms" },
+    );
 
-    const loadChats = useCallback(async () => {
-        if (!token) return;
+    useEffect(() => {
+        if (!rawData) return;
+        mapChatResponses(rawData)
+            .then(setChats)
+            .catch(() => {});
+    }, [rawData]);
 
-        setLoading(true);
-        try {
-            const res = await fetch(`${base}/chat/rooms`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!res.ok) throw new Error("Failed to fetch chats");
-            const data: ChatResponse[] = await res.json();
-
-            const mapped = await Promise.all(
-                data.map(async (chat) => {
-                    let lastMessageText = "";
-
-                    if (!chat.lastMessage) {
-                        lastMessageText = "";
-                    } else if (chat.lastMessage.type !== "text") {
-                        lastMessageText = "🎤 Voice message";
-                    } else if (!chat.lastMessage.encryptedKey) {
-                        lastMessageText = "[Encrypted message]";
-                    } else {
-                        try {
-                            lastMessageText = await decryptMessage({
-                                ciphertext: chat.lastMessage.ciphertext,
-                                iv: chat.lastMessage.iv,
-                                authTag: chat.lastMessage.authTag,
-                                encryptedKey: chat.lastMessage.encryptedKey,
-                            });
-                        } catch {
-                            lastMessageText = "[Unable to decrypt]";
-                        }
-                    }
-
-                    return {
-                        id: chat.room.id,
-                        otherUser: {
-                            id: chat.otherUser.id,
-                            fullName: chat.otherUser.fullName,
-                            avatar: chat.otherUser.avatar,
-                        },
-                        name: chat.otherUser.fullName,
-                        lastMessage: lastMessageText,
-                        createdAt: chat.room.createdAt,
-                        updatedAt: chat.room.updatedAt,
-                        image: chat.otherUser.avatar ?? "",
-                    };
-                }),
-            );
-
-            setChats(orderChatsByUpdatedAt(mapped));
-        } finally {
-            setLoading(false);
-        }
-    }, [token]);
-    const onRefresh = async () => {
+    const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await loadChats();
+        try {
+            const data = await run();
+            if (data) setChats(await mapChatResponses(data));
+        } catch {}
         setRefreshing(false);
-    };
+    }, [run]);
 
-    useEffect(() => {
-        loadChats();
-    }, [loadChats]);
+    const filteredChats = useMemo(() => {
+        const value = searchText.trim().toLowerCase();
+        if (!value) return chats;
+        return chats.filter((chat) => chat.name.toLowerCase().includes(value));
+    }, [chats, searchText]);
 
-    const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
-
-    useEffect(() => {
-        setFilteredChats(chats);
-    }, [chats]);
-
-    const onSearch = (text: string) => {
-        const filtered = chats.filter((chat) =>
-            chat.name.toLowerCase().includes(text.toLowerCase()),
-        );
-        setFilteredChats(filtered);
-    };
+    const isSearching = searchText.trim().length > 0;
 
     return (
-        <View style={{ flex: 1 }}>
-            <View style={{ borderBottomColor: theme.base + "1A", borderBottomWidth: 1 }}>
-                <SearchBarComponent onSearch={onSearch} />
+        <View style={styles.screen}>
+            <View style={styles.searchWrapper}>
+                <SearchBarComponent value={searchText} onChangeText={setSearchText} />
             </View>
-            {loading && (
-                <ActivityIndicator
-                    size={50}
-                    style={{ backgroundColor: theme.background }}
-                    color={theme.text}
-                />
-            )}
 
-            {!loading && filteredChats.length === 0 && (
-                <View
-                    style={{
-                        paddingTop: 32,
-                        alignItems: "center",
-                        backgroundColor: theme.background,
-                    }}
-                >
-                    <Text>
-                        No chats found. Start a new conversation by Joining a Call
-                    </Text>
+            {loading ? (
+                <View style={styles.loaderContainer}>
+                    <ActivityIndicator size={42} color={theme.base} />
                 </View>
-            )}
-
-            <View style={{ flex: 1, width: "100%", backgroundColor: theme.background }}>
+            ) : (
                 <FlashList
                     data={filteredChats}
-                    contentContainerStyle={{ backgroundColor: theme.background }}
                     renderItem={({ item }) => (
                         <ChatComponent
                             chat={item}
@@ -184,7 +163,25 @@ export default function Index() {
                         />
                     )}
                     keyExtractor={(item) => item.id}
-                    estimatedItemSize={80}
+                    estimatedItemSize={88}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={
+                        filteredChats.length === 0
+                            ? { ...styles.listContent, ...styles.emptyListContent }
+                            : styles.listContent
+                    }
+                    ListEmptyComponent={
+                        <EmptyChatsState
+                            isSearching={isSearching}
+                            onPrimaryPress={() => {
+                                if (isSearching) {
+                                    setSearchText("");
+                                    return;
+                                }
+                                router.push("/videocall");
+                            }}
+                        />
+                    }
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
@@ -193,42 +190,28 @@ export default function Index() {
                         />
                     }
                 />
-            </View>
+            )}
         </View>
     );
 }
 
-function orderChatsByUpdatedAt(chats: Chat[]): Chat[] {
-    return [...chats].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-    );
-}
-
 interface ISearchBarComponent {
-    onSearch: (text: string) => void;
+    value: string;
+    onChangeText: (text: string) => void;
 }
 
-function SearchBarComponent({ onSearch }: ISearchBarComponent) {
+function SearchBarComponent({ value, onChangeText }: ISearchBarComponent) {
     const { theme } = useTheme();
     const styles = makeStyles(theme);
-    const [searchText, setSearchText] = useState("");
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            onSearch(searchText);
-        }, 400);
-
-        return () => clearTimeout(timer);
-    }, [searchText, onSearch]);
 
     return (
-        <View style={styles.container}>
+        <View style={styles.searchContainer}>
             <View style={styles.inputContainer}>
-                <Search size={20} color={theme.grayscale} style={{ marginBottom: -2 }} />
+                <Search size={18} color={theme.grayscale} style={{ marginBottom: -1 }} />
                 <TextInput
                     placeholder="Search"
-                    value={searchText}
-                    onChangeText={setSearchText}
+                    value={value}
+                    onChangeText={onChangeText}
                     style={styles.input}
                     placeholderTextColor={theme.grayscale}
                 />
@@ -237,19 +220,224 @@ function SearchBarComponent({ onSearch }: ISearchBarComponent) {
     );
 }
 
+interface EmptyChatsStateProps {
+    isSearching: boolean;
+    onPrimaryPress: () => void;
+}
+
+function EmptyChatsState({ isSearching, onPrimaryPress }: EmptyChatsStateProps) {
+    const { theme } = useTheme();
+    const styles = makeStyles(theme);
+
+    return (
+        <View style={styles.emptyStateWrapper}>
+            <View style={styles.illustrationArea}>
+                <View
+                    style={[
+                        styles.floatingDot,
+                        styles.dotOne,
+                        { backgroundColor: theme.base + "14" },
+                    ]}
+                />
+                <View
+                    style={[
+                        styles.floatingDot,
+                        styles.dotTwo,
+                        { backgroundColor: theme.base + "10" },
+                    ]}
+                />
+                <View
+                    style={[
+                        styles.floatingDot,
+                        styles.dotThree,
+                        { backgroundColor: theme.base + "12" },
+                    ]}
+                />
+
+                <View
+                    style={[
+                        styles.backBubble,
+                        {
+                            backgroundColor: theme.background,
+                            shadowColor: theme.primary,
+                        },
+                    ]}
+                >
+                    <MessageCircleMore size={30} color={theme.white} strokeWidth={2.2} />
+                </View>
+
+                <View
+                    style={[
+                        styles.frontBubble,
+                        {
+                            backgroundColor: theme.background,
+                            borderColor: theme.primary,
+                        },
+                    ]}
+                >
+                    <Heart size={28} color={theme.primary} strokeWidth={2.4} />
+                </View>
+
+                <View
+                    style={[styles.shadow, { backgroundColor: theme.primary + "12" }]}
+                />
+            </View>
+
+            <Text style={styles.emptyTitle}>
+                {isSearching ? "Keine Chats gefunden" : "Noch keine Chats"}
+            </Text>
+
+            <Text style={styles.emptySubtitle}>
+                {isSearching
+                    ? "Zu deiner Suche konnten wir keine Unterhaltung finden. Versuche es mit einem anderen Namen."
+                    : "Hier erscheinen deine Matches und Nachrichten. Starte einen neuen Kontakt und bringe das erste Gespraech ins Rollen."}
+            </Text>
+
+            <Pressable style={styles.emptyButton} onPress={onPrimaryPress}>
+                <Text style={styles.emptyButtonText}>
+                    {isSearching ? "Suche zuruecksetzen" : "Neue Leute entdecken"}
+                </Text>
+            </Pressable>
+        </View>
+    );
+}
+
 const makeStyles = (theme: Theme) =>
     StyleSheet.create({
-        container: {
-            padding: 16,
+        screen: {
+            flex: 1,
+            backgroundColor: theme.background,
+        },
+        searchWrapper: {
+            borderBottomColor: theme.base + "14",
+            borderBottomWidth: 1,
+        },
+        searchContainer: {
+            paddingHorizontal: 16,
+            paddingVertical: 14,
             backgroundColor: theme.background,
         },
         inputContainer: {
-            backgroundColor: theme.base + "1A",
-            color: theme.text,
-            padding: 8,
-            borderRadius: 8,
+            backgroundColor: theme.base + "10",
+            borderRadius: 14,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
             flexDirection: "row",
+            alignItems: "center",
             gap: 8,
         },
-        input: {},
+        input: {
+            flex: 1,
+            color: theme.text,
+            fontSize: 15,
+            paddingVertical: 0,
+        },
+        loaderContainer: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: theme.background,
+        },
+        listContent: {
+            paddingBottom: 24,
+            backgroundColor: theme.background,
+        },
+        emptyListContent: {
+            flexGrow: 1,
+        },
+        emptyStateWrapper: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 28,
+            paddingBottom: 48,
+        },
+        illustrationArea: {
+            width: 210,
+            height: 170,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 18,
+        },
+        backBubble: {
+            position: "absolute",
+            width: 94,
+            height: 94,
+            borderRadius: 999,
+            right: 42,
+            top: 34,
+            justifyContent: "center",
+            alignItems: "center",
+            borderWidth: 5,
+            borderColor: theme.primary,
+        },
+        frontBubble: {
+            position: "absolute",
+            width: 108,
+            height: 108,
+            borderRadius: 999,
+            left: 38,
+            top: 18,
+            justifyContent: "center",
+            alignItems: "center",
+            borderWidth: 5,
+        },
+        shadow: {
+            position: "absolute",
+            width: 90,
+            height: 12,
+            borderRadius: 999,
+            bottom: 6,
+        },
+        floatingDot: {
+            position: "absolute",
+            borderRadius: 999,
+        },
+        dotOne: {
+            width: 10,
+            height: 10,
+            left: 22,
+            top: 86,
+        },
+        dotTwo: {
+            width: 16,
+            height: 16,
+            right: 40,
+            top: 22,
+        },
+        dotThree: {
+            width: 12,
+            height: 12,
+            right: 58,
+            top: 118,
+        },
+        emptyTitle: {
+            color: theme.text,
+            fontSize: 28,
+            fontWeight: "800",
+            textAlign: "center",
+            marginBottom: 12,
+        },
+        emptySubtitle: {
+            color: theme.grayscale,
+            fontSize: 15,
+            lineHeight: 24,
+            textAlign: "center",
+            maxWidth: 320,
+            marginBottom: 28,
+        },
+        emptyButton: {
+            minWidth: 220,
+            backgroundColor: theme.base,
+            paddingVertical: 15,
+            paddingHorizontal: 24,
+            borderRadius: 16,
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        emptyButtonText: {
+            color: theme.background,
+            fontSize: 16,
+            fontWeight: "700",
+        },
     });

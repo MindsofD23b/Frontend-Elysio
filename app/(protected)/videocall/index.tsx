@@ -4,21 +4,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
 import * as mediasoupClient from "mediasoup-client";
 import { io, Socket } from "socket.io-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
     Ionicons,
     MaterialCommunityIcons,
     Feather,
     FontAwesome6,
 } from "@expo/vector-icons";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 registerGlobals();
 
-// made with chatgpt
-
-const BASE_URL = "https://elysio.jamiepoeffel.ch";
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
 export default function VideoCall() {
+    const { token } = useAuth();
     const [started, setStarted] = useState(false);
     const [localUrl, setLocalUrl] = useState<string | null>(null);
     const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
@@ -49,72 +49,108 @@ export default function VideoCall() {
 
     const matchmakingSocketRef = useRef<Socket | null>(null);
 
-    async function api(path: string, options?: RequestInit) {
-        const url = `${BASE_URL}${path}`;
+    const [, , , _activateMatchmakingRequest] = useAuthFetch<{
+        type: "waiting" | "matched";
+        matchedUserId?: string;
+        roomId?: string;
+    }>("/matchmaking/activate", { method: "POST" }, { manual: true, useCache: false });
 
-        try {
-            const res = await fetch(url, {
-                headers: { "Content-Type": "application/json" },
-                ...options,
-            });
+    const activateMatchmakingRef = useRef(_activateMatchmakingRequest);
+    useEffect(() => {
+        activateMatchmakingRef.current = _activateMatchmakingRequest;
+    }, [_activateMatchmakingRequest]);
 
-            const text = await res.text();
-            console.log("API RESPONSE:", res.status, text);
+    const [, , , _deactivateMatchmakingRequest] = useAuthFetch<void>(
+        "/matchmaking/deactivate",
+        { method: "POST" },
+        { manual: true, useCache: false },
+    );
 
-            if (!res.ok) throw new Error(`${res.status} ${text}`);
-            return text ? JSON.parse(text) : {};
-        } catch (error) {
-            console.log("API FETCH FAILED:", url, error);
-            throw error;
-        }
-    }
+    const deactivateMatchmakingRef = useRef(_deactivateMatchmakingRequest);
+    useEffect(() => {
+        deactivateMatchmakingRef.current = _deactivateMatchmakingRequest;
+    }, [_deactivateMatchmakingRequest]);
+
+    // const [, , , joinRoomRequest] = useAuthFetch<any>(
+    //     `/video/room/${roomIdRef.current}/join`,
+    //     { method: "POST" },
+    //     { manual: true, useCache: false },
+    // );
+
+    // const [, , , dynamicRequest] = useAuthFetch<any>(
+    //     "/video",
+    //     { method: "POST" },
+    //     { manual: true, useCache: false },
+    // );
+
+    const api = useCallback(
+        async (path: string, options?: RequestInit) => {
+            if (!token) throw new Error("Unauthorized");
+
+            const url = `${BASE_URL}${path}`;
+            try {
+                const res = await fetch(url, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    ...options,
+                    ...(options?.headers
+                        ? {
+                              headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${token}`,
+                                  ...options.headers,
+                              },
+                          }
+                        : {}),
+                });
+
+                const text = await res.text();
+                console.log("API RESPONSE:", res.status, text);
+
+                if (!res.ok) throw new Error(`${res.status} ${text}`);
+                return text ? JSON.parse(text) : {};
+            } catch (error) {
+                console.log("API FETCH FAILED:", url, error);
+                throw error;
+            }
+        },
+        [token],
+    );
 
     const connectMatchmakingGateway = useCallback(async () => {
-        const token = await AsyncStorage.getItem("token");
-
         if (!token) {
             console.log("No JWT token found for matchmaking socket");
             return;
         }
 
-        if (matchmakingSocketRef.current?.connected) {
-            return;
-        }
+        if (matchmakingSocketRef.current?.connected) return;
 
         const socket = io(BASE_URL, {
-            auth: {
-                token,
-            },
+            auth: { token },
             transports: ["websocket"],
             forceNew: true,
         });
 
         matchmakingSocketRef.current = socket;
 
-        socket.on("connect", () => {
-            console.log("Matchmaking socket connected");
-        });
-
+        socket.on("connect", () => console.log("Matchmaking socket connected"));
         socket.on("connect_error", (err) => {
-            console.log("Matchmaking connect_error:", err.message);
-            console.log("Matchmaking connect_error data:", err);
+            console.log("Matchmaking connect_error:", err.message, err);
         });
-
         socket.on("disconnect", (reason) => {
             console.log("Matchmaking socket disconnected:", reason);
             setMatchmakingReady(false);
         });
-
         socket.on("socket_ready", (payload) => {
             console.log("socket_ready", payload);
             setMatchmakingReady(true);
         });
-
         socket.on("queue_waiting", (payload) => {
             console.log("queue_waiting", payload);
             setMatchState("waiting");
         });
-
         socket.on("match_found", (payload: { matchedUserId: string; roomId: string }) => {
             console.log("match_found", payload);
             setMatchState("matched");
@@ -122,125 +158,125 @@ export default function VideoCall() {
             setGatewayRoomId(payload.roomId);
             updateRoomId(payload.roomId);
         });
-
         socket.on("room_ready", (payload: { roomId: string }) => {
             console.log("room_ready", payload);
             setGatewayRoomId(payload.roomId);
             updateRoomId(payload.roomId);
         });
-    }, []);
-    const consumeProducer = useCallback(async (producerId: string) => {
-        const recvTransport = recvTransportRef.current;
-        const device = deviceRef.current;
+    }, [token]);
 
-        if (!recvTransport || !device) return;
-        if (consumedProducerIdsRef.current.has(producerId)) return;
-        if (consumingProducerIdsRef.current.has(producerId)) return;
+    const consumeProducer = useCallback(
+        async (producerId: string) => {
+            const recvTransport = recvTransportRef.current;
+            const device = deviceRef.current;
 
-        consumingProducerIdsRef.current.add(producerId);
+            if (!recvTransport || !device) return;
+            if (consumedProducerIdsRef.current.has(producerId)) return;
+            if (consumingProducerIdsRef.current.has(producerId)) return;
 
-        const currentRoomId = getRoomIdOrThrow();
+            consumingProducerIdsRef.current.add(producerId);
+            const currentRoomId = getRoomIdOrThrow();
 
-        try {
-            const consumerData = await api(
-                `/video/room/${currentRoomId}/transport/${recvTransport.id}/consume`,
-                {
+            try {
+                const consumerData = await api(
+                    `/video/room/${currentRoomId}/transport/${recvTransport.id}/consume`,
+                    {
+                        method: "POST",
+                        body: JSON.stringify({
+                            peerId: peerIdRef.current,
+                            producerId,
+                            rtpCapabilities: device.rtpCapabilities,
+                        }),
+                    },
+                );
+
+                const consumer = await recvTransport.consume({
+                    id: consumerData.id,
+                    producerId: consumerData.producerId,
+                    kind: consumerData.kind,
+                    rtpParameters: consumerData.rtpParameters,
+                });
+
+                consumersRef.current.set(consumer.id, consumer);
+                consumedProducerIdsRef.current.add(producerId);
+
+                await api(`/video/room/${currentRoomId}/consumer/${consumer.id}/resume`, {
                     method: "POST",
-                    body: JSON.stringify({
-                        peerId: peerIdRef.current,
-                        producerId,
-                        rtpCapabilities: device.rtpCapabilities,
-                    }),
-                },
-            );
+                    body: JSON.stringify({ peerId: peerIdRef.current }),
+                });
 
-            const consumer = await recvTransport.consume({
-                id: consumerData.id,
-                producerId: consumerData.producerId,
-                kind: consumerData.kind,
-                rtpParameters: consumerData.rtpParameters,
-            });
+                consumer.track.enabled = true;
 
-            consumersRef.current.set(consumer.id, consumer);
-            consumedProducerIdsRef.current.add(producerId);
+                if (consumer.kind === "video") {
+                    const videoStream = new MediaStream([consumer.track]);
+                    remoteVideoStreamRef.current = videoStream;
+                    setTimeout(() => setRemoteUrl(videoStream.toURL()), 300);
+                }
 
-            await api(`/video/room/${currentRoomId}/consumer/${consumer.id}/resume`, {
+                consumingProducerIdsRef.current.delete(producerId);
+            } catch (err) {
+                consumingProducerIdsRef.current.delete(producerId);
+                console.error("consumeProducer error", err);
+            }
+        },
+        [api],
+    );
+
+    const createRecvTransport = useCallback(
+        async (device: any) => {
+            const currentRoomId = getRoomIdOrThrow();
+
+            const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
             });
 
-            consumer.track.enabled = true;
+            const recvTransport = device.createRecvTransport({
+                ...transportInfo,
+                iceServers: [
+                    {
+                        urls: [
+                            "turn:elysioturn.jamiepoeffel.ch:3478?transport=udp",
+                            "turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp",
+                            "turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp",
+                        ],
+                        username: "elysioturn",
+                        credential: "q9E811BDjLsK",
+                    },
+                ],
+            });
 
-            if (consumer.kind === "video") {
-                const videoStream = new MediaStream([consumer.track]);
-                remoteVideoStreamRef.current = videoStream;
+            recvTransportRef.current = recvTransport;
 
-                const url = videoStream.toURL();
-
-                setTimeout(() => {
-                    setRemoteUrl(url);
-                }, 300);
-            }
-            consumingProducerIdsRef.current.delete(producerId);
-        } catch (err) {
-            consumingProducerIdsRef.current.delete(producerId);
-            console.error("consumeProducer error", err);
-        }
-    }, []);
-
-    const createRecvTransport = useCallback(async (device: any) => {
-        const currentRoomId = getRoomIdOrThrow();
-
-        const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
-            method: "POST",
-            body: JSON.stringify({ peerId: peerIdRef.current }),
-        });
-
-        const recvTransport = device.createRecvTransport({
-            ...transportInfo,
-            iceServers: [
-                {
-                    urls: [
-                        "turn:elysioturn.jamiepoeffel.ch:3478?transport=udp",
-                        "turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp",
-                        "turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp",
-                    ],
-                    username: "elysioturn",
-                    credential: "q9E811BDjLsK",
+            recvTransport.on(
+                "connect",
+                async ({ dtlsParameters }: any, callback: any, errback: any) => {
+                    try {
+                        const roomId = getRoomIdOrThrow();
+                        await api(
+                            `/video/room/${roomId}/transport/${recvTransport.id}/connect`,
+                            {
+                                method: "POST",
+                                body: JSON.stringify({
+                                    peerId: peerIdRef.current,
+                                    dtlsParameters,
+                                }),
+                            },
+                        );
+                        callback();
+                    } catch (err) {
+                        errback(err);
+                    }
                 },
-            ],
-        });
-
-        recvTransportRef.current = recvTransport;
-
-        recvTransport.on(
-            "connect",
-            async ({ dtlsParameters }: any, callback: any, errback: any) => {
-                try {
-                    const roomId = getRoomIdOrThrow();
-
-                    await api(
-                        `/video/room/${roomId}/transport/${recvTransport.id}/connect`,
-                        {
-                            method: "POST",
-                            body: JSON.stringify({
-                                peerId: peerIdRef.current,
-                                dtlsParameters,
-                            }),
-                        },
-                    );
-
-                    callback();
-                } catch (err) {
-                    errback(err);
-                }
-            },
-        );
-    }, []);
+            );
+        },
+        [api],
+    );
 
     const createSendTransportAndProduce = useCallback(
         async (device: any, localStream: any) => {
             const currentRoomId = getRoomIdOrThrow();
+
             const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
@@ -313,7 +349,7 @@ export default function VideoCall() {
             if (audioTrack) await sendTransport.produce({ track: audioTrack });
             if (videoTrack) await sendTransport.produce({ track: videoTrack });
         },
-        [],
+        [api],
     );
 
     const consumeExistingProducers = useCallback(async () => {
@@ -328,13 +364,12 @@ export default function VideoCall() {
             if (producer.peerId === peerIdRef.current) continue;
             await consumeProducer(producer.producerId);
         }
-    }, [consumeProducer]);
+    }, [api, consumeProducer]);
 
     const startCall = useCallback(async () => {
         if (startingRef.current || started) return;
 
         const currentRoomId = roomIdRef.current;
-
         if (!currentRoomId) {
             Alert.alert("No room", "Room ID is missing.");
             return;
@@ -384,20 +419,14 @@ export default function VideoCall() {
                 },
             );
 
-            // Warten bis Socket wirklich connected ist
             await new Promise<void>((resolve) => {
-                if (socket.connected) {
-                    resolve();
-                } else {
-                    socket.once("connect", () => resolve());
-                }
+                if (socket.connected) resolve();
+                else socket.once("connect", () => resolve());
             });
 
             await createSendTransportAndProduce(device, localStream);
             await consumeExistingProducers();
 
-            // Fallback: nochmal nach 2s konsumieren
-            // falls User B schon produziert hatte bevor wir im Socket-Room waren
             setTimeout(() => {
                 consumeExistingProducers().catch(console.error);
             }, 2000);
@@ -409,6 +438,7 @@ export default function VideoCall() {
         }
     }, [
         started,
+        api,
         consumeProducer,
         createRecvTransport,
         createSendTransportAndProduce,
@@ -417,35 +447,7 @@ export default function VideoCall() {
 
     const activateMatchmaking = useCallback(async () => {
         try {
-            console.log("Get ALl KEys");
-            const keys = await AsyncStorage.getAllKeys();
-            console.log(keys);
-            // if (keys.length > 0) {
-            //     await AsyncStorage.multiRemove(keys);
-            // }
-            const token = await AsyncStorage.getItem("token");
-
-            if (!token) {
-                Alert.alert("Auth", "No token found.");
-                return;
-            }
-            const decoded = parseJwt(token);
-            console.log("activateMatchmaking decoded JWT", decoded);
-
-            const res = await fetch(`${BASE_URL}/matchmaking/activate`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            const data = await res.json();
-            console.log("activateMatchmaking response", data);
-
-            if (!res.ok) {
-                throw new Error(data?.message ?? "Failed to activate matchmaking");
-            }
+            const data = await activateMatchmakingRef.current();
 
             if (data.type === "waiting") {
                 setMatchState("waiting");
@@ -454,7 +456,6 @@ export default function VideoCall() {
             if (data.type === "matched") {
                 setMatchState("matched");
                 setMatchedUserId(data.matchedUserId ?? null);
-
                 if (data.roomId) {
                     setGatewayRoomId(data.roomId);
                     updateRoomId(data.roomId);
@@ -466,50 +467,16 @@ export default function VideoCall() {
         }
     }, []);
 
-    // async function deactivateMatchmaking() {
-    //     try {
-    //         const token = await AsyncStorage.getItem("token");
-
-    //         if (!token) {
-    //             return;
-    //         }
-
-    //         const res = await fetch(`${BASE_URL}/matchmaking/deactivate`, {
-    //             method: "POST",
-    //             headers: {
-    //                 "Content-Type": "application/json",
-    //                 Authorization: `Bearer ${token}`,
-    //             },
-    //         });
-
-    //         const data = await res.json();
-    //         console.log("deactivateMatchmaking response", data);
-
-    //         if (!res.ok) {
-    //             throw new Error(data?.message ?? "Failed to deactivate matchmaking");
-    //         }
-
-    //         setMatchState("idle");
-    //         setMatchedUserId(null);
-    //         setGatewayRoomId(null);
-    //         console.log("Matchmaking deactivated successfully");
-    //     } catch (error) {
-    //         console.error("deactivateMatchmaking error", error);
-    //     }
-    // }
-
     const stopCall = useCallback(async () => {
         startingRef.current = false;
         socketRef.current?.disconnect();
         socketRef.current = null;
 
         const currentRoomId = roomIdRef.current;
-
         if (currentRoomId) {
             try {
-                await fetch(`${BASE_URL}/video/room/${currentRoomId}/leave`, {
+                await api(`/video/room/${currentRoomId}/leave`, {
                     method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ peerId: peerIdRef.current }),
                 });
             } catch (err) {
@@ -518,32 +485,7 @@ export default function VideoCall() {
         }
 
         try {
-            const token = await AsyncStorage.getItem("token");
-            if (token) {
-                await fetch(`${BASE_URL}/matchmaking/deactivate`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-            }
-        } catch (err) {
-            console.error("deactivate matchmaking error", err);
-        }
-
-        // Reset matchmaking state on backend BEFORE cleaning up local state
-        try {
-            const token = await AsyncStorage.getItem("token");
-            if (token) {
-                await fetch(`${BASE_URL}/matchmaking/deactivate`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-            }
+            await deactivateMatchmakingRef.current();
         } catch (err) {
             console.error("deactivate matchmaking error", err);
         }
@@ -575,12 +517,11 @@ export default function VideoCall() {
         setMatchedUserId(null);
         setMatchState("idle");
         roomIdRef.current = null;
-    }, []);
-  
+    }, [api]);
+
     function toggleMute() {
         const stream = localStreamRef.current;
         if (!stream) return;
-
         const nextMuted = !isMuted;
         stream.getAudioTracks().forEach((track: MediaStreamTrack) => {
             track.enabled = !nextMuted;
@@ -591,23 +532,16 @@ export default function VideoCall() {
     function toggleSpeaker() {
         const next = !isSpeakerOn;
         setIsSpeakerOn(next);
-
         Alert.alert("Speaker", `Speaker ${next ? "enabled" : "disabled"}`);
-
-        // Für echtes Routing auf Lautsprecher brauchst du auf iOS/Android meist:
-        // react-native-incall-manager oder eine native Audio Route Lösung
     }
+
     function updateRoomId(nextRoomId: string) {
         roomIdRef.current = nextRoomId;
     }
 
     function getRoomIdOrThrow(): string {
         const currentRoomId = roomIdRef.current;
-
-        if (!currentRoomId) {
-            throw new Error("Room ID is missing");
-        }
-
+        if (!currentRoomId) throw new Error("Room ID is missing");
         return currentRoomId;
     }
 
@@ -630,22 +564,6 @@ export default function VideoCall() {
         );
     }
 
-    function parseJwt(token: string) {
-        try {
-            const base64Url = token.split(".")[1];
-            const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-            const jsonPayload = decodeURIComponent(
-                atob(base64)
-                    .split("")
-                    .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-                    .join(""),
-            );
-            return JSON.parse(jsonPayload);
-        } catch {
-            return null;
-        }
-    }
-
     useEffect(() => {
         const init = async () => {
             try {
@@ -655,9 +573,7 @@ export default function VideoCall() {
             }
         };
 
-        init().catch((error) => {
-            console.error("init error", error);
-        });
+        init().catch((error) => console.error("init error", error));
 
         const matchmakingSocket = matchmakingSocketRef.current;
         const callSocket = socketRef.current;
@@ -672,21 +588,17 @@ export default function VideoCall() {
             stopCall();
             matchmakingSocket?.disconnect();
             callSocket?.disconnect();
-
             sendTransport?.close();
             recvTransport?.close();
             localStream?.getTracks()?.forEach((t: any) => t.stop());
-
             consumers.forEach((consumer) => {
                 try {
                     consumer.close();
                 } catch {}
             });
-
             consumers.clear();
             consumedProducerIds.clear();
             consumingProducerIds.clear();
-
             matchmakingSocketRef.current = null;
             socketRef.current = null;
             sendTransportRef.current = null;
@@ -703,7 +615,7 @@ export default function VideoCall() {
         activateMatchmaking().catch((error) => {
             console.error("activateMatchmaking effect error", error);
         });
-    }, [matchmakingReady, activateMatchmaking]); // ← add activateMatchmaking
+    }, [matchmakingReady, activateMatchmaking]);
 
     useEffect(() => {
         if (!gatewayRoomId) return;
@@ -711,7 +623,7 @@ export default function VideoCall() {
         startCall().catch((error) => {
             console.error("startCall effect error", error);
         });
-    }, [gatewayRoomId, started, startCall]); // ← add startCall
+    }, [gatewayRoomId, started, startCall]);
 
     if (!started) {
         return (
