@@ -1,11 +1,17 @@
 import * as SecureStore from "expo-secure-store";
 import { RSA } from "react-native-rsa-native";
-import Aes from "react-native-aes-crypto";
+import AesGcmCrypto from "react-native-aes-gcm-crypto";
 
 const PRIVATE_KEY_STORE_KEY = "chat_private_key";
 const PUBLIC_KEY_STORE_KEY = "chat_public_key";
 
-// ─── 1. Init (einmal nach Login) ─────────────────────────────────────────────
+export interface EncryptedPayload {
+    type: "text";
+    ciphertext: string;
+    iv: string;
+    authTag: string;
+    encryptedKeys: { userId: string; encryptedKey: string }[];
+}
 
 export async function initCrypto(apiBaseUrl: string, authToken: string): Promise<void> {
     let publicKey: string;
@@ -14,18 +20,15 @@ export async function initCrypto(apiBaseUrl: string, authToken: string): Promise
     const existingPublic = await SecureStore.getItemAsync(PUBLIC_KEY_STORE_KEY);
 
     if (existingPrivate && existingPublic) {
-        // Keys lokal vorhanden → immer nochmal hochladen (idempotent)
         publicKey = existingPublic;
     } else {
-        // Neues Keypair generieren
         const keys = await RSA.generateKeys(2048);
         await SecureStore.setItemAsync(PRIVATE_KEY_STORE_KEY, keys.private);
         await SecureStore.setItemAsync(PUBLIC_KEY_STORE_KEY, keys.public);
         publicKey = keys.public;
     }
 
-    // Public Key immer hochladen – Server macht einfach UPDATE
-    await fetch(`${apiBaseUrl}/users/me/public-key`, {
+    const res = await fetch(`${apiBaseUrl}/users/me/public-key`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -33,41 +36,33 @@ export async function initCrypto(apiBaseUrl: string, authToken: string): Promise
         },
         body: JSON.stringify({ publicKey }),
     });
-}
-// ─── 2. Nachricht verschlüsseln ──────────────────────────────────────────────
 
-export interface EncryptedPayload {
-    type: "text";
-    ciphertext: string; // Base64
-    iv: string; // Base64
-    authTag: string; // leer bei AES-CBC, für Server-Kompatibilität
-    encryptedKeys: { userId: string; encryptedKey: string }[];
+    if (!res.ok) {
+        throw new Error("Public key upload failed");
+    }
 }
 
 export async function encryptMessage(
     plainText: string,
     recipients: { userId: string; publicKey: string }[],
 ): Promise<EncryptedPayload> {
-    // Zufälligen AES-256 Key + IV generieren
-    const aesKey = await Aes.randomKey(32); // 32 bytes = 256 bit, gibt Base64 zurück
-    const iv = await Aes.randomKey(16); // 16 bytes IV
+    const aesKeyBytes = Array.from(crypto.getRandomValues(new Uint8Array(32)));
+    const aesKeyBase64 = btoa(String.fromCharCode(...aesKeyBytes));
 
-    // Nachricht mit AES-256-CBC verschlüsseln
-    const ciphertext = await Aes.encrypt(plainText, aesKey, iv, "aes-256-cbc");
+    const encrypted = await AesGcmCrypto.encrypt(plainText, false, aesKeyBase64);
 
-    // AES Key für jeden Empfänger mit dessen RSA Public Key verschlüsseln
     const encryptedKeys = await Promise.all(
         recipients.map(async (r) => ({
             userId: r.userId,
-            encryptedKey: await RSA.encrypt(aesKey, r.publicKey),
+            encryptedKey: await RSA.encrypt(aesKeyBase64, r.publicKey),
         })),
     );
 
     return {
         type: "text",
-        ciphertext,
-        iv,
-        authTag: "", // AES-CBC hat kein authTag
+        ciphertext: encrypted.content,
+        iv: encrypted.iv,
+        authTag: encrypted.tag,
         encryptedKeys,
     };
 }
@@ -83,11 +78,15 @@ export async function decryptMessage(msg: {
     const privateKey = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
     if (!privateKey) throw new Error("Kein Private Key gefunden");
 
-    // AES Key mit RSA Private Key entschlüsseln
-    const aesKey = await RSA.decrypt(msg.encryptedKey, privateKey);
+    const aesKeyBase64 = await RSA.decrypt(msg.encryptedKey, privateKey);
 
-    // Nachricht mit AES entschlüsseln
-    const plainText = await Aes.decrypt(msg.ciphertext, aesKey, msg.iv, "aes-256-cbc");
+    const plainText = await AesGcmCrypto.decrypt(
+        msg.ciphertext,
+        aesKeyBase64,
+        msg.iv,
+        msg.authTag,
+        false,
+    );
 
     return plainText;
 }
