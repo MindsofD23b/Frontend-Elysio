@@ -39,7 +39,6 @@ export default function OnboardingScreen() {
             setOnboardingCompleted(true);
             const expoPushToken = await Notifications.getExpoPushTokenAsync();
             await store("expo-push-token", expoPushToken.data);
-            console.log(expoPushToken.data);
             return;
         }
         setCurrentPage(currentPage + 1);
