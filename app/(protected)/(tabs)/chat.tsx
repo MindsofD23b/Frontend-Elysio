@@ -1,5 +1,6 @@
 import {
     ActivityIndicator,
+    Pressable,
     RefreshControl,
     StyleSheet,
     Text,
@@ -7,23 +8,26 @@ import {
     View,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
 import { Chat } from "@/types/chats";
 import ChatComponent from "@/components/ChatComponent";
 import { Theme } from "@/lib/theme/theme";
 import { decryptMessage } from "@/services/chat-crypto.client";
-import { Search } from "lucide-react-native";
+import { Heart, MessageCircleMore, Search } from "lucide-react-native";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 const base = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
 export default function Index() {
     const { theme } = useTheme();
+    const styles = makeStyles(theme);
+
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchText, setSearchText] = useState("");
     const { token } = useAuth();
 
     interface ChatResponse {
@@ -56,9 +60,14 @@ export default function Index() {
     }
 
     const loadChats = useCallback(async () => {
-        if (!token) return;
+        if (!token) {
+            setChats([]);
+            setLoading(false);
+            return;
+        }
 
         setLoading(true);
+
         try {
             const res = await fetch(`${base}/chat/rooms`, {
                 method: "GET",
@@ -68,7 +77,10 @@ export default function Index() {
                 },
             });
 
-            if (!res.ok) throw new Error("Failed to fetch chats");
+            if (!res.ok) {
+                throw new Error("Failed to fetch chats");
+            }
+
             const data: ChatResponse[] = await res.json();
 
             const mapped = await Promise.all(
@@ -111,10 +123,14 @@ export default function Index() {
             );
 
             setChats(orderChatsByUpdatedAt(mapped));
+        } catch (error) {
+            console.error("Failed to load chats", error);
+            setChats([]);
         } finally {
             setLoading(false);
         }
     }, [token]);
+
     const onRefresh = async () => {
         setRefreshing(true);
         await loadChats();
@@ -125,50 +141,29 @@ export default function Index() {
         loadChats();
     }, [loadChats]);
 
-    const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
+    const filteredChats = useMemo(() => {
+        const value = searchText.trim().toLowerCase();
 
-    useEffect(() => {
-        setFilteredChats(chats);
-    }, [chats]);
+        if (!value) return chats;
 
-    const onSearch = (text: string) => {
-        const filtered = chats.filter((chat) =>
-            chat.name.toLowerCase().includes(text.toLowerCase()),
-        );
-        setFilteredChats(filtered);
-    };
+        return chats.filter((chat) => chat.name.toLowerCase().includes(value));
+    }, [chats, searchText]);
+
+    const isSearching = searchText.trim().length > 0;
 
     return (
-        <View style={{ flex: 1 }}>
-            <View style={{ borderBottomColor: theme.base + "1A", borderBottomWidth: 1 }}>
-                <SearchBarComponent onSearch={onSearch} />
+        <View style={styles.screen}>
+            <View style={styles.searchWrapper}>
+                <SearchBarComponent value={searchText} onChangeText={setSearchText} />
             </View>
-            {loading && (
-                <ActivityIndicator
-                    size={50}
-                    style={{ backgroundColor: theme.background }}
-                    color={theme.text}
-                />
-            )}
 
-            {!loading && filteredChats.length === 0 && (
-                <View
-                    style={{
-                        paddingTop: 32,
-                        alignItems: "center",
-                        backgroundColor: theme.background,
-                    }}
-                >
-                    <Text>
-                        No chats found. Start a new conversation by Joining a Call
-                    </Text>
+            {loading ? (
+                <View style={styles.loaderContainer}>
+                    <ActivityIndicator size={42} color={theme.base} />
                 </View>
-            )}
-
-            <View style={{ flex: 1, width: "100%", backgroundColor: theme.background }}>
+            ) : (
                 <FlashList
                     data={filteredChats}
-                    contentContainerStyle={{ backgroundColor: theme.background }}
                     renderItem={({ item }) => (
                         <ChatComponent
                             chat={item}
@@ -184,7 +179,26 @@ export default function Index() {
                         />
                     )}
                     keyExtractor={(item) => item.id}
-                    estimatedItemSize={80}
+                    estimatedItemSize={88}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={
+                        filteredChats.length === 0
+                            ? { ...styles.listContent, ...styles.emptyListContent }
+                            : styles.listContent
+                    }
+                    ListEmptyComponent={
+                        <EmptyChatsState
+                            isSearching={isSearching}
+                            onPrimaryPress={() => {
+                                if (isSearching) {
+                                    setSearchText("");
+                                    return;
+                                }
+
+                                router.push("/videocall");
+                            }}
+                        />
+                    }
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
@@ -193,7 +207,7 @@ export default function Index() {
                         />
                     }
                 />
-            </View>
+            )}
         </View>
     );
 }
@@ -205,30 +219,22 @@ function orderChatsByUpdatedAt(chats: Chat[]): Chat[] {
 }
 
 interface ISearchBarComponent {
-    onSearch: (text: string) => void;
+    value: string;
+    onChangeText: (text: string) => void;
 }
 
-function SearchBarComponent({ onSearch }: ISearchBarComponent) {
+function SearchBarComponent({ value, onChangeText }: ISearchBarComponent) {
     const { theme } = useTheme();
     const styles = makeStyles(theme);
-    const [searchText, setSearchText] = useState("");
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            onSearch(searchText);
-        }, 400);
-
-        return () => clearTimeout(timer);
-    }, [searchText, onSearch]);
 
     return (
-        <View style={styles.container}>
+        <View style={styles.searchContainer}>
             <View style={styles.inputContainer}>
-                <Search size={20} color={theme.grayscale} style={{ marginBottom: -2 }} />
+                <Search size={18} color={theme.grayscale} style={{ marginBottom: -1 }} />
                 <TextInput
                     placeholder="Search"
-                    value={searchText}
-                    onChangeText={setSearchText}
+                    value={value}
+                    onChangeText={onChangeText}
                     style={styles.input}
                     placeholderTextColor={theme.grayscale}
                 />
@@ -237,19 +243,219 @@ function SearchBarComponent({ onSearch }: ISearchBarComponent) {
     );
 }
 
+interface EmptyChatsStateProps {
+    isSearching: boolean;
+    onPrimaryPress: () => void;
+}
+
+function EmptyChatsState({ isSearching, onPrimaryPress }: EmptyChatsStateProps) {
+    const { theme } = useTheme();
+    const styles = makeStyles(theme);
+
+    return (
+        <View style={styles.emptyStateWrapper}>
+            <View style={styles.illustrationArea}>
+                <View
+                    style={[
+                        styles.floatingDot,
+                        styles.dotOne,
+                        { backgroundColor: theme.base + "14" },
+                    ]}
+                />
+                <View
+                    style={[
+                        styles.floatingDot,
+                        styles.dotTwo,
+                        { backgroundColor: theme.base + "10" },
+                    ]}
+                />
+                <View
+                    style={[
+                        styles.floatingDot,
+                        styles.dotThree,
+                        { backgroundColor: theme.base + "12" },
+                    ]}
+                />
+
+                <View style={[styles.backBubble, { backgroundColor: theme.base }]}>
+                    <MessageCircleMore size={28} color="#FFFFFF" strokeWidth={2.1} />
+                </View>
+
+                <View
+                    style={[
+                        styles.frontBubble,
+                        {
+                            backgroundColor: theme.background,
+                            borderColor: theme.base,
+                        },
+                    ]}
+                >
+                    <Heart
+                        size={24}
+                        color={theme.base}
+                        fill={theme.base}
+                        strokeWidth={2.1}
+                    />
+                </View>
+
+                <View style={[styles.shadow, { backgroundColor: theme.base + "12" }]} />
+            </View>
+
+            <Text style={styles.emptyTitle}>
+                {isSearching ? "Keine Chats gefunden" : "Noch keine Chats"}
+            </Text>
+
+            <Text style={styles.emptySubtitle}>
+                {isSearching
+                    ? "Zu deiner Suche konnten wir keine Unterhaltung finden. Versuche es mit einem anderen Namen."
+                    : "Hier erscheinen deine Matches und Nachrichten. Starte einen neuen Kontakt und bringe das erste Gespräch ins Rollen."}
+            </Text>
+
+            <Pressable style={styles.emptyButton} onPress={onPrimaryPress}>
+                <Text style={styles.emptyButtonText}>
+                    {isSearching ? "Suche zurücksetzen" : "Neue Leute entdecken"}
+                </Text>
+            </Pressable>
+        </View>
+    );
+}
+
 const makeStyles = (theme: Theme) =>
     StyleSheet.create({
-        container: {
-            padding: 16,
+        screen: {
+            flex: 1,
+            backgroundColor: theme.background,
+        },
+        searchWrapper: {
+            borderBottomColor: theme.base + "14",
+            borderBottomWidth: 1,
+        },
+        searchContainer: {
+            paddingHorizontal: 16,
+            paddingVertical: 14,
             backgroundColor: theme.background,
         },
         inputContainer: {
-            backgroundColor: theme.base + "1A",
-            color: theme.text,
-            padding: 8,
-            borderRadius: 8,
+            backgroundColor: theme.base + "10",
+            borderRadius: 14,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
             flexDirection: "row",
+            alignItems: "center",
             gap: 8,
         },
-        input: {},
+        input: {
+            flex: 1,
+            color: theme.text,
+            fontSize: 15,
+            paddingVertical: 0,
+        },
+        loaderContainer: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: theme.background,
+        },
+        listContent: {
+            paddingBottom: 24,
+            backgroundColor: theme.background,
+        },
+        emptyListContent: {
+            flexGrow: 1,
+        },
+        emptyStateWrapper: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 28,
+            paddingBottom: 48,
+        },
+        illustrationArea: {
+            width: 210,
+            height: 170,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 18,
+        },
+        backBubble: {
+            position: "absolute",
+            width: 94,
+            height: 94,
+            borderRadius: 999,
+            right: 42,
+            top: 34,
+            justifyContent: "center",
+            alignItems: "center",
+            borderWidth: 5,
+            borderColor: theme.base,
+        },
+        frontBubble: {
+            position: "absolute",
+            width: 108,
+            height: 108,
+            borderRadius: 999,
+            left: 38,
+            top: 18,
+            justifyContent: "center",
+            alignItems: "center",
+            borderWidth: 5,
+        },
+        shadow: {
+            position: "absolute",
+            width: 90,
+            height: 12,
+            borderRadius: 999,
+            bottom: 6,
+        },
+        floatingDot: {
+            position: "absolute",
+            borderRadius: 999,
+        },
+        dotOne: {
+            width: 10,
+            height: 10,
+            left: 18,
+            top: 48,
+        },
+        dotTwo: {
+            width: 16,
+            height: 16,
+            right: 20,
+            top: 26,
+        },
+        dotThree: {
+            width: 12,
+            height: 12,
+            right: 54,
+            top: 86,
+        },
+        emptyTitle: {
+            color: theme.text,
+            fontSize: 28,
+            fontWeight: "800",
+            textAlign: "center",
+            marginBottom: 12,
+        },
+        emptySubtitle: {
+            color: theme.grayscale,
+            fontSize: 15,
+            lineHeight: 24,
+            textAlign: "center",
+            maxWidth: 320,
+            marginBottom: 28,
+        },
+        emptyButton: {
+            minWidth: 220,
+            backgroundColor: theme.base,
+            paddingVertical: 15,
+            paddingHorizontal: 24,
+            borderRadius: 16,
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        emptyButtonText: {
+            color: theme.background,
+            fontSize: 16,
+            fontWeight: "700",
+        },
     });

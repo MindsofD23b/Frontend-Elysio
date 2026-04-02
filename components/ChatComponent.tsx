@@ -34,7 +34,7 @@ export default function ChatComponent({ chat, onPress }: ChatComponentProps) {
             >
                 <View>
                     <Image
-                        source={{ uri: chat.image }}
+                        source={{ uri: chat.image || undefined }}
                         style={{ width: 50, height: 50, borderRadius: 25 }}
                         placeholder={
                             "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
@@ -50,7 +50,10 @@ export default function ChatComponent({ chat, onPress }: ChatComponentProps) {
                         <Text style={styles.title}>{chat.name}</Text>
                         <Text style={styles.time}>{formatTime(chat.updatedAt)}</Text>
                     </View>
-                    <Text style={styles.message}>{chat.lastMessage}</Text>
+
+                    <Text style={styles.message}>
+                        {chat.lastMessage ? chat.lastMessage : "No messages yet"}
+                    </Text>
                 </View>
             </View>
         </Pressable>
@@ -68,6 +71,7 @@ export const makeStyles = (theme: Theme) =>
         title: {
             fontSize: 16,
             fontWeight: "700",
+            color: theme.text,
         },
         time: {
             fontSize: 12,
