@@ -104,8 +104,9 @@ export default function Index() {
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
     const [searchText, setSearchText] = useState("");
+    const [loading, setLoading] = useState(true);
 
-    const [rawData, loading, , run] = useAuthFetch<ChatResponse[]>(
+    const [rawData, , , run] = useAuthFetch<ChatResponse[]>(
         "/chat/rooms",
         { method: "GET" },
         { cacheKey: "chat:rooms" },
@@ -115,7 +116,8 @@ export default function Index() {
         if (!rawData) return;
         mapChatResponses(rawData)
             .then(setChats)
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => setLoading(false));
     }, [rawData]);
 
     const onRefresh = useCallback(async () => {
