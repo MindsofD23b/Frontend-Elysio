@@ -17,6 +17,7 @@ import { Theme } from "@/lib/theme/theme";
 import { decryptMessage } from "@/services/chat-crypto.client";
 import { Heart, MessageCircleMore, Search } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 // Design made with Pinterest and ChatGPT
 interface ChatResponse {
@@ -39,7 +40,7 @@ interface ChatResponse {
         mediaDurationSec: number | null;
         isDeleted: boolean;
         createdAt: string;
-        encryptedKey: string | null;
+        encryptedKeys: { userId: string; encryptedKey: string }[] | null;
     } | null;
     otherUser: {
         id: string;
@@ -54,7 +55,7 @@ function orderChatsByUpdatedAt(chats: Chat[]): Chat[] {
     );
 }
 
-async function mapChatResponses(data: ChatResponse[]): Promise<Chat[]> {
+async function mapChatResponses(data: ChatResponse[], userId: string): Promise<Chat[]> {
     const mapped = await Promise.all(
         data.map(async (chat) => {
             let lastMessageText = "";
@@ -63,16 +64,28 @@ async function mapChatResponses(data: ChatResponse[]): Promise<Chat[]> {
                 lastMessageText = "";
             } else if (chat.lastMessage.type !== "text") {
                 lastMessageText = "🎤 Voice message";
-            } else if (!chat.lastMessage.encryptedKey) {
+            } else if (!chat.lastMessage.encryptedKeys) {
                 lastMessageText = "[Encrypted message]";
             } else {
                 try {
-                    lastMessageText = await decryptMessage({
-                        ciphertext: chat.lastMessage.ciphertext,
-                        iv: chat.lastMessage.iv,
-                        authTag: chat.lastMessage.authTag,
-                        encryptedKey: chat.lastMessage.encryptedKey,
-                    });
+                    const myKey = chat.lastMessage.encryptedKeys?.find(
+                        (k) => k.userId === userId,
+                    );
+
+                    if (!myKey) {
+                        lastMessageText = "[Encrypted message]";
+                    } else {
+                        try {
+                            lastMessageText = await decryptMessage({
+                                ciphertext: chat.lastMessage.ciphertext,
+                                iv: chat.lastMessage.iv,
+                                authTag: chat.lastMessage.authTag,
+                                encryptedKey: myKey.encryptedKey,
+                            });
+                        } catch {
+                            lastMessageText = "[Unable to decrypt]";
+                        }
+                    }
                 } catch {
                     lastMessageText = "[Unable to decrypt]";
                 }
@@ -97,6 +110,12 @@ async function mapChatResponses(data: ChatResponse[]): Promise<Chat[]> {
     return orderChatsByUpdatedAt(mapped);
 }
 
+function getUserIdFromToken(token: string): string {
+    const payload = token.split(".")[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded.sub ?? decoded.id ?? decoded.userId;
+}
+
 export default function Index() {
     const { theme } = useTheme();
     const styles = makeStyles(theme);
@@ -104,28 +123,37 @@ export default function Index() {
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
     const [searchText, setSearchText] = useState("");
+    const { token } = useAuth();
+
+    const currentUserId = useMemo(() => {
+        if (!token) return "";
+        return getUserIdFromToken(token);
+    }, [token]);
+
+    const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
+    const chatOptions = useMemo(() => ({ cacheKey: "chat:rooms" }), []);
 
     const [rawData, loading, , run] = useAuthFetch<ChatResponse[]>(
         "/chat/rooms",
-        { method: "GET" },
-        { cacheKey: "chat:rooms" },
+        chatRequest,
+        chatOptions,
     );
 
     useEffect(() => {
         if (!rawData) return;
-        mapChatResponses(rawData)
+        mapChatResponses(rawData, currentUserId)
             .then(setChats)
             .catch(() => {});
-    }, [rawData]);
+    }, [rawData, currentUserId]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         try {
             const data = await run();
-            if (data) setChats(await mapChatResponses(data));
+            if (data) setChats(await mapChatResponses(data, currentUserId));
         } catch {}
         setRefreshing(false);
-    }, [run]);
+    }, [run, currentUserId]);
 
     const filteredChats = useMemo(() => {
         const value = searchText.trim().toLowerCase();
