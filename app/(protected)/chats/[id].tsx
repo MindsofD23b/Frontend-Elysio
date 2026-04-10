@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useRoomSocket } from "@/hooks/useRoomSocket";
 // Design made with Pinterest and ChatGPT
 interface Message {
     id: string;
@@ -60,6 +61,9 @@ export default function ChatsScreen() {
 
     const scrollRef = useRef<ScrollView>(null);
     const { token } = useAuth();
+    const currentUserId: string | null = token
+        ? JSON.parse(atob(token.split(".")[1])).sub
+        : null;
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -223,6 +227,39 @@ export default function ChatsScreen() {
             setSending(false);
         }
     };
+    useRoomSocket(id, async (incoming) => {
+        if (incoming.senderId === currentUserId) return;
+
+        let text = "[Encrypted message]";
+
+        if (incoming.type !== "text") {
+            text = "Voice message";
+        } else {
+            const myKey = incoming.encryptedKeys.find((k) => k.userId === currentUserId);
+            if (myKey) {
+                try {
+                    text = await decryptMessage({
+                        ciphertext: incoming.ciphertext,
+                        iv: incoming.iv,
+                        authTag: incoming.authTag,
+                        encryptedKey: myKey.encryptedKey,
+                    });
+                } catch {
+                    text = "[Unable to decrypt]";
+                }
+            }
+        }
+
+        setDecryptedMessages((prev) => [
+            ...prev,
+            {
+                id: incoming.id,
+                senderId: incoming.senderId,
+                text,
+                createdAt: incoming.createdAt,
+            },
+        ]);
+    });
 
     return (
         <KeyboardAvoidingView
