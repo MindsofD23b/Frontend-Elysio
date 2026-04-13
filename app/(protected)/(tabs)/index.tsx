@@ -206,10 +206,15 @@ export default function Index() {
         { manual: true },
     );
 
+    const hasFetched = useRef(false);
+
     console.log(callsData);
 
     useEffect(() => {
-        refetch().catch(() => {});
+        if (!hasFetched.current) {
+            hasFetched.current = true;
+            refetch().catch(() => {});
+        }
     }, [refetch]);
     const styles = makeStyles(theme);
 
