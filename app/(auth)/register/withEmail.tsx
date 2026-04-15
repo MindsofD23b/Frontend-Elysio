@@ -18,8 +18,9 @@ export default function WithEmail() {
 
     const [email, setEmailInput] = useState(data.email || "");
     const [errors, setErrors] = useState<EmailFormErrors>({});
+    const [loading, setLoading] = useState(false);
 
-    const [_, loading, fetchError, checkEmail] = usePublicFetch<RegisterResponse>(
+    const [_, fetchError, checkEmail] = usePublicFetch<RegisterResponse>(
         "/auth/check-email",
         {
             method: "POST",
@@ -34,6 +35,7 @@ export default function WithEmail() {
     );
 
     const onSubmit = async () => {
+        setLoading(true);
         const normalizedEmail = email.trim().toLowerCase();
         const nextErrors: EmailFormErrors = {};
 
@@ -77,6 +79,8 @@ export default function WithEmail() {
                             : t("fallbacks.errors.reqFailed"),
                 },
             });
+        } finally {
+            setLoading(false);
         }
     };
 

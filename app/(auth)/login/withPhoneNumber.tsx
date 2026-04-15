@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
 import { useEffect, useState } from "react";
-import { parsePhoneNumber } from "libphonenumber-js";
+import { parsePhoneNumberWithError } from "libphonenumber-js";
 import { router } from "expo-router";
 import { createT } from "@/i18n";
 import { usePublicFetch } from "@/hooks/usePublicFetch";
@@ -28,8 +28,9 @@ export default function WithPhoneNumber() {
     const [tel, setTel] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState<FormErrors>({});
+    const [loading, setLoading] = useState(false);
 
-    const [, loading, fetchError, loginRequest] = usePublicFetch<LoginResponse>(
+    const [, fetchError, loginRequest] = usePublicFetch<LoginResponse>(
         "/auth/login",
         {
             method: "POST",
@@ -44,11 +45,12 @@ export default function WithPhoneNumber() {
     );
 
     const onSubmit = async () => {
+        setLoading(true);
         const nextErrors: FormErrors = {};
 
         let parsed;
         try {
-            parsed = parsePhoneNumber(tel);
+            parsed = parsePhoneNumberWithError(tel);
         } catch {
             parsed = null;
         }
@@ -86,6 +88,8 @@ export default function WithPhoneNumber() {
                     message: err instanceof Error ? err.message : t("errors.loginFailed"),
                 },
             });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -165,7 +169,7 @@ export default function WithPhoneNumber() {
                             </Text>
                         )}
                         <Text
-                            onPress={() => router.push("../login/forgot-password")}
+                            onPress={() => router.push("/(auth)/login/forgot-password")}
                             style={{
                                 color: theme.primary,
                                 fontSize: 13,

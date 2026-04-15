@@ -32,8 +32,9 @@ export default function WithEmail() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState<FormErrors>({});
+    const [loading, setLoading] = useState(false);
 
-    const [, loading, fetchError, loginRequest] = usePublicFetch<LoginResponse>(
+    const [, fetchError, loginRequest] = usePublicFetch<LoginResponse>(
         "/auth/login",
         {
             method: "POST",
@@ -48,6 +49,7 @@ export default function WithEmail() {
     );
 
     const onSubmit = async (data: FormData) => {
+        setLoading(true);
         const nextErrors: FormErrors = {};
 
         if (!/^\S+@\S+\.\S+$/.test(data.email.trim())) {
@@ -87,6 +89,8 @@ export default function WithEmail() {
                     message: err instanceof Error ? err.message : t("errors.loginFailed"),
                 },
             });
+        } finally {
+            setLoading(false);
         }
     };
 
