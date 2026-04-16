@@ -283,6 +283,7 @@ export default function Index() {
         inputRange: [0, 1],
         outputRange: ["0deg", "360deg"],
     });
+
     return (
         <View style={gs.container}>
             {/* Grid */}
