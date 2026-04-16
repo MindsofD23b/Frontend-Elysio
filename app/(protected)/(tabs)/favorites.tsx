@@ -294,7 +294,7 @@ export default function Favorites() {
                             <Pressable
                                 onPress={() => {
                                     setActiveTip(null);
-                                    router.push("/analytics/premium");
+                                    // router.push("/analytics/premium");
                                 }}
                                 style={[
                                     s.premiumBtn,
