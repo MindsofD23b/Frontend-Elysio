@@ -32,6 +32,7 @@ import { io, Socket } from "socket.io-client";
 import { FlashList } from "@shopify/flash-list";
 import { Message, RoomMessagesResponse, RoomKeysResponse } from "@/types/messages";
 import { MessageBubble } from "@/components/messageBubble";
+import { useRoomSocket } from "@/hooks/useRoomSocket";
 // Design made with Pinterest and ChatGPT
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://elysio.jamiepoeffel.ch";
@@ -57,6 +58,9 @@ export default function ChatsScreen() {
 
     const scrollRef = useRef<FlashList<Message>>(null);
     const { token } = useAuth();
+    const currentUserId: string | null = token
+        ? JSON.parse(atob(token.split(".")[1])).sub
+        : null;
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -321,6 +325,39 @@ export default function ChatsScreen() {
             setSending(false);
         }
     };
+    useRoomSocket(id, async (incoming) => {
+        if (incoming.senderId === currentUserId) return;
+
+        let text = "[Encrypted message]";
+
+        if (incoming.type !== "text") {
+            text = "Voice message";
+        } else {
+            const myKey = incoming.encryptedKeys.find((k) => k.userId === currentUserId);
+            if (myKey) {
+                try {
+                    text = await decryptMessage({
+                        ciphertext: incoming.ciphertext,
+                        iv: incoming.iv,
+                        authTag: incoming.authTag,
+                        encryptedKey: myKey.encryptedKey,
+                    });
+                } catch {
+                    text = "[Unable to decrypt]";
+                }
+            }
+        }
+
+        setDecryptedMessages((prev) => [
+            ...prev,
+            {
+                id: incoming.id,
+                senderId: incoming.senderId,
+                text,
+                createdAt: incoming.createdAt,
+            },
+        ]);
+    });
 
     function attachSameMinute(messages: Message[]): (Message & { hideTime: boolean })[] {
         return messages.map((msg, i) => {
