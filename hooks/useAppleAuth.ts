@@ -29,7 +29,6 @@ export function useAppleAuth() {
             const fullName = credential.fullName
                 ? `${credential.fullName.givenName ?? ""} ${credential.fullName.familyName ?? ""}`.trim()
                 : null;
-
             const response = await fetch(`${BASE_URL}/auth/apple`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -40,6 +39,9 @@ export function useAppleAuth() {
             });
 
             const text = await response.text();
+            console.log("Status:", response.status);
+            console.log("Response:", text);
+
             const json = text ? JSON.parse(text) : null;
 
             if (!response.ok) {
@@ -50,9 +52,9 @@ export function useAppleAuth() {
                 );
             }
 
-            await login(json.token); // plugs into your AuthContext exactly like email login
+            await login(json.token);
         } catch (err: any) {
-            if (err.code === "ERR_REQUEST_CANCELED") return; // user dismissed — no error
+            if (err.code === "ERR_REQUEST_CANCELED") return;
             const finalError = err instanceof Error ? err : new Error("Unknown error");
             setError(finalError);
             throw finalError;
