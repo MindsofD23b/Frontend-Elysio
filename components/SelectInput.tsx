@@ -25,14 +25,14 @@ export default function Select({ label, checked, onChange }: ISelectProps) {
     });
 
     const boxStyle = useAnimatedStyle(() => ({
-        backgroundColor: checked ? theme.primary : theme.card + "FA",
+        backgroundColor: checked ? theme.primary : "transparent",
         borderColor: theme.primary,
     }));
 
     const dotStyle = useAnimatedStyle(() => ({
         opacity: withTiming(checked ? 1 : 0, { duration: 250 }),
         transform: [{ scale: withTiming(checked ? 1 : 0.5, { duration: 150 }) }],
-        backgroundColor: theme.white ?? theme.card + "FA",
+        backgroundColor: theme.white ?? "transparent",
     }));
 
     return (
