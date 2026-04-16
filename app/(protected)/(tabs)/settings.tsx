@@ -1,7 +1,7 @@
 import { BtnText, Button } from "@/components/button";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/theme/context";
-import { Eye, Globe, Heart, MessageCircle, Moon, User } from "lucide-react-native";
+import { Eye, Gem, Globe, Heart, MessageCircle, Moon, User } from "lucide-react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
@@ -51,6 +51,14 @@ export default function SettingsScreen() {
                     iconColor={iconColor}
                     textColor={theme.text}
                     href="/settings/personaldetails"
+                />
+                <MenuRow
+                    icon={Gem}
+                    label={t("subscription")}
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/subscriptions"
                 />
                 <MenuRow
                     icon={Heart}
