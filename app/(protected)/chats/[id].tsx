@@ -355,6 +355,7 @@ export default function ChatsScreen() {
                 senderId: incoming.senderId,
                 text,
                 createdAt: incoming.createdAt,
+                hideTime: false,
             },
         ]);
     });

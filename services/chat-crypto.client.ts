@@ -146,6 +146,7 @@ export async function decryptBatch(
                 senderId: msg.senderId,
                 text,
                 createdAt: msg.createdAt,
+                hideTime: false,
             };
         }),
     );
