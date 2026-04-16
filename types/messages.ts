@@ -3,8 +3,10 @@ export interface Message {
     senderId: string;
     text: string;
     createdAt: string;
-    hideTime: boolean;
+    hideTime?: boolean;
 }
+
+export type MessageWithMeta = Message & { hideTime: boolean };
 
 export interface RoomMessagesResponse {
     messages: {

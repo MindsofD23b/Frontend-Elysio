@@ -30,7 +30,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { io, Socket } from "socket.io-client";
 import { FlashList } from "@shopify/flash-list";
-import { Message, RoomMessagesResponse, RoomKeysResponse } from "@/types/messages";
+import {
+    Message,
+    RoomMessagesResponse,
+    RoomKeysResponse,
+    MessageWithMeta,
+} from "@/types/messages";
 import { MessageBubble } from "@/components/messageBubble";
 import { useRoomSocket } from "@/hooks/useRoomSocket";
 // Design made with Pinterest and ChatGPT
@@ -46,7 +51,7 @@ export default function ChatsScreen() {
 
     const [message, setMessage] = useState("");
     const [sending, setSending] = useState(false);
-    const [decryptedMessages, setDecryptedMessages] = useState<Message[]>([]);
+    const [decryptedMessages, setDecryptedMessages] = useState<MessageWithMeta[]>([]);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
@@ -56,7 +61,7 @@ export default function ChatsScreen() {
     const scrollButtonOpacity = useRef(new Animated.Value(0)).current;
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const scrollRef = useRef<FlashList<Message>>(null);
+    const scrollRef = useRef<FlashList<MessageWithMeta>>(null);
     const { token } = useAuth();
     const currentUserId: string | null = token
         ? JSON.parse(atob(token.split(".")[1])).sub
@@ -360,7 +365,7 @@ export default function ChatsScreen() {
         ]);
     });
 
-    function attachSameMinute(messages: Message[]): (Message & { hideTime: boolean })[] {
+    function attachSameMinute(messages: Message[]): MessageWithMeta[] {
         return messages.map((msg, i) => {
             const next = messages[i - 1]; // inverted so previous index
             const sameMinute =
@@ -371,7 +376,7 @@ export default function ChatsScreen() {
                 new Date(next.createdAt).getHours() ===
                     new Date(msg.createdAt).getHours() &&
                 new Date(next.createdAt).getDate() === new Date(msg.createdAt).getDate();
-            return { ...msg, hideTime: sameMinute };
+            return { ...msg, hideTime: sameMinute } as MessageWithMeta;
         });
     }
 
