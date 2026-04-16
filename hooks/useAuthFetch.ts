@@ -54,9 +54,9 @@ export function useAuthFetch<S>(
             setError(null);
 
             try {
-                if (!isCached) {
-                    free();
-                }
+                // if (!isCached) {
+                //     free();
+                // }
 
                 const finalHeaders = {
                     "Content-Type": "application/json",
