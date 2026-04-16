@@ -5,7 +5,7 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
-import { useFetch } from "@/hooks/useFetch";
+import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { useRegisterStore } from "@/utils/registerStore";
 import { RegisterResponse, EmailFormErrors } from "@/types/register";
 import { createT } from "@/i18n";
@@ -18,8 +18,9 @@ export default function WithEmail() {
 
     const [email, setEmailInput] = useState(data.email || "");
     const [errors, setErrors] = useState<EmailFormErrors>({});
+    const [loading, setLoading] = useState(false);
 
-    const [_, loading, fetchError, checkEmail] = useFetch<RegisterResponse>(
+    const [_, fetchError, checkEmail] = usePublicFetch<RegisterResponse>(
         "/auth/check-email",
         {
             method: "POST",
@@ -34,6 +35,7 @@ export default function WithEmail() {
     );
 
     const onSubmit = async () => {
+        setLoading(true);
         const normalizedEmail = email.trim().toLowerCase();
         const nextErrors: EmailFormErrors = {};
 
@@ -77,6 +79,8 @@ export default function WithEmail() {
                             : t("fallbacks.errors.reqFailed"),
                 },
             });
+        } finally {
+            setLoading(false);
         }
     };
 

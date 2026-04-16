@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Slot } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
@@ -6,8 +6,11 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
-
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+function AppContent() {
+    return <Slot />;
+}
 
 export default function RootLayout() {
     const [appIsReady, setAppIsReady] = useState(false);
@@ -38,7 +41,7 @@ export default function RootLayout() {
                 <BaseTheme>
                     <SafeAreaProvider>
                         <SafeAreaWrapper>
-                            <Stack screenOptions={{ headerShown: false }} />
+                            <AppContent />
                         </SafeAreaWrapper>
                     </SafeAreaProvider>
                 </BaseTheme>

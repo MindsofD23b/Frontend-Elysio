@@ -11,6 +11,7 @@
             "orLoginWith": "Or Login with",
             "google": "Google",
             "apple": "Apple",
+            "loading": "Loading...",
             "terms": "By continuing, you agree to our",
             "termsOfService": "Terms of Service",
             "and": "and",
@@ -38,7 +39,9 @@
                 "forgotPassword": "Forgot Password?",
                 "login": "Login",
                 "errors": {
-                    "invalidPhone": "Invalid phone number"
+                    "invalidPhone": "Invalid phone number",
+                    "passwordRequired": "Password is required",
+                    "loginFailed": "Login failed"
                 }
             }
         },
@@ -52,6 +55,7 @@
             "orLoginWith": "Or Login with",
             "google": "Google",
             "apple": "Apple",
+            "loading": "Loading...",
             "terms": "By continuing, you agree to our",
             "termsOfService": "Terms of Service",
             "and": "and",

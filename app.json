@@ -2,7 +2,7 @@
     "expo": {
         "name": "Elysio",
         "slug": "elysio",
-        "version": "1.0.0",
+        "version": "0.0.1",
         "orientation": "portrait",
         "icon": "./assets/images/ios-light.png",
         "scheme": "elysio",
@@ -14,7 +14,8 @@
                 "NSMicrophoneUsageDescription": "Allow access to microphone for calls",
                 "ITSAppUsesNonExemptEncryption": false
             },
-            "bundleIdentifier": "com.mindsofd23b.elysio"
+            "bundleIdentifier": "com.mindsofd23b.elysio",
+            "usesAppleSignIn": true
         },
         "android": {
             "adaptiveIcon": {
@@ -29,7 +30,7 @@
             ],
             "edgeToEdgeEnabled": true,
             "predictiveBackGestureEnabled": false,
-            "package": "com.jamie123456789.elysio"
+            "package": "com.mindsofd23b.elysio"
         },
         "web": {
             "output": "static",
@@ -37,6 +38,7 @@
         },
         "plugins": [
             "expo-router",
+            "expo-apple-authentication",
             [
                 "expo-splash-screen",
                 {
@@ -54,6 +56,8 @@
             ],
             "expo-font",
             "@react-native-community/datetimepicker",
+            "expo-secure-store",
+            "expo-localization",
             "expo-image"
         ],
         "experiments": {
