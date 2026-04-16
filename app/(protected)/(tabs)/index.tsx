@@ -198,6 +198,10 @@ function InfiniteColumn({
     );
 }
 
+interface FullFillUserResponse {
+    message: string;
+}
+
 export default function Index() {
     const { theme, gs } = useTheme();
     const [callsData, , , refetch] = useAuthFetch<{ callsToday: number }>(
@@ -207,8 +211,6 @@ export default function Index() {
     );
 
     const hasFetched = useRef(false);
-
-    console.log(callsData);
 
     useEffect(() => {
         if (!hasFetched.current) {
@@ -372,6 +374,15 @@ export default function Index() {
         inputRange: [0, 1],
         outputRange: ["0deg", "360deg"],
     });
+
+    const [_rawData, _loading, _error, run] = useAuthFetch<FullFillUserResponse>(
+        "/users/user-full",
+        { method: "GET" },
+        { manual: true, useCache: false },
+    );
+    useEffect(() => {
+        run().catch(() => {});
+    }, [run]);
     return (
         <View style={gs.container}>
             {/* Grid */}
