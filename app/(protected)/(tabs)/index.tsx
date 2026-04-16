@@ -276,9 +276,12 @@ export default function Index() {
     const onStart = () => {
         // TODO: Implement i18n here
         if (!canCall(user.plan, count)) {
-            return user.plan === PlanType.FREE
-                ? alert("Upgrade to Paid plan!")
-                : alert("You have no more Calls to day");
+            if (user.plan === PlanType.FREE) {
+                router.push("/subscriptions");
+            } else {
+                alert("You have no more Calls to day");
+            }
+            return;
         }
 
         setCount((prev) => prev + 1);

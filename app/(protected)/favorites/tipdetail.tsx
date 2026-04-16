@@ -246,7 +246,7 @@ export default function TipDetail() {
                             ))}
                         </View>
 
-                        <Link href="/analytics/premium" asChild>
+                        <Link href="/subscriptions" asChild>
                             <Pressable
                                 style={[
                                     s.premiumOverlay,

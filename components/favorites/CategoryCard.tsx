@@ -69,7 +69,7 @@ export function DateIdeaList({ ideas }: IdeaListProps) {
                             styles.blurOverlay,
                             { backgroundColor: theme.background + "CC" },
                         ]}
-                        onPress={() => router.push("/analytics/premium")}
+                        onPress={() => router.push("/subscriptions")}
                     >
                         <View
                             style={[
