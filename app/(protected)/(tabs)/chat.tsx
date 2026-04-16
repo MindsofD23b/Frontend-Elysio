@@ -169,7 +169,7 @@ export default function Index() {
                 <SearchBarComponent value={searchText} onChangeText={setSearchText} />
             </View>
 
-            {loading ? (
+            {loading && !refreshing ? (
                 <View style={styles.loaderContainer}>
                     <ActivityIndicator size={42} color={theme.base} />
                 </View>

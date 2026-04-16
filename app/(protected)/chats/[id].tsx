@@ -1,55 +1,46 @@
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useTheme } from "@/lib/theme/context";
 import { Chat } from "@/types/chats";
-import { decryptMessage, encryptMessage } from "@/services/chat-crypto.client";
+import {
+    decryptBatch,
+    decryptMessage,
+    encryptMessage,
+} from "@/services/chat-crypto.client";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowUp, ChevronLeft, Heart, MessageCircleMore } from "lucide-react-native";
+import {
+    ArrowUp,
+    ChevronDown,
+    ChevronLeft,
+    Heart,
+    MessageCircleMore,
+} from "lucide-react-native";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
     ActivityIndicator,
+    Animated,
     KeyboardAvoidingView,
     Platform,
     Pressable,
-    ScrollView,
     Text,
     TextInput,
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { FlashList } from "@shopify/flash-list";
+import {
+    Message,
+    RoomMessagesResponse,
+    RoomKeysResponse,
+    MessageWithMeta,
+} from "@/types/messages";
+import { MessageBubble } from "@/components/messageBubble";
 import { useRoomSocket } from "@/hooks/useRoomSocket";
 // Design made with Pinterest and ChatGPT
-interface Message {
-    id: string;
-    senderId: string;
-    text: string;
-    createdAt: string;
-}
 
-interface RoomMessagesResponse {
-    messages: {
-        id: string;
-        roomId: string;
-        senderId: string;
-        type: string;
-        ciphertext: string;
-        iv: string;
-        authTag: string;
-        mediaUrl: string | null;
-        mediaDurationSec: number | null;
-        isDeleted: boolean;
-        createdAt: string;
-        encryptedKey: string | null;
-    }[];
-    hasMore: boolean;
-    nextCursor: string | null;
-}
-
-type RoomKeysResponse = {
-    userId: string;
-    publicKey: string;
-}[];
+// Wie viele Pixel vom unteren Ende entfernt gilt noch als "unten"
+const BOTTOM_THRESHOLD = 80;
 
 export default function ChatsScreen() {
     const { id, user: userRaw } = useLocalSearchParams<{ id: string; user: string }>();
@@ -57,9 +48,17 @@ export default function ChatsScreen() {
 
     const [message, setMessage] = useState("");
     const [sending, setSending] = useState(false);
-    const [decryptedMessages, setDecryptedMessages] = useState<Message[]>([]);
+    const [decryptedMessages, setDecryptedMessages] = useState<MessageWithMeta[]>([]);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
 
-    const scrollRef = useRef<ScrollView>(null);
+    // Scroll-to-bottom Button State
+    const [showScrollButton, setShowScrollButton] = useState(false);
+    const scrollButtonOpacity = useRef(new Animated.Value(0)).current;
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const scrollRef = useRef<FlashList<MessageWithMeta>>(null);
     const { token } = useAuth();
     const currentUserId: string | null = token
         ? JSON.parse(atob(token.split(".")[1])).sub
@@ -69,6 +68,60 @@ export default function ChatsScreen() {
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const inputRef = useRef<TextInput>(null);
+
+    // Button ein-/ausblenden animieren
+    const showButton = useCallback(() => {
+        setShowScrollButton(true);
+        Animated.spring(scrollButtonOpacity, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 80,
+            friction: 10,
+        }).start();
+    }, [scrollButtonOpacity]);
+
+    const hideButton = useCallback(() => {
+        Animated.spring(scrollButtonOpacity, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 80,
+            friction: 10,
+        }).start(() => setShowScrollButton(false));
+    }, [scrollButtonOpacity]);
+
+    // Debounced onScroll Handler — wird maximal alle 150ms ausgewertet
+    // Bei invertierter Liste: offset 0 = ganz unten, grosser offset = weit oben
+    const handleScroll = useCallback(
+        (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+            const offsetY = event.nativeEvent.contentOffset.y;
+
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+
+            debounceTimer.current = setTimeout(() => {
+                if (offsetY > BOTTOM_THRESHOLD) {
+                    showButton();
+                } else {
+                    hideButton();
+                }
+            }, 50);
+        },
+        [showButton, hideButton],
+    );
+
+    // Cleanup beim Unmount
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, []);
+
+    const scrollToBottom = useCallback(() => {
+        scrollRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }, []);
 
     const startConversation = useCallback(() => {
         const firstName = user.name?.split(" ")[0] ?? user.name ?? "";
@@ -92,7 +145,7 @@ export default function ChatsScreen() {
         }),
         [],
     );
-    const [, loading, _error, run] = useAuthFetch<RoomMessagesResponse>(
+    const [, , _error, run] = useAuthFetch<RoomMessagesResponse>(
         `/chat/rooms/${id}/messages`,
         messagesRequest,
         messagesOptions,
@@ -141,52 +194,44 @@ export default function ChatsScreen() {
         id: string;
         senderId: string;
         createdAt: string;
-    }>(`/chat/rooms/${id}/messages`, sendMessageRequest, sendMessageOptions);
+    }>(`/chat/rooms/${id}/messages?limit=30`, sendMessageRequest, sendMessageOptions);
 
     const loadMessages = useCallback(async () => {
         try {
-            const data = await run();
+            const data = await run(undefined, `/chat/rooms/${id}/messages?limit=30`);
+            const decrypted = await decryptBatch(data.messages);
 
-            const decrypted = await Promise.all(
-                data.messages.map(async (msg) => {
-                    let text = "[Encrypted message]";
-
-                    if (msg.type !== "text") {
-                        text = "Voice message";
-                    } else if (msg.encryptedKey) {
-                        try {
-                            text = await decryptMessage({
-                                ciphertext: msg.ciphertext,
-                                iv: msg.iv,
-                                authTag: msg.authTag,
-                                encryptedKey: msg.encryptedKey,
-                            });
-                        } catch {
-                            text = "[Unable to decrypt]";
-                        }
-                    }
-
-                    return {
-                        id: msg.id,
-                        senderId: msg.senderId,
-                        text,
-                        createdAt: msg.createdAt,
-                    };
-                }),
-            );
-
-            setDecryptedMessages(
-                decrypted.sort(
-                    (a, b) =>
-                        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-                ),
-            );
+            setDecryptedMessages(attachSameMinute([...decrypted]));
+            setNextCursor(data.nextCursor);
+            setHasMore(data.hasMore);
         } catch (err) {
             console.error("loadMessages error", err);
         } finally {
             setHasLoadedOnce(true);
         }
-    }, [run]);
+    }, [run, id]);
+
+    const loadOlderMessages = useCallback(async () => {
+        if (!hasMore || loadingMore || !nextCursor) return;
+        setLoadingMore(true);
+
+        try {
+            const data = await run(
+                undefined,
+                `/chat/rooms/${id}/messages?limit=30&before=${nextCursor}`,
+            );
+            const decrypted = await decryptBatch(data.messages);
+
+            setDecryptedMessages((prev) => attachSameMinute([...prev, ...decrypted]));
+            setNextCursor(data.nextCursor);
+            setHasMore(data.hasMore);
+        } catch (err) {
+            console.error("loadOlderMessages error", err);
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [hasMore, loadingMore, nextCursor, run, id]);
+
     useEffect(() => {
         if (!token) return;
 
@@ -212,13 +257,14 @@ export default function ChatsScreen() {
             });
 
             setDecryptedMessages((prev) => [
-                ...prev,
                 {
                     id: sent.id,
                     senderId: sent.senderId,
                     text,
                     createdAt: sent.createdAt,
+                    hideTime: false,
                 },
+                ...prev,
             ]);
         } catch (e: unknown) {
             console.error("Send error:", e);
@@ -257,9 +303,39 @@ export default function ChatsScreen() {
                 senderId: incoming.senderId,
                 text,
                 createdAt: incoming.createdAt,
+                hideTime: false,
             },
         ]);
     });
+
+    function attachSameMinute(messages: Message[]): MessageWithMeta[] {
+        return messages.map((msg, i) => {
+            const next = messages[i - 1]; // inverted so previous index
+            const sameMinute =
+                !!next &&
+                next.senderId === msg.senderId &&
+                new Date(next.createdAt).getMinutes() ===
+                    new Date(msg.createdAt).getMinutes() &&
+                new Date(next.createdAt).getHours() ===
+                    new Date(msg.createdAt).getHours() &&
+                new Date(next.createdAt).getDate() === new Date(msg.createdAt).getDate();
+            return { ...msg, hideTime: sameMinute } as MessageWithMeta;
+        });
+    }
+
+    const otherUserId = useMemo(() => user.otherUser.id, [user.otherUser.id]);
+
+    const renderMessage = useCallback(
+        ({ item }: { item: Message & { hideTime: boolean } }) => (
+            <MessageBubble
+                text={item.text}
+                time={item.createdAt}
+                isOwn={item.senderId !== otherUserId}
+                hideTime={item.hideTime}
+            />
+        ),
+        [otherUserId],
+    );
 
     return (
         <KeyboardAvoidingView
@@ -311,8 +387,9 @@ export default function ChatsScreen() {
                     </Text>
                 </View>
 
-                <View style={{ flex: 1, paddingTop: 12 }}>
-                    {!hasLoadedOnce || loading ? (
+                {/* Nachrichten-Liste + Scroll-Button als relativer Container */}
+                <View style={{ flex: 1 }}>
+                    {!hasLoadedOnce ? (
                         <ActivityIndicator
                             style={{ marginTop: 32 }}
                             color={theme.primary}
@@ -323,46 +400,77 @@ export default function ChatsScreen() {
                             onPress={startConversation}
                         />
                     ) : (
-                        <ScrollView
-                            ref={scrollRef}
-                            style={{ flex: 1 }}
-                            keyboardShouldPersistTaps="handled"
-                            onContentSizeChange={() =>
-                                scrollRef.current?.scrollToEnd({ animated: true })
-                            }
-                            contentContainerStyle={{
-                                flexDirection: "column",
-                                paddingTop: 0,
-                                paddingBottom: 12,
-                            }}
-                        >
-                            {decryptedMessages.map((msg, i) => {
-                                const next = decryptedMessages[i + 1];
-                                const sameMinute =
-                                    next &&
-                                    next.senderId === msg.senderId &&
-                                    new Date(next.createdAt).getFullYear() ===
-                                        new Date(msg.createdAt).getFullYear() &&
-                                    new Date(next.createdAt).getMonth() ===
-                                        new Date(msg.createdAt).getMonth() &&
-                                    new Date(next.createdAt).getDate() ===
-                                        new Date(msg.createdAt).getDate() &&
-                                    new Date(next.createdAt).getHours() ===
-                                        new Date(msg.createdAt).getHours() &&
-                                    new Date(next.createdAt).getMinutes() ===
-                                        new Date(msg.createdAt).getMinutes();
+                        <>
+                            <FlashList
+                                ref={scrollRef}
+                                data={decryptedMessages}
+                                renderItem={renderMessage}
+                                overrideItemLayout={(layout, item) => {
+                                    layout.size = item.hideTime ? 44 : 68;
+                                }}
+                                estimatedItemSize={72}
+                                keyExtractor={(item) => item.id}
+                                onEndReached={loadOlderMessages}
+                                onEndReachedThreshold={0.6}
+                                onScroll={handleScroll}
+                                scrollEventThrottle={16}
+                                inverted
+                                drawDistance={5000}
+                                ListHeaderComponent={
+                                    loadingMore ? (
+                                        <ActivityIndicator
+                                            color={theme.primary}
+                                            style={{ padding: 12 }}
+                                        />
+                                    ) : null
+                                }
+                                contentContainerStyle={{ paddingBottom: 12 }}
+                            />
 
-                                return (
-                                    <MessageBubble
-                                        key={msg.id}
-                                        text={msg.text}
-                                        time={msg.createdAt}
-                                        isOwn={msg.senderId !== user.otherUser.id}
-                                        hideTime={!!sameMinute}
-                                    />
-                                );
-                            })}
-                        </ScrollView>
+                            {/* Scroll-to-bottom Button */}
+                            {showScrollButton && (
+                                <Animated.View
+                                    style={{
+                                        position: "absolute",
+                                        bottom: 16,
+                                        alignSelf: "center",
+                                        opacity: scrollButtonOpacity,
+                                        transform: [
+                                            {
+                                                translateY:
+                                                    scrollButtonOpacity.interpolate({
+                                                        inputRange: [0, 1],
+                                                        outputRange: [12, 0],
+                                                    }),
+                                            },
+                                        ],
+                                    }}
+                                >
+                                    <Pressable
+                                        onPress={scrollToBottom}
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 999,
+                                            backgroundColor: theme.primary,
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            shadowColor: "#000",
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.2,
+                                            shadowRadius: 4,
+                                            elevation: 4,
+                                        }}
+                                    >
+                                        <ChevronDown
+                                            color={theme.white}
+                                            size={20}
+                                            strokeWidth={2.5}
+                                        />
+                                    </Pressable>
+                                </Animated.View>
+                            )}
+                        </>
                     )}
                 </View>
 
@@ -570,69 +678,6 @@ function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => vo
                     Say hi
                 </Text>
             </Pressable>
-        </View>
-    );
-}
-function MessageBubble({
-    text,
-    time,
-    isOwn,
-    hideTime,
-}: {
-    text: string;
-    time: string;
-    isOwn?: boolean;
-    hideTime?: boolean;
-}) {
-    const { theme } = useTheme();
-    const timeString = new Date(time).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-
-    return (
-        <View
-            style={{
-                alignSelf: isOwn ? "flex-end" : "flex-start",
-                marginRight: isOwn ? 8 : 0,
-                marginLeft: isOwn ? 0 : 8,
-                marginBottom: hideTime ? 2 : 8,
-                maxWidth: "80%",
-            }}
-        >
-            <View
-                style={{
-                    paddingTop: 8,
-                    paddingBottom: 6,
-                    paddingHorizontal: 12,
-                    backgroundColor: isOwn ? theme.primary : theme.card,
-                    borderRadius: 18,
-                    borderBottomRightRadius: !hideTime && isOwn ? 4 : 18,
-                    borderBottomLeftRadius: !hideTime && !isOwn ? 4 : 18,
-                }}
-            >
-                <Text
-                    style={{
-                        color: isOwn ? theme.white : theme.text,
-                        fontSize: 16,
-                    }}
-                >
-                    {text}
-                </Text>
-                {!hideTime && (
-                    <Text
-                        style={{
-                            color: isOwn ? theme.white : theme.text,
-                            fontSize: 11,
-                            opacity: 0.6,
-                            alignSelf: "flex-end",
-                            marginTop: 4,
-                        }}
-                    >
-                        {timeString}
-                    </Text>
-                )}
-            </View>
         </View>
     );
 }

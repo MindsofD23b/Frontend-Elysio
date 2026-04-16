@@ -43,7 +43,7 @@ export function useAuthFetch<S>(
         Date.now() - fetchData.created_at < fetchData.ttl;
 
     const run = useCallback(
-        async (overrideInit?: RequestInit) => {
+        async (overrideInit?: RequestInit, path?: RequestInfo) => {
             if (!token) {
                 const authError = new Error("Unauthorized");
                 setError(authError);
@@ -73,7 +73,10 @@ export function useAuthFetch<S>(
 
                 console.log("useAuthFetch route", route);
 
-                const response = await fetch(`${BASE_URL}${route}`, finalInit);
+                const response = await fetch(
+                    path ? `${BASE_URL}${path}` : `${BASE_URL}${route}`,
+                    finalInit,
+                );
                 const text = await response.text();
                 const json = text ? JSON.parse(text) : null;
 
