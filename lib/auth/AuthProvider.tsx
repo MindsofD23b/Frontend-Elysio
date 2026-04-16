@@ -48,7 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log("initCrypto done");
         console.log("Calling initDeviceToken...");
         const pushToken: string | null = await get("expo-push-token");
-        await initDeviceToken(BASE_URL, pushToken!, nextToken);
+        if (pushToken) {
+            await initDeviceToken(BASE_URL, pushToken, nextToken);
+        }
         console.log("initDeviceToken done");
     };
 
