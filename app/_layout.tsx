@@ -2,18 +2,15 @@ import { Slot } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
-import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppContent() {
-    return <Slot />;
-}
-
-export default function RootLayout() {
     const [appIsReady, setAppIsReady] = useState(false);
+    const { isLoading } = useAuth();
 
     useEffect(() => {
         async function prepare() {
@@ -33,19 +30,25 @@ export default function RootLayout() {
         }
     }, [appIsReady]);
 
-    if (!appIsReady) return null;
+    if (!appIsReady || isLoading) return null;
 
     return (
         <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-            <AuthProvider>
-                <BaseTheme>
-                    <SafeAreaProvider>
-                        <SafeAreaWrapper>
-                            <AppContent />
-                        </SafeAreaWrapper>
-                    </SafeAreaProvider>
-                </BaseTheme>
-            </AuthProvider>
+            <Slot />
         </View>
+    );
+}
+
+export default function RootLayout() {
+    return (
+        <AuthProvider>
+            <BaseTheme>
+                <SafeAreaProvider>
+                    <SafeAreaWrapper>
+                        <AppContent />
+                    </SafeAreaWrapper>
+                </SafeAreaProvider>
+            </BaseTheme>
+        </AuthProvider>
     );
 }
