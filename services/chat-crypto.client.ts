@@ -109,12 +109,17 @@ async function prewarmAesCache(messages: RoomMessagesResponse["messages"]) {
     if (!cachedPrivateKey) {
         cachedPrivateKey = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
     }
+    if (!cachedPrivateKey) {
+        throw new Error("Kein Private Key gefunden");
+    }
+
+    const privateKey = cachedPrivateKey;
 
     await Promise.all(
         uniqueKeys.map(async (encKey) => {
-            if (!aesKeyCache.has(encKey!)) {
-                const aesKey = await RSA.decrypt(encKey!, cachedPrivateKey!);
-                aesKeyCache.set(encKey!, aesKey);
+            if (encKey && !aesKeyCache.has(encKey)) {
+                const aesKey = await RSA.decrypt(encKey, privateKey);
+                aesKeyCache.set(encKey, aesKey);
             }
         }),
     );
