@@ -39,7 +39,7 @@ interface ChatResponse {
         mediaDurationSec: number | null;
         isDeleted: boolean;
         createdAt: string;
-        encryptedKey: string | null;
+        encryptedKeys: [{ encryptedKey: string; userId: string } | null];
     } | null;
     otherUser: {
         id: string;
@@ -63,7 +63,7 @@ async function mapChatResponses(data: ChatResponse[]): Promise<Chat[]> {
                 lastMessageText = "";
             } else if (chat.lastMessage.type !== "text") {
                 lastMessageText = "🎤 Voice message";
-            } else if (!chat.lastMessage.encryptedKey) {
+            } else if (!chat.lastMessage?.encryptedKeys[0]?.encryptedKey) {
                 lastMessageText = "[Encrypted message]";
             } else {
                 try {
@@ -71,7 +71,7 @@ async function mapChatResponses(data: ChatResponse[]): Promise<Chat[]> {
                         ciphertext: chat.lastMessage.ciphertext,
                         iv: chat.lastMessage.iv,
                         authTag: chat.lastMessage.authTag,
-                        encryptedKey: chat.lastMessage.encryptedKey,
+                        encryptedKey: chat.lastMessage?.encryptedKeys[0]?.encryptedKey,
                     });
                 } catch {
                     lastMessageText = "[Unable to decrypt]";
@@ -141,7 +141,7 @@ export default function Index() {
                 <SearchBarComponent value={searchText} onChangeText={setSearchText} />
             </View>
 
-            {loading ? (
+            {loading && !refreshing ? (
                 <View style={styles.loaderContainer}>
                     <ActivityIndicator size={42} color={theme.base} />
                 </View>
