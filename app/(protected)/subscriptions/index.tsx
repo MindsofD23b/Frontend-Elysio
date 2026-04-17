@@ -1,16 +1,21 @@
-import React, { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     View,
     Text,
     TouchableOpacity,
     FlatList,
     StyleSheet,
-    SafeAreaView,
     Dimensions,
     NativeSyntheticEvent,
     NativeScrollEvent,
 } from "react-native";
 import { useTheme } from "@/lib/theme/context";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
+} from "react-native-reanimated";
+import BackWrapper from "@/components/backwrapper";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -29,6 +34,7 @@ interface Plan {
     tagline: string;
     monthlyPrice: number;
     yearlyPrice: number;
+    yearlyMonthPrice: number;
     features: string[];
     badge?: string;
     highlight?: boolean;
@@ -42,7 +48,8 @@ const PLANS: Plan[] = [
         nameItalic: "plan",
         tagline: "One request at a time",
         monthlyPrice: 5.99,
-        yearlyPrice: 4.99,
+        yearlyMonthPrice: 4.99,
+        yearlyPrice: 59.99,
         features: [
             "Access to all features",
             "Bi-weekly sync calls",
@@ -58,7 +65,8 @@ const PLANS: Plan[] = [
         nameItalic: "plan",
         tagline: "Double your output 2×",
         monthlyPrice: 12.99,
-        yearlyPrice: 10.49,
+        yearlyMonthPrice: 10.49,
+        yearlyPrice: 125.99,
         badge: "BEST VALUE",
         highlight: true,
         features: [
@@ -78,7 +86,8 @@ const PLANS: Plan[] = [
         nameItalic: "plan",
         tagline: "Fitting your individual needs",
         monthlyPrice: 29.99,
-        yearlyPrice: 24.99,
+        yearlyMonthPrice: 24.99,
+        yearlyPrice: 299.99,
         features: [
             "Custom scope",
             "Dedicated team",
@@ -136,7 +145,7 @@ function BillingToggle({
                 </Text>
                 {value === "yearly" && (
                     <View style={[styles.savePill, { backgroundColor: theme.primary }]}>
-                        <Text style={styles.savePillText}>–17%</Text>
+                        <Text style={styles.savePillText}>-17%</Text>
                     </View>
                 )}
             </TouchableOpacity>
@@ -156,8 +165,9 @@ function PlanCard({
     onSubscribe: () => void;
 }) {
     const { theme } = useTheme();
-    const price = billing === "monthly" ? plan.monthlyPrice : plan.yearlyPrice;
+    const price = billing === "monthly" ? plan.monthlyPrice : plan.yearlyMonthPrice;
     const isHighlight = plan.highlight;
+    const isMonthly = billing === "monthly";
 
     const cardBg = isHighlight ? theme.primary : theme.background;
     const textColor = isHighlight ? "#fff" : theme.text;
@@ -165,9 +175,22 @@ function PlanCard({
     const dividerColor = isHighlight ? "rgba(255,255,255,0.15)" : theme.accent + "22";
     const btnBg = isHighlight ? "#fff" : theme.primary;
     const btnTextColor = isHighlight ? theme.primary : "#fff";
+    const priceText = isMonthly ? "/mo" : "/annually";
 
     const whole = Math.floor(price);
     const cents = (price % 1).toFixed(2).slice(1);
+
+    const opacity = useSharedValue(1);
+
+    useEffect(() => {
+        opacity.value = 0;
+
+        opacity.value = withTiming(1, { duration: 350 });
+    }, [billing]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+    }));
 
     return (
         <View
@@ -219,18 +242,27 @@ function PlanCard({
                     </Text>
                 </TouchableOpacity>
 
-                <View style={styles.priceBlock}>
-                    <Text style={[styles.priceDollar, { color: mutedColor }]}>$</Text>
-                    <Text style={[styles.priceAmount, { color: textColor }]}>
-                        {whole}
-                    </Text>
-                    <View>
-                        <Text style={[styles.priceCents, { color: textColor }]}>
-                            {cents}
+                <Animated.View style={[styles.priceBlock, animatedStyle]}>
+                    <View style={styles.priceBlock}>
+                        <Text style={[styles.priceDollar, { color: mutedColor }]}>$</Text>
+                        <Text style={[styles.priceAmount, { color: textColor }]}>
+                            {whole}
                         </Text>
-                        <Text style={[styles.pricePer, { color: mutedColor }]}>/mo</Text>
+                        <View>
+                            <Text style={[styles.priceCents, { color: textColor }]}>
+                                {cents}
+                            </Text>
+                            <Text
+                                style={[
+                                    styles.pricePer,
+                                    { color: mutedColor, minWidth: 50 },
+                                ]}
+                            >
+                                {priceText}
+                            </Text>
+                        </View>
                     </View>
-                </View>
+                </Animated.View>
             </View>
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
@@ -294,57 +326,59 @@ export default function SubscriptionPlans() {
     };
 
     return (
-        <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={[styles.title, { color: theme.text }]}>
-                    Choose your plan
+        <View style={{ flex: 1 }}>
+            <BackWrapper p={false}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={[styles.title, { color: theme.text }]}>
+                        Choose your plan
+                    </Text>
+                    <Text style={[styles.subtitle, { color: theme.accent }]}>
+                        Upgrade or downgrade at any time.
+                    </Text>
+                </View>
+
+                {/* Toggle */}
+                <View style={styles.toggleWrapper}>
+                    <BillingToggle value={billing} onChange={setBilling} />
+                </View>
+
+                {/* Cards — peek layout */}
+                <FlatList
+                    ref={flatListRef}
+                    data={PLANS}
+                    keyExtractor={(p) => p.id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    snapToInterval={CARD_WIDTH + CARD_GAP}
+                    snapToAlignment="start"
+                    decelerationRate="fast"
+                    contentContainerStyle={{
+                        paddingHorizontal: SIDE_PADDING,
+                        paddingVertical: 20,
+                        gap: CARD_GAP,
+                    }}
+                    initialScrollIndex={1}
+                    getItemLayout={(_, index) => ({
+                        length: CARD_WIDTH + CARD_GAP,
+                        offset: (CARD_WIDTH + CARD_GAP) * index,
+                        index,
+                    })}
+                    onScroll={handleScroll}
+                    scrollEventThrottle={16}
+                    renderItem={({ item }) => (
+                        <PlanCard plan={item} billing={billing} onSubscribe={() => {}} />
+                    )}
+                />
+
+                {/* Dots */}
+                <PaginationDots total={PLANS.length} active={activeIndex} />
+
+                <Text style={[styles.cancelNote, { color: theme.accent }]}>
+                    Cancel anytime · No hidden fees
                 </Text>
-                <Text style={[styles.subtitle, { color: theme.accent }]}>
-                    Upgrade or downgrade at any time.
-                </Text>
-            </View>
-
-            {/* Toggle */}
-            <View style={styles.toggleWrapper}>
-                <BillingToggle value={billing} onChange={setBilling} />
-            </View>
-
-            {/* Cards — peek layout */}
-            <FlatList
-                ref={flatListRef}
-                data={PLANS}
-                keyExtractor={(p) => p.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                snapToInterval={CARD_WIDTH + CARD_GAP}
-                snapToAlignment="start"
-                decelerationRate="fast"
-                contentContainerStyle={{
-                    paddingHorizontal: SIDE_PADDING,
-                    paddingVertical: 20,
-                    gap: CARD_GAP,
-                }}
-                initialScrollIndex={1}
-                getItemLayout={(_, index) => ({
-                    length: CARD_WIDTH + CARD_GAP,
-                    offset: (CARD_WIDTH + CARD_GAP) * index,
-                    index,
-                })}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                renderItem={({ item }) => (
-                    <PlanCard plan={item} billing={billing} onSubscribe={() => {}} />
-                )}
-            />
-
-            {/* Dots */}
-            <PaginationDots total={PLANS.length} active={activeIndex} />
-
-            <Text style={[styles.cancelNote, { color: theme.accent }]}>
-                Cancel anytime · No hidden fees
-            </Text>
-        </SafeAreaView>
+            </BackWrapper>
+        </View>
     );
 }
 

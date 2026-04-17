@@ -3,10 +3,14 @@ import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
-import { useCallback, useEffect, useState } from "react";
-import { View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { View, LogBox } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
+import { useCacheFetch } from "@/hooks/useCacheFetch";
+import { minToMs } from "@/utils/formatTime";
 import * as Sentry from "@sentry/react-native";
+
+LogBox.ignoreAllLogs();
 
 Sentry.init({
     dsn: "https://4661a597143882ddcad75b48f4e69f4d@o4511231190761472.ingest.de.sentry.io/4511231191810128",
@@ -30,36 +34,54 @@ Sentry.init({
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppContent() {
-    return <Slot />;
-}
-
-export default Sentry.wrap(function RootLayout() {
     const [appIsReady, setAppIsReady] = useState(false);
-    const { isLoading } = useAuth();
+    const { isLoading, token } = useAuth();
+    const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
+    const [, , cache] = useCacheFetch("/chat/rooms", chatRequest, {
+        cacheKey: "chat:rooms",
+        useCache: true,
+        ttlMs: minToMs(10),
+    });
 
     useEffect(() => {
+        if (isLoading) return;
+
         async function prepare() {
             try {
-                await new Promise((resolve) => setTimeout(resolve, 500));
+                if (token) await cache();
+            } catch {
             } finally {
                 setAppIsReady(true);
             }
         }
-
         prepare();
-    }, []);
+    }, [isLoading, token]);
 
-    const onLayoutRootView = useCallback(async () => {
+    useEffect(() => {
         if (appIsReady) {
-            await SplashScreen.hideAsync();
+            SplashScreen.hideAsync().catch(() => {});
         }
     }, [appIsReady]);
 
     if (!appIsReady || isLoading) return null;
 
     return (
-        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <View style={{ flex: 1 }}>
             <Slot />
         </View>
+    );
+}
+
+export default Sentry.wrap(function RootLayout() {
+    return (
+        <AuthProvider>
+            <BaseTheme>
+                <SafeAreaProvider>
+                    <SafeAreaWrapper>
+                        <AppContent />
+                    </SafeAreaWrapper>
+                </SafeAreaProvider>
+            </BaseTheme>
+        </AuthProvider>
     );
 });

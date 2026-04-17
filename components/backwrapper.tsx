@@ -5,9 +5,10 @@ import { Pressable, View } from "react-native";
 
 interface BackWrapperProps {
     children?: React.ReactNode;
+    p?: boolean;
 }
 
-export default function BackWrapper({ children }: BackWrapperProps) {
+export default function BackWrapper({ children, p = true }: BackWrapperProps) {
     const { theme } = useTheme();
 
     return (
@@ -19,7 +20,7 @@ export default function BackWrapper({ children }: BackWrapperProps) {
                         style={{ marginLeft: 20, marginTop: 30 }}
                     />
                 </Pressable>
-                <View style={{ flex: 1, padding: 20 }}>{children}</View>
+                <View style={{ flex: 1, padding: p ? 20 : 0 }}>{children}</View>{" "}
             </View>
         </>
     );

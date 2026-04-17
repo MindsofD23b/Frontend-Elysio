@@ -191,7 +191,6 @@ export default function Index() {
                         />
                     )}
                     keyExtractor={(item) => item.id}
-                    estimatedItemSize={88}
                     keyboardShouldPersistTaps="handled"
                     contentContainerStyle={
                         filteredChats.length === 0
