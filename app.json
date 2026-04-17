@@ -58,7 +58,17 @@
             "@react-native-community/datetimepicker",
             "expo-secure-store",
             "expo-localization",
-            "expo-image"
+            "expo-image",
+            [
+                "@sentry/react-native/expo",
+                {
+                    "url": "https://sentry.io/",
+                    "project": "elysio",
+                    "organization": "mindsofd23b"
+                }
+            ],
+            "@sentry/react-native",
+            "expo-web-browser"
         ],
         "experiments": {
             "typedRoutes": true,
