@@ -390,14 +390,6 @@ export default function Index() {
         outputRange: ["0deg", "360deg"],
     });
 
-    const [_rawData, _loading, _error, run] = useAuthFetch<FullFillUserResponse>(
-        "/users/user-full",
-        { method: "GET" },
-        { manual: true, useCache: false },
-    );
-    useEffect(() => {
-        run().catch(() => {});
-    }, [run]);
     return (
         <View style={gs.container}>
             {/* Grid */}
