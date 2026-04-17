@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
     Animated,
     Dimensions,
@@ -12,10 +12,11 @@ import {
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { router } from "expo-router";
-import { canCall } from "@/lib/premium/canCall";
 import { CONSTANTS, PlanType } from "@/lib/constants";
 import { Heart } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import * as StoreReview from "expo-store-review";
+
 // TODO: Implement plan based constants
 const user = {
     plan: PlanType.FREE,
@@ -198,6 +199,12 @@ function InfiniteColumn({
     );
 }
 
+const handleReview = async () => {
+    if (await StoreReview.isAvailableAsync()) {
+        await StoreReview.requestReview();
+    }
+};
+
 interface FullFillUserResponse {
     message: string;
 }
@@ -271,17 +278,25 @@ export default function Index() {
         };
     }, [driftL, driftR, leftColHeight, rightColHeight]);
 
-    const [count, setCount] = useState(0);
+    function canCall(plan: PlanType, count: number | undefined) {
+        return (
+            CONSTANTS.PLANS[plan].maxCalls >
+            (count !== undefined ? count : CONSTANTS.PLANS[plan].maxCalls)
+        );
+    }
 
     const onStart = () => {
-        // TODO: Implement i18n here
-        if (!canCall(user.plan, count)) {
+        // TODO: implement i18n here
+        if (!canCall(user.plan, callsData?.callsToday)) {
             return user.plan === PlanType.FREE
                 ? alert("Upgrade to Paid plan!")
-                : alert("You have no more Calls to day");
+                : alert("You have no more Calls today");
         }
 
-        setCount((prev) => prev + 1);
+        if (callsData?.callsToday === 3) {
+            handleReview();
+        }
+
         router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
     };
 
