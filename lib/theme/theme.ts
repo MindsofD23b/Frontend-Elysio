@@ -12,6 +12,15 @@ export const colors = {
         card: "#000000" + "15",
         cardAccent: "#000000" + "2A",
         grayscale: "#9CA3AF",
+
+        matchColor: "#7c72b0",
+        matchValue: "#9B8FDD",
+        waitColor: "#d9430e",
+        freezeColor: "#6BBFDF",
+        interestMusic: "#fc8a92",
+        interestGaming: "#c8a4ff",
+        interestTravel: "#DA9AB4",
+        barInactive: "#CCCCCC",
     },
     dark: {
         background: "#1E1E1E",
@@ -26,6 +35,15 @@ export const colors = {
         card: "#FFFFFF" + "15",
         cardAccent: "#FFFFFF" + "2A",
         grayscale: "#9CA3AF",
+
+        matchColor: "#7c72b0",
+        matchValue: "#9B8FDD",
+        waitColor: "#d9430e",
+        freezeColor: "#6BBFDF",
+        interestMusic: "#fc8a92",
+        interestGaming: "#c8a4ff",
+        interestTravel: "#DA9AB4",
+        barInactive: "#3A3A3A",
     },
 };
 
