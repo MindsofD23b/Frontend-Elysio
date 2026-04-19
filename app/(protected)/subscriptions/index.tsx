@@ -16,6 +16,7 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import BackWrapper from "@/components/backwrapper";
+import { router } from "expo-router";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -51,11 +52,10 @@ const PLANS: Plan[] = [
         yearlyMonthPrice: 4.99,
         yearlyPrice: 59.99,
         features: [
-            "Access to all features",
-            "Bi-weekly sync calls",
-            "Available 3 days each week",
-            "Easy-to-manage dashboard",
-            "Immediate start",
+            "Up to 10 video calls per day",
+            "Basic profile customization",
+            "Text chat after matching",
+            "Standard support",
         ],
     },
     {
@@ -70,13 +70,12 @@ const PLANS: Plan[] = [
         badge: "BEST VALUE",
         highlight: true,
         features: [
-            "All from Basic plan",
-            "Direct comms + weekly sync",
-            "Available 5 days each week",
-            "Delivery in avg. 48 hours",
-            "No-code add-ons for free",
-            "Easy-to-manage dashboard",
-            "Immediate start",
+            "Everything in Basic",
+            "Up to 30 video calls per day",
+            "See who liked you",
+            "Priority in discovery feed",
+            "Read receipts in chat",
+            "Standard support",
         ],
     },
     {
@@ -89,11 +88,10 @@ const PLANS: Plan[] = [
         yearlyMonthPrice: 24.99,
         yearlyPrice: 299.99,
         features: [
-            "Custom scope",
-            "Dedicated team",
-            "Fixed deadlines",
-            "Strategic consulting bi-weekly",
-            "Payment plan on milestones",
+            "Everything in Premium",
+            "Up to 100 video calls per day",
+            "Profile boost every week",
+            "Standard support",
         ],
     },
 ];
@@ -367,7 +365,16 @@ export default function SubscriptionPlans() {
                     onScroll={handleScroll}
                     scrollEventThrottle={16}
                     renderItem={({ item }) => (
-                        <PlanCard plan={item} billing={billing} onSubscribe={() => {}} />
+                        <PlanCard
+                            plan={item}
+                            billing={billing}
+                            onSubscribe={() => {
+                                router.push({
+                                    pathname: "/subscriptions/checkout",
+                                    params: { planId: item.id, billing },
+                                });
+                            }}
+                        />
                     )}
                 />
 
