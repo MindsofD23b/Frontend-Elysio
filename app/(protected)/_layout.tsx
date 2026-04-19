@@ -1,9 +1,11 @@
 import { Redirect, Stack } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { ActivityIndicator, View } from "react-native";
 
 export default function ProtectedLayout() {
     const { isAuthenticated, isLoading } = useAuth();
+    usePushNotifications();
 
     if (isLoading) {
         return (
