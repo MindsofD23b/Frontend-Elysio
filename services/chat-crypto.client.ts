@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { RSA } from "react-native-rsa-native";
+import RSA, { Hash } from "react-native-fast-rsa";
 import {
     AESEncryptionKey,
     AESSealedData,
@@ -31,10 +31,10 @@ export async function initCrypto(apiBaseUrl: string, authToken: string): Promise
     if (existingPrivate && existingPublic) {
         publicKey = existingPublic;
     } else {
-        const keys = await RSA.generateKeys(2048);
-        await SecureStore.setItemAsync(PRIVATE_KEY_STORE_KEY, keys.private);
-        await SecureStore.setItemAsync(PUBLIC_KEY_STORE_KEY, keys.public);
-        publicKey = keys.public;
+        const keys = await RSA.generate(2048);
+        await SecureStore.setItemAsync(PRIVATE_KEY_STORE_KEY, keys.privateKey);
+        await SecureStore.setItemAsync(PUBLIC_KEY_STORE_KEY, keys.publicKey);
+        publicKey = keys.publicKey;
     }
 
     const res = await fetch(`${apiBaseUrl}/users/me/public-key`, {
@@ -57,9 +57,7 @@ export async function encryptMessage(
 ): Promise<EncryptedPayload> {
     const aesKey = await AESEncryptionKey.generate(256);
     const aesKeyBase64 = await aesKey.encoded("base64");
-
     const plaintextBase64 = btoa(unescape(encodeURIComponent(plainText)));
-
     const sealedData = await aesEncryptAsync(plaintextBase64, aesKey);
 
     const iv = (await sealedData.iv("base64")) as string;
@@ -72,7 +70,12 @@ export async function encryptMessage(
     const encryptedKeys = await Promise.all(
         recipients.map(async (r) => ({
             userId: r.userId,
-            encryptedKey: await RSA.encrypt(aesKeyBase64, r.publicKey),
+            encryptedKey: await RSA.encryptOAEP(
+                aesKeyBase64,
+                "",
+                Hash.SHA256,
+                r.publicKey,
+            ),
         })),
     );
 
@@ -98,13 +101,17 @@ export async function decryptMessage(msg: {
 
     let aesKey = aesKeyCache.get(msg.encryptedKey);
     if (!aesKey) {
-        const aesKeyBase64 = await RSA.decrypt(msg.encryptedKey, cachedPrivateKey);
+        const aesKeyBase64 = await RSA.decryptOAEP(
+            msg.encryptedKey,
+            "",
+            Hash.SHA256,
+            cachedPrivateKey,
+        );
         aesKey = await AESEncryptionKey.import(aesKeyBase64, "base64");
         aesKeyCache.set(msg.encryptedKey, aesKey);
     }
 
     const sealedData = AESSealedData.fromParts(msg.iv, msg.ciphertext, msg.authTag);
-
     const decryptedBase64 = (await aesDecryptAsync(sealedData, aesKey, {
         output: "base64",
     })) as string;
@@ -127,7 +134,12 @@ async function prewarmAesCache(messages: RoomMessagesResponse["messages"]) {
     await Promise.all(
         uniqueKeys.map(async (encKey) => {
             if (encKey && !aesKeyCache.has(encKey)) {
-                const aesKeyBase64 = await RSA.decrypt(encKey, privateKey);
+                const aesKeyBase64 = await RSA.decryptOAEP(
+                    encKey,
+                    "",
+                    Hash.SHA256,
+                    privateKey,
+                );
                 const aesKey = await AESEncryptionKey.import(aesKeyBase64, "base64");
                 aesKeyCache.set(encKey, aesKey);
             }
