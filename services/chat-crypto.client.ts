@@ -112,7 +112,11 @@ export async function decryptMessage(msg: {
         aesKeyCache.set(msg.encryptedKey, aesKey);
     }
 
-    const sealedData = AESSealedData.fromParts(msg.iv, msg.ciphertext, msg.authTag);
+    const sealedData = AESSealedData.fromParts(
+        base64ToBytes(msg.iv),
+        base64ToBytes(msg.ciphertext),
+        base64ToBytes(msg.authTag),
+    );
     const decryptedBase64 = (await aesDecryptAsync(sealedData, aesKey, {
         output: "base64",
     })) as string;
@@ -185,4 +189,13 @@ function bytesToBase64(bytes: Uint8Array): string {
         binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
 }
