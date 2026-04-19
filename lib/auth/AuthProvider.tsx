@@ -14,6 +14,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const BASE_URL = "https://elysio.jamiepoeffel.ch";
+const TOKEN_KEY = "token";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setToken] = useState<string | null>(null);
@@ -22,8 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const hydrateAuth = async () => {
             try {
-                const raw = await AsyncStorage.getItem("store_token");
-                const storedToken = raw ? JSON.parse(raw) : null;
+                const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
                 setToken(storedToken);
 
                 if (storedToken) {
@@ -42,13 +42,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (nextToken: string) => {
         setToken(nextToken);
-        await AsyncStorage.setItem("token", nextToken);
+        await AsyncStorage.setItem(TOKEN_KEY, nextToken);
         console.log("Calling initCrypto...");
         await initCrypto("https://elysio.jamiepoeffel.ch", nextToken);
         console.log("initCrypto done");
         console.log("Calling initDeviceToken...");
         const pushToken: string | null = await get("expo-push-token");
-        await initDeviceToken(BASE_URL, pushToken!, nextToken);
+        if (pushToken) {
+            await initDeviceToken(BASE_URL, pushToken, nextToken);
+        }
         console.log("initDeviceToken done");
     };
 

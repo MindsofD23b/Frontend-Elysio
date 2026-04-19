@@ -2,9 +2,13 @@ import * as SecureStore from "expo-secure-store";
 import { RSA } from "react-native-rsa-native";
 import AesGcmCrypto from "react-native-aes-gcm-crypto";
 import * as Crypto from "expo-crypto";
+import { Message, RoomMessagesResponse } from "@/types/messages";
 
 const PRIVATE_KEY_STORE_KEY = "chat_private_key";
 const PUBLIC_KEY_STORE_KEY = "chat_public_key";
+
+let cachedPrivateKey: string | null = null;
+const aesKeyCache = new Map<string, string>(); // encryptedKey → decryptedAesKey
 
 export interface EncryptedPayload {
     type: "text";
@@ -76,10 +80,18 @@ export async function decryptMessage(msg: {
     authTag: string;
     encryptedKey: string;
 }): Promise<string> {
-    const privateKey = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
-    if (!privateKey) throw new Error("Kein Private Key gefunden");
+    // Cache private key — only 1 disk read ever
+    if (!cachedPrivateKey) {
+        cachedPrivateKey = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
+    }
+    if (!cachedPrivateKey) throw new Error("Kein Private Key gefunden");
 
-    const aesKeyBase64 = await RSA.decrypt(msg.encryptedKey, privateKey);
+    // Cache AES key — RSA decrypt only once per unique encrypted key
+    let aesKeyBase64 = aesKeyCache.get(msg.encryptedKey);
+    if (!aesKeyBase64) {
+        aesKeyBase64 = await RSA.decrypt(msg.encryptedKey, cachedPrivateKey);
+        aesKeyCache.set(msg.encryptedKey, aesKeyBase64);
+    }
 
     const plainText = await AesGcmCrypto.decrypt(
         msg.ciphertext,
@@ -88,8 +100,60 @@ export async function decryptMessage(msg: {
         msg.authTag,
         false,
     );
-
     return plainText;
+}
+
+async function prewarmAesCache(messages: RoomMessagesResponse["messages"]) {
+    const uniqueKeys = [...new Set(messages.map((m) => m.encryptedKey).filter(Boolean))];
+
+    if (!cachedPrivateKey) {
+        cachedPrivateKey = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
+    }
+    if (!cachedPrivateKey) {
+        throw new Error("Kein Private Key gefunden");
+    }
+
+    const privateKey = cachedPrivateKey;
+
+    await Promise.all(
+        uniqueKeys.map(async (encKey) => {
+            if (encKey && !aesKeyCache.has(encKey)) {
+                const aesKey = await RSA.decrypt(encKey, privateKey);
+                aesKeyCache.set(encKey, aesKey);
+            }
+        }),
+    );
+}
+
+export async function decryptBatch(
+    messages: RoomMessagesResponse["messages"],
+): Promise<Message[]> {
+    await prewarmAesCache(messages);
+    return await Promise.all(
+        messages.map(async (msg) => {
+            let text = "[Encrypted message]";
+            if (msg.type !== "text") {
+                text = "Voice message";
+            } else if (msg.encryptedKey) {
+                try {
+                    text = await decryptMessage({
+                        ciphertext: msg.ciphertext,
+                        iv: msg.iv,
+                        authTag: msg.authTag,
+                        encryptedKey: msg.encryptedKey,
+                    });
+                } catch {
+                    text = "[Unable to decrypt]";
+                }
+            }
+            return {
+                id: msg.id,
+                senderId: msg.senderId,
+                text,
+                createdAt: msg.createdAt,
+            };
+        }),
+    );
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -97,5 +161,5 @@ function bytesToBase64(bytes: Uint8Array): string {
     for (let i = 0; i < bytes.length; i++) {
         binary += String.fromCharCode(bytes[i]);
     }
-    return global.btoa(binary);
+    return btoa(binary);
 }
