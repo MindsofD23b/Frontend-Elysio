@@ -62,10 +62,11 @@ export async function encryptMessage(
 
     const iv = (await sealedData.iv("base64")) as string;
     const authTag = (await sealedData.tag("base64")) as string;
-    const ciphertext = (await sealedData.ciphertext({
-        encoding: "base64",
+    const ciphertextBytes = (await sealedData.ciphertext({
+        encoding: "bytes",
         includeTag: false,
-    })) as string;
+    })) as Uint8Array;
+    const ciphertext = bytesToBase64(ciphertextBytes);
 
     const encryptedKeys = await Promise.all(
         recipients.map(async (r) => ({
@@ -176,4 +177,12 @@ export async function decryptBatch(
             };
         }),
     );
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
 }
