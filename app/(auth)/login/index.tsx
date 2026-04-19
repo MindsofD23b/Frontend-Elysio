@@ -2,16 +2,19 @@ import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { Link, router } from "expo-router";
 import { HomeIcon } from "lucide-react-native";
-import { StyleSheet, Text, View, useColorScheme } from "react-native";
+import { StyleSheet, Text, View, useColorScheme, Platform } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
-import i18n from "@/i18n";
+import { createT } from "@/i18n";
+import { useAppleAuth } from "@/hooks/useAppleAuth";
 
 export default function Login() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();
-    const t = (key: string) => i18n.t(`auth.login.${key}`);
+    const t = createT("auth.login");
+
+    const { signInWithApple, loading: appleLoading, error: appleError } = useAppleAuth();
 
     // useEffect(() => {
     //     router.prefetch("/login/withEmail");
@@ -32,7 +35,7 @@ export default function Login() {
             </Text>
             <View style={{ width: "100%", gap: 6, marginVertical: 16 }}>
                 <Button onPress={() => router.push("/(auth)/login/withEmail")}>
-                    <BtnText>Continue with Email</BtnText>
+                    <BtnText>{t("continueWithEmail")}</BtnText>
                 </Button>
                 <Button
                     variante="outline"
@@ -103,12 +106,13 @@ export default function Login() {
                         }
                         transition={1000}
                     />
-                    <BtnText style={{ color: theme.text }}>Google</BtnText>
+                    <BtnText style={{ color: theme.text }}>{t("google")}</BtnText>
                 </Button>
                 <Button
                     variante="outline"
                     style={{ flex: 1, width: "100%", borderColor: theme.base + "4D" }}
-                    onPress={() => alert("Login button pressed")}
+                    onPress={signInWithApple}
+                    disabled={appleLoading || Platform.OS !== "ios"}
                 >
                     {colorScheme === "light" ? (
                         <Image
@@ -129,9 +133,24 @@ export default function Login() {
                             transition={1000}
                         />
                     )}
-                    <BtnText style={{ color: theme.text }}>Apple</BtnText>
+                    <BtnText style={{ color: theme.text }}>
+                        {appleLoading ? t("loading") : t("apple")}
+                    </BtnText>
                 </Button>
             </View>
+
+            {appleError && (
+                <Text
+                    style={{
+                        fontSize: 12,
+                        textAlign: "center",
+                        color: "red",
+                        marginTop: 8,
+                    }}
+                >
+                    {appleError.message}
+                </Text>
+            )}
 
             <View>
                 {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>

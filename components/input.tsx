@@ -21,42 +21,15 @@ interface InputProps extends TextInputProps {
     ref?: React.Ref<TextInput> | undefined;
 }
 
-export default function Input({
-    editable,
-    placeholder,
-    secureTextEntry,
-    textContentType,
-    keyboardType,
-    autoComplete,
-    onChangeText,
-    value,
-    style,
-    maxLength,
-    textAlign,
-    passwordRules,
-    onKeyPress,
-    ref,
-}: InputProps) {
+export default function Input({ style, ...props }: InputProps) {
     const { theme } = useTheme();
     return (
         <TextInput
-            editable={editable}
-            placeholder={placeholder}
-            textContentType={textContentType}
-            secureTextEntry={secureTextEntry}
-            keyboardType={keyboardType}
-            onChangeText={onChangeText}
-            value={value}
-            autoComplete={autoComplete}
-            passwordRules={passwordRules}
             returnKeyType="done"
             submitBehavior="blurAndSubmit"
             autoCapitalize="none"
-            onKeyPress={onKeyPress}
-            ref={ref}
-            maxLength={maxLength}
-            textAlign={textAlign}
             placeholderTextColor={theme.primary + "BF"}
+            {...props}
             style={[
                 {
                     width: "100%",

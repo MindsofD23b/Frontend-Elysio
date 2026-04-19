@@ -11,6 +11,7 @@
             "orLoginWith": "Or Login with",
             "google": "Google",
             "apple": "Apple",
+            "loading": "Loading...",
             "terms": "By continuing, you agree to our",
             "termsOfService": "Terms of Service",
             "and": "and",
@@ -21,9 +22,26 @@
                 "bodyBold": "Credentials",
                 "emailPlaceholder": "Email",
                 "passwordPlaceholder": "Password",
+                "forgotPassword": "Forgot Password?",
                 "login": "Login",
                 "errors": {
-                    "invalidEmail": "Invalid email address"
+                    "invalidEmail": "Invalid email address",
+                    "passwordRequired": "Password is required",
+                    "loginFailed": "Login failed"
+                }
+            },
+            "withPhoneNumber": {
+                "title": "Login with Phone Number",
+                "body": "Please enter your",
+                "bodyBold": "Credentials",
+                "phonePlaceholder": "+41 79 123 45 67",
+                "passwordPlaceholder": "Password",
+                "forgotPassword": "Forgot Password?",
+                "login": "Login",
+                "errors": {
+                    "invalidPhone": "Invalid phone number",
+                    "passwordRequired": "Password is required",
+                    "loginFailed": "Login failed"
                 }
             }
         },
@@ -37,6 +55,7 @@
             "orLoginWith": "Or Login with",
             "google": "Google",
             "apple": "Apple",
+            "loading": "Loading...",
             "terms": "By continuing, you agree to our",
             "termsOfService": "Terms of Service",
             "and": "and",
@@ -139,19 +158,55 @@
                     }
                 }
             }
+        },
+        "home": {
+            "start": "START"
+        },
+        "settings": {
+            "title": "Settings",
+            "personalDetails": "Personal Details",
+            "subscription": "Subscriptions",
+            "interests": "Interests",
+            "termsAndConditions": "Terms and Conditions",
+            "privacyPolicy": "Privacy & Policy",
+            "aboutUs": "About us",
+            "lightmode": "Lightmode",
+            "darkmode": "Darkmode",
+            "appearance": "Appearance",
+            "logOut": "Log Out"
+        },
+        "forgotPassword": {
+            "title": "Forgot Password",
+            "subtitle": "Enter your",
+            "subtitleBold": "Email Address",
+            "subtitleSuffix": "and we will send you a reset code.",
+            "emailPlaceholder": "Email",
+            "sendCode": "Send Reset Code",
+
+            "enterCode": "Enter Code",
+            "codeSentTo": "We sent a reset code to",
+            "codePlaceholder": "Enter code",
+            "resendCode": "Resend code",
+            "verifyCode": "Verify Code",
+
+            "newPassword": "New Password",
+            "newPasswordSubtitlePrefix": "Choose a",
+            "newPasswordSubtitleSuffix": "for your account.",
+            "newPasswordSubtitleBold": "strong",
+            "newPasswordPlaceholder": "New Password",
+            "confirmPasswordPlaceholder": "Confirm Password",
+            "resetPassword": "Reset Password",
+
+            "successTitle": "Password Reset!",
+            "successBody": "Your password has been successfully reset.",
+            "backToLogin": "Back to Login",
+
+            "errors": {
+                "invalidEmail": "Invalid email address",
+                "codeToShort": "Please enter the full code",
+                "passwordTooShort": "Password must be at least 6 characters",
+                "passwordMismatch": "Passwords dont match"
+            }
         }
-    },
-    "home": {},
-    "settings": {
-        "title": "Settings",
-        "personalDetails": "Personal Details",
-        "interests": "Interests",
-        "appearance": "Appearance",
-        "termsAndConditions": "Terms and Conditions",
-        "privacyPolicy": "Privacy & Policy",
-        "aboutUs": "About us",
-        "lightmode": "Lightmode",
-        "darkmode": "Darkmode",
-        "logOut": "Log Out"
     }
 }

@@ -3,6 +3,15 @@ import { useState, useEffect, useCallback } from "react";
 
 const ramStore = new Map<string, any>();
 
+export function setToken(token: string) {
+    ramStore.set("token", token);
+    AsyncStorage.setItem("token", token);
+}
+
+export function getToken(): string | null {
+    return ramStore.get("token") ?? null;
+}
+
 export function useStore<S>(
     keyValue: string,
     initialValue?: S,
