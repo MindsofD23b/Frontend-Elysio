@@ -1,14 +1,18 @@
 import * as SecureStore from "expo-secure-store";
 import { RSA } from "react-native-rsa-native";
-import AesGcmCrypto from "react-native-aes-gcm-crypto";
-import * as Crypto from "expo-crypto";
+import {
+    AESEncryptionKey,
+    AESSealedData,
+    aesEncryptAsync,
+    aesDecryptAsync,
+} from "expo-crypto";
 import { Message, RoomMessagesResponse } from "@/types/messages";
 
 const PRIVATE_KEY_STORE_KEY = "chat_private_key";
 const PUBLIC_KEY_STORE_KEY = "chat_public_key";
 
 let cachedPrivateKey: string | null = null;
-const aesKeyCache = new Map<string, string>(); // encryptedKey → decryptedAesKey
+const aesKeyCache = new Map<string, AESEncryptionKey>();
 
 export interface EncryptedPayload {
     type: "text";
@@ -51,10 +55,19 @@ export async function encryptMessage(
     plainText: string,
     recipients: { userId: string; publicKey: string }[],
 ): Promise<EncryptedPayload> {
-    const keyBytes = Crypto.getRandomValues(new Uint8Array(32));
-    const aesKeyBase64 = bytesToBase64(keyBytes);
+    const aesKey = await AESEncryptionKey.generate(256);
+    const aesKeyBase64 = await aesKey.encoded("base64");
 
-    const encrypted = await AesGcmCrypto.encrypt(plainText, false, aesKeyBase64);
+    const plaintextBase64 = btoa(unescape(encodeURIComponent(plainText)));
+
+    const sealedData = await aesEncryptAsync(plaintextBase64, aesKey);
+
+    const iv = (await sealedData.iv("base64")) as string;
+    const authTag = (await sealedData.tag("base64")) as string;
+    const ciphertext = (await sealedData.ciphertext({
+        encoding: "base64",
+        includeTag: false,
+    })) as string;
 
     const encryptedKeys = await Promise.all(
         recipients.map(async (r) => ({
@@ -65,14 +78,12 @@ export async function encryptMessage(
 
     return {
         type: "text",
-        ciphertext: encrypted.content,
-        iv: encrypted.iv,
-        authTag: encrypted.tag,
+        ciphertext,
+        iv,
+        authTag,
         encryptedKeys,
     };
 }
-
-// ─── 3. Nachricht entschlüsseln ──────────────────────────────────────────────
 
 export async function decryptMessage(msg: {
     ciphertext: string;
@@ -80,27 +91,25 @@ export async function decryptMessage(msg: {
     authTag: string;
     encryptedKey: string;
 }): Promise<string> {
-    // Cache private key — only 1 disk read ever
     if (!cachedPrivateKey) {
         cachedPrivateKey = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
     }
     if (!cachedPrivateKey) throw new Error("Kein Private Key gefunden");
 
-    // Cache AES key — RSA decrypt only once per unique encrypted key
-    let aesKeyBase64 = aesKeyCache.get(msg.encryptedKey);
-    if (!aesKeyBase64) {
-        aesKeyBase64 = await RSA.decrypt(msg.encryptedKey, cachedPrivateKey);
-        aesKeyCache.set(msg.encryptedKey, aesKeyBase64);
+    let aesKey = aesKeyCache.get(msg.encryptedKey);
+    if (!aesKey) {
+        const aesKeyBase64 = await RSA.decrypt(msg.encryptedKey, cachedPrivateKey);
+        aesKey = await AESEncryptionKey.import(aesKeyBase64, "base64");
+        aesKeyCache.set(msg.encryptedKey, aesKey);
     }
 
-    const plainText = await AesGcmCrypto.decrypt(
-        msg.ciphertext,
-        aesKeyBase64,
-        msg.iv,
-        msg.authTag,
-        false,
-    );
-    return plainText;
+    const sealedData = AESSealedData.fromParts(msg.iv, msg.ciphertext, msg.authTag);
+
+    const decryptedBase64 = (await aesDecryptAsync(sealedData, aesKey, {
+        output: "base64",
+    })) as string;
+
+    return decodeURIComponent(escape(atob(decryptedBase64)));
 }
 
 async function prewarmAesCache(messages: RoomMessagesResponse["messages"]) {
@@ -118,7 +127,8 @@ async function prewarmAesCache(messages: RoomMessagesResponse["messages"]) {
     await Promise.all(
         uniqueKeys.map(async (encKey) => {
             if (encKey && !aesKeyCache.has(encKey)) {
-                const aesKey = await RSA.decrypt(encKey, privateKey);
+                const aesKeyBase64 = await RSA.decrypt(encKey, privateKey);
+                const aesKey = await AESEncryptionKey.import(aesKeyBase64, "base64");
                 aesKeyCache.set(encKey, aesKey);
             }
         }),
@@ -154,12 +164,4 @@ export async function decryptBatch(
             };
         }),
     );
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-    let binary = "";
-    for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
 }
