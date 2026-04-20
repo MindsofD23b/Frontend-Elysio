@@ -51,3 +51,7 @@ app-example
 /android
 
 .env.local
+
+.claude
+*.claude
+claude
