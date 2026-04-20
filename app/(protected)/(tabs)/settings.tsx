@@ -24,7 +24,7 @@ const version = Constants.expoConfig?.version;
 export default function SettingsScreen() {
     const { gs, theme } = useTheme();
     const { logout } = useAuth();
-    const [profile] = useAuthFetch<UserProfile>("/users/me");
+    const [profile] = useAuthFetch<UserProfile>("/users/me", {}, { useCache: false });
 
     const mutedText = theme.text + "8C";
     const divider = theme.text + "26";
