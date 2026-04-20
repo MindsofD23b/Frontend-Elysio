@@ -20,7 +20,7 @@ export default function BackWrapper({ children, p = true }: BackWrapperProps) {
                         style={{ marginLeft: 20, marginTop: 30 }}
                     />
                 </Pressable>
-                <View style={{ flex: 1, padding: p ? 20 : 0 }}>{children}</View>{" "}
+                <View style={{ flex: 1, padding: p ? 20 : 0 }}>{children}</View>
             </View>
         </>
     );

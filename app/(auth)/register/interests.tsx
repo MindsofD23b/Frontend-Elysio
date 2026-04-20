@@ -63,7 +63,7 @@ export default function Interests() {
         }
 
         setInterests(selected);
-        router.push("/register/addProfileData");
+        router.push("/register/addProfilePicture");
     };
 
     return (
