@@ -18,6 +18,25 @@ registerGlobals();
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
 export default function VideoCall() {
+    const ICEBREAKERS = [
+        "What's the weirdest thing you've ever eaten?",
+        "If you could live in any movie universe, which would you pick?",
+        "What's a skill you're secretly proud of?",
+        "What's the most spontaneous thing you've ever done?",
+        "If you had to eat one meal forever, what would it be?",
+        "What's your most controversial food opinion?",
+        "Would you rather explore space or the deep ocean?",
+        "What's the best trip you've ever been on?",
+        "What did you want to be as a kid?",
+        "What's your go-to karaoke song?",
+        "What's a hobby you've always wanted to try?",
+        "What's the last thing that made you laugh out loud?",
+    ];
+
+    const [icebreakerIndex, setIcebreakerIndex] = useState(() =>
+        Math.floor(Math.random() * ICEBREAKERS.length),
+    );
+
     const { token } = useAuth();
     const [started, setStarted] = useState(false);
     const [localUrl, setLocalUrl] = useState<string | null>(null);
@@ -560,10 +579,13 @@ export default function VideoCall() {
     }
 
     function handleIcebreaker() {
-        Alert.alert(
-            "Icebreaker",
-            "Hier kannst du Tipps oder einen kurzen Gesprächsstarter anzeigen.",
-        );
+        setIcebreakerIndex((prev) => {
+            let next;
+            do {
+                next = Math.floor(Math.random() * ICEBREAKERS.length);
+            } while (next === prev && ICEBREAKERS.length > 1);
+            return next;
+        });
     }
 
     useEffect(() => {
@@ -686,6 +708,12 @@ export default function VideoCall() {
                         />
                     </View>
                 )}
+
+                <View style={styles.icebreakerBubble}>
+                    <Text style={styles.icebreakerText}>
+                        {ICEBREAKERS[icebreakerIndex]}
+                    </Text>
+                </View>
 
                 <View style={styles.topBar}>
                     <Pressable style={styles.topButton} onPress={stopCall}>
@@ -904,5 +932,26 @@ const styles = StyleSheet.create({
         color: "#cfcfcf",
         fontSize: 14,
         marginBottom: 6,
+    },
+    icebreakerBubble: {
+        position: "absolute",
+        left: 14,
+        bottom: 110,
+        maxWidth: 200,
+        backgroundColor: "rgba(255,255,255,0.93)",
+        borderRadius: 14,
+        paddingHorizontal: 13,
+        paddingVertical: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        elevation: 4,
+    },
+    icebreakerText: {
+        color: "#111",
+        fontSize: 13,
+        fontWeight: "500",
+        lineHeight: 18,
     },
 });

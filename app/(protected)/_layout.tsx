@@ -1,10 +1,15 @@
-import { Redirect, Stack } from "expo-router";
+import { Redirect, router, Stack } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { GlassView } from "expo-glass-effect";
+import { X } from "lucide-react-native";
+import { useTheme } from "@/lib/theme/context";
 
 export default function ProtectedLayout() {
     const { isAuthenticated, isLoading } = useAuth();
+    const { theme } = useTheme();
+
     usePushNotifications();
 
     if (isLoading) {
@@ -19,5 +24,20 @@ export default function ProtectedLayout() {
         return <Redirect href="/login" />;
     }
 
-    return <Stack screenOptions={{ headerShown: false }} />;
+    return (
+        <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen
+                name="info"
+                options={{
+                    presentation: "formSheet",
+                    headerShown: false,
+                    sheetAllowedDetents: [0.5, 1.0],
+                    sheetGrabberVisible: true,
+                    sheetExpandsWhenScrolledToEdge: true,
+                    sheetLargestUndimmedDetentIndex: "none",
+                    contentStyle: { backgroundColor: theme.gray },
+                }}
+            />
+        </Stack>
+    );
 }

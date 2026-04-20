@@ -48,9 +48,9 @@ const PLANS: Plan[] = [
         name: "Basic",
         nameItalic: "plan",
         tagline: "One request at a time",
-        monthlyPrice: 5.99,
-        yearlyMonthPrice: 4.99,
-        yearlyPrice: 59.99,
+        monthlyPrice: 5.9,
+        yearlyMonthPrice: 4.9,
+        yearlyPrice: 58.8,
         features: [
             "Up to 10 video calls per day",
             "Basic profile customization",
@@ -64,9 +64,9 @@ const PLANS: Plan[] = [
         name: "Premium",
         nameItalic: "plan",
         tagline: "Double your output 2×",
-        monthlyPrice: 12.99,
-        yearlyMonthPrice: 10.49,
-        yearlyPrice: 125.99,
+        monthlyPrice: 12.9,
+        yearlyMonthPrice: 10.9,
+        yearlyPrice: 130.8,
         badge: "BEST VALUE",
         highlight: true,
         features: [
@@ -84,9 +84,9 @@ const PLANS: Plan[] = [
         name: "Gold",
         nameItalic: "plan",
         tagline: "Fitting your individual needs",
-        monthlyPrice: 29.99,
-        yearlyMonthPrice: 24.99,
-        yearlyPrice: 299.99,
+        monthlyPrice: 29.9,
+        yearlyMonthPrice: 24.9,
+        yearlyPrice: 298.8,
         features: [
             "Everything in Premium",
             "Up to 100 video calls per day",
@@ -242,7 +242,9 @@ function PlanCard({
 
                 <Animated.View style={[styles.priceBlock, animatedStyle]}>
                     <View style={styles.priceBlock}>
-                        <Text style={[styles.priceDollar, { color: mutedColor }]}>$</Text>
+                        <Text style={[styles.priceDollar, { color: mutedColor }]}>
+                            CHF
+                        </Text>
                         <Text style={[styles.priceAmount, { color: textColor }]}>
                             {whole}
                         </Text>
