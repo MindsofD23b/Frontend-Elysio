@@ -12,6 +12,8 @@ export const colors = {
         card: "#000000" + "15",
         cardAccent: "#000000" + "2A",
         grayscale: "#9CA3AF",
+        gray: "#ced4da",
+        orange: "#f3722c",
     },
     dark: {
         background: "#1E1E1E",
@@ -26,6 +28,8 @@ export const colors = {
         card: "#FFFFFF" + "15",
         cardAccent: "#FFFFFF" + "2A",
         grayscale: "#9CA3AF",
+        gray: "#ced4da",
+        orange: "#f3722c",
     },
 };
 

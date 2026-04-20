@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
 import Constants from "expo-constants";
 import { MenuRow } from "@/components/menuRow";
+import * as WebBrowser from "expo-web-browser";
 
 const t = createT("auth.settings");
 const version = Constants.expoConfig?.version;
@@ -74,7 +75,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() =>
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        )
+                    }
                 />
                 <MenuRow
                     icon={MessageCircle}
@@ -82,7 +94,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() =>
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/privacypolicy/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        )
+                    }
                 />
                 <MenuRow
                     icon={Eye}
@@ -90,7 +113,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() => {
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/aboutus/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        );
+                    }}
                 />
                 <MenuRow
                     icon={Moon}
