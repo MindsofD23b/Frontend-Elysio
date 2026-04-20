@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import {
     View,
@@ -13,14 +13,27 @@ import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { ShieldCheck, CreditCard, Lock } from "lucide-react-native";
 import { type BillingCycle, type Plan, PLANS_MAP as PLANS } from "./plans";
+import Purchases, { PurchasesPackage } from "react-native-purchases";
 
 // ─── Order Summary ─────────────────────────────────────────────────────────────
 
-function OrderSummary({ plan, billing }: { plan: Plan; billing: BillingCycle }) {
+function OrderSummary({
+    plan,
+    billing,
+    rcPriceString,
+    rcPerMonthString,
+}: {
+    plan: Plan;
+    billing: BillingCycle;
+    rcPriceString?: string;
+    rcPerMonthString?: string;
+}) {
     const { theme } = useTheme();
     const isYearly = billing === "yearly";
-    const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
-    const perMonth = isYearly ? plan.yearlyMonthPrice : plan.monthlyPrice;
+    const fallbackPrice = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
+    const fallbackPerMonth = isYearly ? plan.yearlyMonthPrice : plan.monthlyPrice;
+    const displayPrice = rcPriceString ?? `CHF ${fallbackPrice.toFixed(2)}`;
+    const displayPerMonth = rcPerMonthString ?? `CHF ${fallbackPerMonth.toFixed(2)}`;
 
     return (
         <View style={[styles.card, { backgroundColor: theme.card }]}>
@@ -41,7 +54,7 @@ function OrderSummary({ plan, billing }: { plan: Plan; billing: BillingCycle }) 
                     )}
                 </View>
                 <Text style={[styles.planPrice, { color: theme.text }]}>
-                    CHF {price.toFixed(2)}
+                    {displayPrice}
                 </Text>
             </View>
 
@@ -52,13 +65,13 @@ function OrderSummary({ plan, billing }: { plan: Plan; billing: BillingCycle }) 
                     Total today
                 </Text>
                 <Text style={[styles.totalPrice, { color: theme.text }]}>
-                    CHF {price.toFixed(2)}
+                    {displayPrice}
                 </Text>
             </View>
 
             {isYearly && (
                 <Text style={[styles.perMonthNote, { color: theme.grayscale }]}>
-                    CHF {perMonth.toFixed(2)}/mo · billed annually
+                    {displayPerMonth}/mo · billed annually
                 </Text>
             )}
         </View>
@@ -122,15 +135,53 @@ export default function Checkout() {
         billing: BillingCycle;
     }>();
     const [loading, setLoading] = useState(false);
+    const [pkg, setPkg] = useState<PurchasesPackage | null>(null);
+    const [offeringLoading, setOfferingLoading] = useState(true);
 
     const plan = PLANS[planId ?? "premium"];
     const billingCycle: BillingCycle = billing === "yearly" ? "yearly" : "monthly";
 
-    const handleSubscribe = () => {
+    useEffect(() => {
+        async function loadPackage() {
+            try {
+                const offerings = await Purchases.getOfferings();
+                const offering = offerings.all[planId ?? "premium"] ?? offerings.current;
+                if (offering) {
+                    const selected =
+                        billingCycle === "yearly"
+                            ? (offering.annual ?? offering.availablePackages[0])
+                            : (offering.monthly ?? offering.availablePackages[0]);
+                    setPkg(selected ?? null);
+                }
+            } catch (error) {
+                console.error("Failed to load offerings:", error);
+            } finally {
+                setOfferingLoading(false);
+            }
+        }
+        loadPackage();
+    }, [planId, billingCycle]);
+
+    const handleSubscribe = async () => {
+        if (!pkg) return;
         setLoading(true);
-        // TODO: integrate payment provider
-        setTimeout(() => setLoading(false), 2000);
+        try {
+            const { customerInfo } = await Purchases.purchasePackage(pkg);
+            if (typeof customerInfo.entitlements.active[planId] !== "undefined") {
+                console.log("successfully subscribed to", planId);
+            }
+        } catch (error) {
+            console.error("Subscription error:", error);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const rcPriceString = pkg?.product.priceString;
+    const rcPerMonthString =
+        billingCycle === "yearly" && pkg
+            ? `${pkg.product.currencyCode} ${(pkg.product.price / 12).toFixed(2)}`
+            : undefined;
 
     return (
         <BackWrapper p={false}>
@@ -145,7 +196,12 @@ export default function Checkout() {
                     </Text>
                 </View>
 
-                <OrderSummary plan={plan} billing={billingCycle} />
+                <OrderSummary
+                    plan={plan}
+                    billing={billingCycle}
+                    rcPriceString={rcPriceString}
+                    rcPerMonthString={rcPerMonthString}
+                />
                 <IncludedFeatures plan={plan} />
                 <TrustBadges />
             </ScrollView>
@@ -164,13 +220,13 @@ export default function Checkout() {
                     style={[
                         styles.ctaBtn,
                         { backgroundColor: theme.primary },
-                        loading && styles.ctaBtnDisabled,
+                        (loading || offeringLoading || !pkg) && styles.ctaBtnDisabled,
                     ]}
                     onPress={handleSubscribe}
                     activeOpacity={0.85}
-                    disabled={loading}
+                    disabled={loading || offeringLoading || !pkg}
                 >
-                    {loading ? (
+                    {loading || offeringLoading ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
                         <Text style={styles.ctaBtnText}>Confirm & Subscribe</Text>
@@ -219,8 +275,6 @@ export default function Checkout() {
         </BackWrapper>
     );
 }
-
-// ─── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
     scroll: {
