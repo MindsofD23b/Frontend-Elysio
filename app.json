@@ -14,7 +14,8 @@
                 "NSMicrophoneUsageDescription": "Allow access to microphone for calls",
                 "ITSAppUsesNonExemptEncryption": false
             },
-            "bundleIdentifier": "com.mindsofd23b.elysio"
+            "bundleIdentifier": "com.mindsofd23b.elysio",
+            "usesAppleSignIn": true
         },
         "android": {
             "adaptiveIcon": {
@@ -37,6 +38,7 @@
         },
         "plugins": [
             "expo-router",
+            "expo-apple-authentication",
             [
                 "expo-splash-screen",
                 {
@@ -56,7 +58,17 @@
             "@react-native-community/datetimepicker",
             "expo-secure-store",
             "expo-localization",
-            "expo-image"
+            "expo-image",
+            [
+                "@sentry/react-native/expo",
+                {
+                    "url": "https://sentry.io/",
+                    "project": "elysio",
+                    "organization": "mindsofd23b"
+                }
+            ],
+            "@sentry/react-native",
+            "expo-web-browser"
         ],
         "experiments": {
             "typedRoutes": true,

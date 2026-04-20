@@ -11,6 +11,7 @@
             "orLoginWith": "Or Login with",
             "google": "Google",
             "apple": "Apple",
+            "loading": "Loading...",
             "terms": "By continuing, you agree to our",
             "termsOfService": "Terms of Service",
             "and": "and",
@@ -54,6 +55,7 @@
             "orLoginWith": "Or Login with",
             "google": "Google",
             "apple": "Apple",
+            "loading": "Loading...",
             "terms": "By continuing, you agree to our",
             "termsOfService": "Terms of Service",
             "and": "and",
@@ -163,6 +165,7 @@
         "settings": {
             "title": "Settings",
             "personalDetails": "Personal Details",
+            "subscription": "Subscriptions",
             "interests": "Interests",
             "termsAndConditions": "Terms and Conditions",
             "privacyPolicy": "Privacy & Policy",
