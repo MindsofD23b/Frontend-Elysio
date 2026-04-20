@@ -3,13 +3,19 @@ import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View, LogBox, Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { useCacheFetch } from "@/hooks/useCacheFetch";
 import { minToMs } from "@/utils/formatTime";
 import * as Sentry from "@sentry/react-native";
 import Purchases, { LOG_LEVEL } from "react-native-purchases";
+import { initCrypto } from "@/services/chat-crypto.client";
+import OutageScreen from "@/app/(auth)/outage";
+import UpdateScreen from "@/app/(auth)/update";
+
+const SERVER_URL = "https://elysio.jamiepoeffel.ch";
+const SERVER_CHECK_INTERVAL = 20_000;
 
 LogBox.ignoreAllLogs();
 
@@ -36,7 +42,40 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppContent() {
     const [appIsReady, setAppIsReady] = useState(false);
+    const [serverStatus, setServerStatus] = useState<
+        "pending" | "ok" | "down" | "update"
+    >("pending");
+    const [updateDuration, setUpdateDuration] = useState<string | undefined>(undefined);
     const { isLoading, token } = useAuth();
+    const serverCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    async function checkServer() {
+        try {
+            const res = await fetch(SERVER_URL, { method: "GET", cache: "no-store" });
+            const text = await res.text();
+            const trimmed = text.trim();
+            if (res.ok && trimmed === "Hello World!") {
+                setServerStatus("ok");
+            } else if (trimmed.startsWith("update")) {
+                const parts = trimmed.split(" ");
+                setUpdateDuration(parts[1] ?? undefined);
+                setServerStatus("update");
+            } else {
+                setServerStatus("down");
+            }
+        } catch {
+            setServerStatus("down");
+        }
+    }
+
+    useEffect(() => {
+        checkServer();
+        serverCheckRef.current = setInterval(checkServer, SERVER_CHECK_INTERVAL);
+        return () => {
+            if (serverCheckRef.current) clearInterval(serverCheckRef.current);
+        };
+    }, []);
+
     const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
     const [, , cache] = useCacheFetch("/chat/rooms", chatRequest, {
         cacheKey: "chat:rooms",
@@ -65,7 +104,7 @@ function AppContent() {
     }
 
     useEffect(() => {
-        if (isLoading) return;
+        if (isLoading || serverStatus !== "ok") return;
 
         Purchases.setLogLevel(LOG_LEVEL.DEBUG);
 
@@ -75,7 +114,7 @@ function AppContent() {
             });
         } else if (Platform.OS === "android") {
             Purchases.configure({
-                apiKey: "appl_9c8b1cbdcbb849d0a1e7cdd7f",
+                apiKey: "goog_vuioAmQKQpPnwGqxktfBuiqAKfz",
             });
         }
 
@@ -84,20 +123,29 @@ function AppContent() {
 
         async function prepare() {
             try {
-                if (token) await cache();
+                if (token) {
+                    await initCrypto(SERVER_URL, token);
+                    await cache();
+                }
             } catch {
             } finally {
                 setAppIsReady(true);
             }
         }
         prepare();
-    }, [isLoading, token]);
+    }, [isLoading, token, serverStatus]);
 
     useEffect(() => {
         if (appIsReady) {
             SplashScreen.hideAsync().catch(() => {});
         }
     }, [appIsReady]);
+
+    if (serverStatus === "pending") return null;
+
+    if (serverStatus === "down") return <OutageScreen />;
+
+    if (serverStatus === "update") return <UpdateScreen duration={updateDuration} />;
 
     if (!appIsReady || isLoading) return null;
 
