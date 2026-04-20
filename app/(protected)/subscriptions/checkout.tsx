@@ -12,61 +12,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { ShieldCheck, CreditCard, Lock } from "lucide-react-native";
-
-type BillingCycle = "monthly" | "yearly";
-
-interface Plan {
-    id: string;
-    name: string;
-    monthlyPrice: number;
-    yearlyPrice: number;
-    yearlyMonthPrice: number;
-    features: string[];
-}
-
-const PLANS: Record<string, Plan> = {
-    basic: {
-        id: "basic",
-        name: "Basic",
-        monthlyPrice: 5.99,
-        yearlyMonthPrice: 4.99,
-        yearlyPrice: 59.99,
-        features: [
-            "Up to 10 video calls per day",
-            "Basic profile customization",
-            "Text chat after matching",
-            "Standard support",
-        ],
-    },
-    premium: {
-        id: "premium",
-        name: "Premium",
-        monthlyPrice: 12.99,
-        yearlyMonthPrice: 10.49,
-        yearlyPrice: 125.99,
-        features: [
-            "Everything in Basic",
-            "Up to 30 video calls per day",
-            "See who liked you",
-            "Priority in discovery feed",
-            "Read receipts in chat",
-            "Standard support",
-        ],
-    },
-    gold: {
-        id: "gold",
-        name: "Gold",
-        monthlyPrice: 29.99,
-        yearlyMonthPrice: 24.99,
-        yearlyPrice: 299.99,
-        features: [
-            "Everything in Premium",
-            "Up to 100 video calls per day",
-            "Profile boost every week",
-            "Standard support",
-        ],
-    },
-};
+import { type BillingCycle, type Plan, PLANS_MAP as PLANS } from "./plans";
 
 // ─── Order Summary ─────────────────────────────────────────────────────────────
 
@@ -95,7 +41,7 @@ function OrderSummary({ plan, billing }: { plan: Plan; billing: BillingCycle }) 
                     )}
                 </View>
                 <Text style={[styles.planPrice, { color: theme.text }]}>
-                    ${price.toFixed(2)}
+                    CHF {price.toFixed(2)}
                 </Text>
             </View>
 
@@ -106,13 +52,13 @@ function OrderSummary({ plan, billing }: { plan: Plan; billing: BillingCycle }) 
                     Total today
                 </Text>
                 <Text style={[styles.totalPrice, { color: theme.text }]}>
-                    ${price.toFixed(2)}
+                    CHF {price.toFixed(2)}
                 </Text>
             </View>
 
             {isYearly && (
                 <Text style={[styles.perMonthNote, { color: theme.grayscale }]}>
-                    ${perMonth.toFixed(2)}/mo · billed annually
+                    CHF {perMonth.toFixed(2)}/mo · billed annually
                 </Text>
             )}
         </View>
@@ -247,7 +193,7 @@ export default function Checkout() {
                         }
                         style={{ color: theme.primary }}
                     >
-                        Terms of Service
+                        Terms and Conditions
                     </Text>{" "}
                     and{" "}
                     <Text

@@ -17,6 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import BackWrapper from "@/components/backwrapper";
 import { router } from "expo-router";
+import { type BillingCycle, type Plan, PLANS } from "./plans";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -24,77 +25,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.82;
 const CARD_GAP = 14;
 const SIDE_PADDING = (SCREEN_WIDTH - CARD_WIDTH) / 2; // bleibt gleich
-
-type BillingCycle = "monthly" | "yearly";
-
-interface Plan {
-    id: string;
-    tier: string;
-    name: string;
-    nameItalic: string;
-    tagline: string;
-    monthlyPrice: number;
-    yearlyPrice: number;
-    yearlyMonthPrice: number;
-    features: string[];
-    badge?: string;
-    highlight?: boolean;
-}
-
-const PLANS: Plan[] = [
-    {
-        id: "basic",
-        tier: "01  Basic",
-        name: "Basic",
-        nameItalic: "plan",
-        tagline: "One request at a time",
-        monthlyPrice: 5.9,
-        yearlyMonthPrice: 4.9,
-        yearlyPrice: 58.8,
-        features: [
-            "Up to 10 video calls per day",
-            "Basic profile customization",
-            "Text chat after matching",
-            "Standard support",
-        ],
-    },
-    {
-        id: "premium",
-        tier: "02  Premium",
-        name: "Premium",
-        nameItalic: "plan",
-        tagline: "Double your output 2×",
-        monthlyPrice: 12.9,
-        yearlyMonthPrice: 10.9,
-        yearlyPrice: 130.8,
-        badge: "BEST VALUE",
-        highlight: true,
-        features: [
-            "Everything in Basic",
-            "Up to 30 video calls per day",
-            "See who liked you",
-            "Priority in discovery feed",
-            "Read receipts in chat",
-            "Standard support",
-        ],
-    },
-    {
-        id: "gold",
-        tier: "03  Gold",
-        name: "Gold",
-        nameItalic: "plan",
-        tagline: "Fitting your individual needs",
-        monthlyPrice: 29.9,
-        yearlyMonthPrice: 24.9,
-        yearlyPrice: 298.8,
-        features: [
-            "Everything in Premium",
-            "Up to 100 video calls per day",
-            "Profile boost every week",
-            "Standard support",
-        ],
-    },
-];
 
 // ─── Billing Toggle ───────────────────────────────────────────────────────────
 
