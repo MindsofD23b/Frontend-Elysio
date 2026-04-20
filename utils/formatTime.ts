@@ -15,7 +15,3 @@ export function formatTime(isoString: string) {
         return date.toLocaleDateString();
     }
 }
-
-export function minToMs(min: number) {
-    return min * 60 * 1000;
-}

@@ -28,7 +28,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { FlashList, FlashListRef } from "@shopify/flash-list";
+import { FlashList } from "@shopify/flash-list";
 import {
     Message,
     RoomMessagesResponse,
@@ -58,7 +58,7 @@ export default function ChatsScreen() {
     const scrollButtonOpacity = useRef(new Animated.Value(0)).current;
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const scrollRef = useRef<FlashListRef<MessageWithMeta>>(null);
+    const scrollRef = useRef<FlashList<MessageWithMeta>>(null);
     const { token } = useAuth();
     const currentUserId: string | null = token
         ? JSON.parse(atob(token.split(".")[1])).sub
@@ -80,16 +80,6 @@ export default function ChatsScreen() {
         }).start();
     }, [scrollButtonOpacity]);
 
-    const hasScrolledOnLoad = useRef(false);
-
-    useEffect(() => {
-        if (!hasLoadedOnce || hasScrolledOnLoad.current) return;
-        hasScrolledOnLoad.current = true;
-        setTimeout(() => {
-            scrollRef.current?.scrollToOffset({ offset: 999999, animated: false });
-        }, 50);
-    }, [hasLoadedOnce]);
-
     const hideButton = useCallback(() => {
         Animated.spring(scrollButtonOpacity, {
             toValue: 0,
@@ -98,6 +88,27 @@ export default function ChatsScreen() {
             friction: 10,
         }).start(() => setShowScrollButton(false));
     }, [scrollButtonOpacity]);
+
+    // Debounced onScroll Handler — wird maximal alle 150ms ausgewertet
+    // Bei invertierter Liste: offset 0 = ganz unten, grosser offset = weit oben
+    const handleScroll = useCallback(
+        (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+            const offsetY = event.nativeEvent.contentOffset.y;
+
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+
+            debounceTimer.current = setTimeout(() => {
+                if (offsetY > BOTTOM_THRESHOLD) {
+                    showButton();
+                } else {
+                    hideButton();
+                }
+            }, 50);
+        },
+        [showButton, hideButton],
+    );
 
     // Cleanup beim Unmount
     useEffect(() => {
@@ -109,7 +120,7 @@ export default function ChatsScreen() {
     }, []);
 
     const scrollToBottom = useCallback(() => {
-        scrollRef.current?.scrollToEnd({ animated: true });
+        scrollRef.current?.scrollToOffset({ offset: 0, animated: true });
     }, []);
 
     const startConversation = useCallback(() => {
@@ -189,7 +200,8 @@ export default function ChatsScreen() {
         try {
             const data = await run(undefined, `/chat/rooms/${id}/messages?limit=30`);
             const decrypted = await decryptBatch(data.messages);
-            setDecryptedMessages(attachSameMinute([...decrypted].reverse()));
+
+            setDecryptedMessages(attachSameMinute([...decrypted]));
             setNextCursor(data.nextCursor);
             setHasMore(data.hasMore);
         } catch (err) {
@@ -210,9 +222,7 @@ export default function ChatsScreen() {
             );
             const decrypted = await decryptBatch(data.messages);
 
-            setDecryptedMessages((prev) =>
-                attachSameMinute([...decrypted].reverse().concat(prev)),
-            );
+            setDecryptedMessages((prev) => attachSameMinute([...prev, ...decrypted]));
             setNextCursor(data.nextCursor);
             setHasMore(data.hasMore);
         } catch (err) {
@@ -221,38 +231,6 @@ export default function ChatsScreen() {
             setLoadingMore(false);
         }
     }, [hasMore, loadingMore, nextCursor, run, id]);
-
-    const handleScroll = useCallback(
-        (event: {
-            nativeEvent: {
-                contentOffset: { y: number };
-                contentSize: { height: number };
-                layoutMeasurement: { height: number };
-            };
-        }) => {
-            const offsetY = event.nativeEvent.contentOffset.y;
-            const contentHeight = event.nativeEvent.contentSize.height;
-            const layoutHeight = event.nativeEvent.layoutMeasurement.height;
-
-            if (debounceTimer.current) clearTimeout(debounceTimer.current);
-
-            debounceTimer.current = setTimeout(() => {
-                // load older messages when near top
-                if (offsetY < 100) {
-                    loadOlderMessages();
-                }
-
-                // scroll to bottom button
-                const distanceFromBottom = contentHeight - layoutHeight - offsetY;
-                if (distanceFromBottom > BOTTOM_THRESHOLD) {
-                    showButton();
-                } else {
-                    hideButton();
-                }
-            }, 50);
-        },
-        [showButton, hideButton, loadOlderMessages],
-    );
 
     useEffect(() => {
         if (!token) return;
@@ -279,7 +257,6 @@ export default function ChatsScreen() {
             });
 
             setDecryptedMessages((prev) => [
-                ...prev,
                 {
                     id: sent.id,
                     senderId: sent.senderId,
@@ -287,8 +264,8 @@ export default function ChatsScreen() {
                     createdAt: sent.createdAt,
                     hideTime: false,
                 },
+                ...prev,
             ]);
-            setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
         } catch (e: unknown) {
             console.error("Send error:", e);
             setMessage(text);
@@ -296,7 +273,6 @@ export default function ChatsScreen() {
             setSending(false);
         }
     };
-
     useRoomSocket(id, async (incoming) => {
         if (incoming.senderId === currentUserId) return;
 
@@ -330,20 +306,19 @@ export default function ChatsScreen() {
                 hideTime: false,
             },
         ]);
-        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     });
 
     function attachSameMinute(messages: Message[]): MessageWithMeta[] {
         return messages.map((msg, i) => {
-            const prev = messages[i - 1]; // previous = older message
+            const next = messages[i - 1]; // inverted so previous index
             const sameMinute =
-                !!prev &&
-                prev.senderId === msg.senderId &&
-                new Date(prev.createdAt).getMinutes() ===
+                !!next &&
+                next.senderId === msg.senderId &&
+                new Date(next.createdAt).getMinutes() ===
                     new Date(msg.createdAt).getMinutes() &&
-                new Date(prev.createdAt).getHours() ===
+                new Date(next.createdAt).getHours() ===
                     new Date(msg.createdAt).getHours() &&
-                new Date(prev.createdAt).getDate() === new Date(msg.createdAt).getDate();
+                new Date(next.createdAt).getDate() === new Date(msg.createdAt).getDate();
             return { ...msg, hideTime: sameMinute } as MessageWithMeta;
         });
     }
@@ -429,13 +404,17 @@ export default function ChatsScreen() {
                             <FlashList
                                 ref={scrollRef}
                                 data={decryptedMessages}
-                                style={{ flex: 1 }}
                                 renderItem={renderMessage}
-                                keyExtractor={(item) => item.id}
-                                maintainVisibleContentPosition={{
-                                    startRenderingFromBottom: true,
+                                overrideItemLayout={(layout, item) => {
+                                    layout.size = item.hideTime ? 44 : 68;
                                 }}
+                                estimatedItemSize={72}
+                                keyExtractor={(item) => item.id}
+                                onEndReached={loadOlderMessages}
+                                onEndReachedThreshold={0.6}
                                 onScroll={handleScroll}
+                                scrollEventThrottle={16}
+                                inverted
                                 drawDistance={5000}
                                 ListHeaderComponent={
                                     loadingMore ? (
@@ -447,6 +426,7 @@ export default function ChatsScreen() {
                                 }
                                 contentContainerStyle={{ paddingBottom: 12 }}
                             />
+
                             {/* Scroll-to-bottom Button */}
                             {showScrollButton && (
                                 <Animated.View

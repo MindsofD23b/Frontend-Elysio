@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { initCrypto } from "@/services/chat-crypto.client";
 import { get } from "@/utils/store";
 import { initDeviceToken } from "@/services/notifications";
 
@@ -24,6 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
                 setToken(storedToken);
+
+                if (storedToken) {
+                    await initCrypto(BASE_URL, storedToken);
+                }
             } catch (error) {
                 console.error("Failed to load auth token", error);
                 setToken(null);

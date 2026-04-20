@@ -1,6 +1,6 @@
 {
     "expo": {
-        "name": "Elysio - Dating",
+        "name": "Elysio",
         "slug": "elysio",
         "version": "0.0.1",
         "orientation": "portrait",
@@ -13,9 +13,6 @@
                 "NSCameraUsageDescription": "Allow access to camera for video calls",
                 "NSMicrophoneUsageDescription": "Allow access to microphone for calls",
                 "ITSAppUsesNonExemptEncryption": false
-            },
-            "entitlements": {
-                "com.apple.developer.in-app-payments": []
             },
             "bundleIdentifier": "com.mindsofd23b.elysio",
             "usesAppleSignIn": true

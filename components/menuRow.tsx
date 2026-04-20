@@ -2,28 +2,26 @@ import { useTheme } from "@/lib/theme/context";
 import { Href, router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-type MenuRowProps = {
-    icon: React.ElementType;
-    label: string;
-    divider: string;
-    iconColor: string;
-    textColor: string;
-} & ({ onPress: () => void; href?: never } | { href: Href; onPress?: never });
-
 export function MenuRow({
     icon: Icon,
     label,
     divider,
     iconColor,
     textColor,
-    onPress,
     href,
-}: MenuRowProps) {
+}: {
+    icon: React.ElementType;
+    label: string;
+    divider: string;
+    iconColor: string;
+    textColor: string;
+    href: Href;
+}) {
     const { theme } = useTheme();
 
     return (
         <Pressable
-            onPress={onPress || (() => router.push(href))}
+            onPress={() => router.push(href)}
             style={({ pressed }) => [
                 styles.row,
                 { borderBottomColor: divider, width: "100%" },

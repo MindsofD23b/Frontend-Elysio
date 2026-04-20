@@ -9,7 +9,6 @@ interface ChatComponentProps {
     chat: Chat;
     onPress: () => void;
 }
-
 // Design made with Pinterest and ChatGPT
 export default function ChatComponent({ chat, onPress }: ChatComponentProps) {
     const { theme } = useTheme();
@@ -52,7 +51,7 @@ export default function ChatComponent({ chat, onPress }: ChatComponentProps) {
                         <Text style={styles.time}>{formatTime(chat.updatedAt)}</Text>
                     </View>
 
-                    <Text style={styles.message} numberOfLines={2}>
+                    <Text style={styles.message}>
                         {chat.lastMessage ? chat.lastMessage : "No messages yet"}
                     </Text>
                 </View>

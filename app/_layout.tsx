@@ -2,22 +2,11 @@ import { Slot } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
-import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { View, LogBox, Platform } from "react-native";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { useCallback, useEffect, useState } from "react";
+import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
-import { useCacheFetch } from "@/hooks/useCacheFetch";
-import { minToMs } from "@/utils/formatTime";
 import * as Sentry from "@sentry/react-native";
-import Purchases, { LOG_LEVEL } from "react-native-purchases";
-import { initCrypto } from "@/services/chat-crypto.client";
-import OutageScreen from "@/app/(auth)/outage";
-import UpdateScreen from "@/app/(auth)/update";
-
-const SERVER_URL = "https://elysio.jamiepoeffel.ch";
-const SERVER_CHECK_INTERVAL = 20_000;
-
-LogBox.ignoreAllLogs();
 
 Sentry.init({
     dsn: "https://4661a597143882ddcad75b48f4e69f4d@o4511231190761472.ingest.de.sentry.io/4511231191810128",
@@ -41,131 +30,43 @@ Sentry.init({
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppContent() {
+    return <Slot />;
+}
+
+export default Sentry.wrap(function RootLayout() {
     const [appIsReady, setAppIsReady] = useState(false);
-    const [serverStatus, setServerStatus] = useState<
-        "pending" | "ok" | "down" | "update"
-    >("pending");
-    const [updateDuration, setUpdateDuration] = useState<string | undefined>(undefined);
-    const { isLoading, token } = useAuth();
-    const serverCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-    async function checkServer() {
-        try {
-            const res = await fetch(SERVER_URL, { method: "GET", cache: "no-store" });
-            const text = await res.text();
-            const trimmed = text.trim();
-            if (res.ok && trimmed === "Hello World!") {
-                setServerStatus("ok");
-            } else if (trimmed.startsWith("update")) {
-                const parts = trimmed.split(" ");
-                setUpdateDuration(parts[1] ?? undefined);
-                setServerStatus("update");
-            } else {
-                setServerStatus("down");
-            }
-        } catch {
-            setServerStatus("down");
-        }
-    }
 
     useEffect(() => {
-        checkServer();
-        serverCheckRef.current = setInterval(checkServer, SERVER_CHECK_INTERVAL);
-        return () => {
-            if (serverCheckRef.current) clearInterval(serverCheckRef.current);
-        };
-    }, []);
-
-    const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
-    const [, , cache] = useCacheFetch("/chat/rooms", chatRequest, {
-        cacheKey: "chat:rooms",
-        useCache: true,
-        ttlMs: minToMs(10),
-    });
-
-    async function getCustomerInfo() {
-        try {
-            const customerInfo = await Purchases.getCustomerInfo();
-            console.log("Customer Info:", customerInfo);
-        } catch (error) {
-            console.error("Error fetching customer info:", error);
-        }
-    }
-
-    async function getOfferings() {
-        const offerings = await Purchases.getOfferings();
-
-        if (
-            offerings.current !== null &&
-            offerings.current.availablePackages.length !== 0
-        ) {
-            console.log("Offerings:", JSON.stringify(offerings, null, 2));
-        }
-    }
-
-    useEffect(() => {
-        if (isLoading || serverStatus !== "ok") return;
-
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-
-        if (Platform.OS === "ios") {
-            Purchases.configure({
-                apiKey: "appl_HHPNNqzuCyRKMvuLLtZFloXfaIA",
-            });
-        } else if (Platform.OS === "android") {
-            Purchases.configure({
-                apiKey: "goog_vuioAmQKQpPnwGqxktfBuiqAKfz",
-            });
-        }
-
-        getCustomerInfo();
-        getOfferings();
-
         async function prepare() {
             try {
-                if (token) {
-                    await initCrypto(SERVER_URL, token);
-                    await cache();
-                }
-            } catch {
+                await new Promise((resolve) => setTimeout(resolve, 500));
             } finally {
                 setAppIsReady(true);
             }
         }
-        prepare();
-    }, [isLoading, token, serverStatus]);
 
-    useEffect(() => {
+        prepare();
+    }, []);
+
+    const onLayoutRootView = useCallback(async () => {
         if (appIsReady) {
-            SplashScreen.hideAsync().catch(() => {});
+            await SplashScreen.hideAsync();
         }
     }, [appIsReady]);
 
-    if (serverStatus === "pending") return null;
-
-    if (serverStatus === "down") return <OutageScreen />;
-
-    if (serverStatus === "update") return <UpdateScreen duration={updateDuration} />;
-
-    if (!appIsReady || isLoading) return null;
+    if (!appIsReady) return null;
 
     return (
-        <View style={{ flex: 1 }}>
-            <Slot />
+        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+            <AuthProvider>
+                <BaseTheme>
+                    <SafeAreaProvider>
+                        <SafeAreaWrapper>
+                            <AppContent />
+                        </SafeAreaWrapper>
+                    </SafeAreaProvider>
+                </BaseTheme>
+            </AuthProvider>
         </View>
-    );
-}
-
-export default Sentry.wrap(function RootLayout() {
-    return (
-        <AuthProvider>
-            <BaseTheme>
-                <SafeAreaProvider>
-                    <SafeAreaWrapper>
-                        <AppContent />
-                    </SafeAreaWrapper>
-                </SafeAreaProvider>
-            </BaseTheme>
-        </AuthProvider>
     );
 });
