@@ -28,12 +28,11 @@ export default function AddProfileDataPage() {
     const [language, setLanguage] = useState(
         data.language || getLocales()[0]?.languageCode || "en",
     );
-    const fullLanguageName = new Intl.DisplayNames(
-        [getLocales()[0]?.languageTag ?? "en"],
-        {
-            type: "language",
-        },
-    ).of(language);
+    const fullLanguageName = Intl.DisplayNames
+        ? new Intl.DisplayNames([getLocales()[0]?.languageTag ?? "en"], {
+              type: "language",
+          }).of(language)
+        : language;
     const [jobTitle, setJobTitle] = useState(data.jobTitle || "");
     const [aboutMe, setAboutMe] = useState(data.aboutMe || "");
     const [acceptedTerms, setAcceptedTerms] = useState(data.acceptedTerms || false);
