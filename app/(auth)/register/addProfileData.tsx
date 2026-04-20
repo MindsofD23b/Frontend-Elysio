@@ -188,16 +188,37 @@ export default function AddProfileDataPage() {
 
             if (response?.statusCode && response.statusCode >= 400) {
                 setErrors({
-                    general: {
-                        message: response.message || t("fallback.regFailed"),
-                    },
+                    general: { message: response.message || t("fallback.regFailed") },
                 });
                 return;
             }
 
+            // ✅ Upload profile picture if one was picked
+            if (data.profilePictureUri && response?.userId) {
+                try {
+                    const uri = data.profilePictureUri;
+                    const ext = uri.split(".").pop() ?? "jpg";
+                    const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+
+                    const formData = new FormData();
+                    formData.append("file", {
+                        uri,
+                        name: `profile.${ext}`,
+                        type: mimeType,
+                    } as any);
+
+                    await fetch(
+                        `https://elysio.jamiepoeffel.ch/users/${response.userId}/photos`,
+                        {
+                            method: "POST",
+                            body: formData,
+                        },
+                    );
+                } catch {}
+            }
+
             const registeredEmail = data.email;
             reset();
-
             router.replace({
                 pathname: "/register/sendVerificationEmail",
                 params: { email: registeredEmail },

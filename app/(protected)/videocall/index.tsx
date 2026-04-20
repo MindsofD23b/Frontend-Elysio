@@ -1,5 +1,14 @@
-import { useRef, useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    Pressable,
+    Alert,
+    ScrollView,
+    Animated,
+    Easing,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
 import * as mediasoupClient from "mediasoup-client";
@@ -12,10 +21,414 @@ import {
 } from "@expo/vector-icons";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useTheme } from "@/lib/theme/context";
 
 registerGlobals();
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
+
+// ─── Hardcoded data (replace later) ────────────────────────────────────────
+
+const CAMERAS = [
+    { id: "front", label: "Front camera" },
+    { id: "back", label: "Back camera" },
+];
+
+const MICROPHONES = [
+    { id: "default", label: "Built-in microphone" },
+    { id: "headset", label: "Headset microphone" },
+];
+
+const INTERESTS = [
+    "Music",
+    "Travel",
+    "Gaming",
+    "Fitness",
+    "Art",
+    "Photography",
+    "Movies",
+    "Cooking",
+    "Tech",
+    "Books",
+    "Hiking",
+    "Fashion",
+    "Sports",
+    "Design",
+    "Languages",
+];
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+type AppScreen = "setup" | "connecting" | "call";
+
+// ─── Loader dot component ────────────────────────────────────────────────────
+
+function PulsingDots() {
+    const dot0 = useRef(new Animated.Value(0)).current;
+    const dot1 = useRef(new Animated.Value(0)).current;
+    const dot2 = useRef(new Animated.Value(0)).current;
+    const dots = [dot0, dot1, dot2];
+
+    useEffect(() => {
+        const animations = dots.map((dot, i) =>
+            Animated.loop(
+                Animated.sequence([
+                    Animated.delay(i * 160),
+                    Animated.timing(dot, {
+                        toValue: 1,
+                        duration: 420,
+                        easing: Easing.inOut(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(dot, {
+                        toValue: 0,
+                        duration: 420,
+                        easing: Easing.inOut(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                    Animated.delay((dots.length - i - 1) * 160),
+                ]),
+            ),
+        );
+        Animated.parallel(animations).start();
+        return () => animations.forEach((a) => a.stop());
+    }, [dot0, dot1, dot2]);
+
+    return (
+        <View style={loaderStyles.dotsRow}>
+            {dots.map((dot, i) => (
+                <Animated.View
+                    key={i}
+                    style={[
+                        loaderStyles.dot,
+                        {
+                            transform: [
+                                {
+                                    scale: dot.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: [0.6, 1.2],
+                                    }),
+                                },
+                            ],
+                            opacity: dot.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.3, 1],
+                            }),
+                        },
+                    ]}
+                />
+            ))}
+        </View>
+    );
+}
+
+// ─── Setup screen ────────────────────────────────────────────────────────────
+
+const makeSetupStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+    StyleSheet.create({
+        root: {
+            flex: 1,
+            backgroundColor: "#0b0b0b",
+        },
+        scroll: {
+            paddingHorizontal: 24,
+            paddingTop: 12,
+            paddingBottom: 48,
+        },
+        header: {
+            marginBottom: 36,
+        },
+        title: {
+            color: "#fff",
+            fontSize: 28,
+            fontWeight: "700",
+            letterSpacing: -0.5,
+            marginBottom: 6,
+        },
+        subtitle: {
+            color: "#777",
+            fontSize: 15,
+        },
+        section: {
+            marginBottom: 28,
+        },
+        sectionHeader: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 12,
+        },
+        sectionLabel: {
+            color: "#bbb",
+            fontSize: 13,
+            fontWeight: "600",
+            letterSpacing: 0.3,
+            textTransform: "uppercase",
+        },
+        sectionLabelMuted: {
+            color: "#555",
+            fontWeight: "400",
+            textTransform: "none",
+            fontSize: 12,
+        },
+        pillRow: {
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+        },
+        pill: {
+            paddingHorizontal: 14,
+            paddingVertical: 9,
+            borderRadius: 10,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#2a2a2a",
+        },
+        pillActive: {
+            backgroundColor: theme.primary,
+            borderColor: theme.primary,
+        },
+        pillText: {
+            color: "#888",
+            fontSize: 14,
+            fontWeight: "500",
+        },
+        pillTextActive: {
+            color: "#fff",
+        },
+        interestGrid: {
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+        },
+        interestTag: {
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 13,
+            paddingVertical: 8,
+            borderRadius: 20,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#2a2a2a",
+        },
+        interestTagActive: {
+            backgroundColor: "#1c1c1c",
+            borderColor: theme.primary,
+        },
+        interestText: {
+            color: "#666",
+            fontSize: 14,
+            fontWeight: "500",
+        },
+        interestTextActive: {
+            color: "#fff",
+        },
+        cta: {
+            marginTop: 16,
+            backgroundColor: theme.primary,
+            borderRadius: 16,
+            paddingVertical: 16,
+            paddingHorizontal: 24,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+        },
+        ctaText: {
+            color: "#fff",
+            fontSize: 16,
+            fontWeight: "700",
+        },
+    });
+
+function SetupScreen({
+    onConnect,
+}: {
+    onConnect: (camera: string, mic: string, interests: string[]) => void;
+}) {
+    const [selectedCamera, setSelectedCamera] = useState(CAMERAS[0].id);
+    const [selectedMic, setSelectedMic] = useState(MICROPHONES[0].id);
+    const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+    const { theme } = useTheme();
+    const setupStyles = useMemo(() => makeSetupStyles(theme), [theme]);
+
+    function toggleInterest(interest: string) {
+        setSelectedInterests((prev) =>
+            prev.includes(interest)
+                ? prev.filter((i) => i !== interest)
+                : [...prev, interest],
+        );
+    }
+
+    return (
+        <SafeAreaView style={setupStyles.root}>
+            <ScrollView
+                contentContainerStyle={setupStyles.scroll}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Header */}
+                <View style={setupStyles.header}>
+                    <Text style={setupStyles.title}>Ready to connect?</Text>
+                    <Text style={setupStyles.subtitle}>
+                        Set up your devices and pick your interests
+                    </Text>
+                </View>
+
+                {/* Camera */}
+                <View style={setupStyles.section}>
+                    <View style={setupStyles.sectionHeader}>
+                        <Ionicons name="videocam-outline" size={16} color="#888" />
+                        <Text style={setupStyles.sectionLabel}>Camera</Text>
+                    </View>
+                    <View style={setupStyles.pillRow}>
+                        {CAMERAS.map((cam) => (
+                            <Pressable
+                                key={cam.id}
+                                style={[
+                                    setupStyles.pill,
+                                    selectedCamera === cam.id && setupStyles.pillActive,
+                                ]}
+                                onPress={() => setSelectedCamera(cam.id)}
+                            >
+                                <Text
+                                    style={[
+                                        setupStyles.pillText,
+                                        selectedCamera === cam.id &&
+                                            setupStyles.pillTextActive,
+                                    ]}
+                                >
+                                    {cam.label}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Microphone */}
+                <View style={setupStyles.section}>
+                    <View style={setupStyles.sectionHeader}>
+                        <Feather name="mic" size={15} color="#888" />
+                        <Text style={setupStyles.sectionLabel}>Microphone</Text>
+                    </View>
+                    <View style={setupStyles.pillRow}>
+                        {MICROPHONES.map((mic) => (
+                            <Pressable
+                                key={mic.id}
+                                style={[
+                                    setupStyles.pill,
+                                    selectedMic === mic.id && setupStyles.pillActive,
+                                ]}
+                                onPress={() => setSelectedMic(mic.id)}
+                            >
+                                <Text
+                                    style={[
+                                        setupStyles.pillText,
+                                        selectedMic === mic.id &&
+                                            setupStyles.pillTextActive,
+                                    ]}
+                                >
+                                    {mic.label}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Interests */}
+                <View style={setupStyles.section}>
+                    <View style={setupStyles.sectionHeader}>
+                        <Ionicons name="sparkles-outline" size={16} color="#888" />
+                        <Text style={setupStyles.sectionLabel}>
+                            Interests{" "}
+                            <Text style={setupStyles.sectionLabelMuted}>
+                                · match with people like you
+                            </Text>
+                        </Text>
+                    </View>
+                    <View style={setupStyles.interestGrid}>
+                        {INTERESTS.map((interest) => {
+                            const active = selectedInterests.includes(interest);
+                            return (
+                                <Pressable
+                                    key={interest}
+                                    style={[
+                                        setupStyles.interestTag,
+                                        active && setupStyles.interestTagActive,
+                                    ]}
+                                    onPress={() => toggleInterest(interest)}
+                                >
+                                    {active && (
+                                        <Ionicons
+                                            name="checkmark"
+                                            size={12}
+                                            color="#fff"
+                                            style={{ marginRight: 4 }}
+                                        />
+                                    )}
+                                    <Text
+                                        style={[
+                                            setupStyles.interestText,
+                                            active && setupStyles.interestTextActive,
+                                        ]}
+                                    >
+                                        {interest}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+                </View>
+
+                {/* CTA */}
+                <Pressable
+                    style={setupStyles.cta}
+                    onPress={() =>
+                        onConnect(selectedCamera, selectedMic, selectedInterests)
+                    }
+                >
+                    <Text style={setupStyles.ctaText}>Find a match</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                </Pressable>
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
+
+// ─── Connecting screen ───────────────────────────────────────────────────────
+
+function ConnectingScreen({
+    matchState,
+    onCancel,
+}: {
+    matchState: "idle" | "waiting" | "matched";
+    onCancel: () => void;
+}) {
+    const statusLabel =
+        matchState === "matched"
+            ? "Match found! Connecting…"
+            : matchState === "waiting"
+              ? "Looking for someone…"
+              : "Connecting to matchmaking…";
+
+    return (
+        <SafeAreaView style={connectingStyles.root}>
+            <View style={connectingStyles.card}>
+                <PulsingDots />
+                <Text style={connectingStyles.label}>{statusLabel}</Text>
+                {matchState === "waiting" && (
+                    <Text style={connectingStyles.hint}>
+                        This usually takes a few seconds
+                    </Text>
+                )}
+            </View>
+            <Pressable style={connectingStyles.cancelBtn} onPress={onCancel}>
+                <Text style={connectingStyles.cancelText}>Cancel</Text>
+            </Pressable>
+        </SafeAreaView>
+    );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 
 export default function VideoCall() {
     const ICEBREAKERS = [
@@ -38,7 +451,8 @@ export default function VideoCall() {
     );
 
     const { token } = useAuth();
-    const [started, setStarted] = useState(false);
+
+    const [screen, setScreen] = useState<AppScreen>("setup");
     const [localUrl, setLocalUrl] = useState<string | null>(null);
     const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
     const roomIdRef = useRef<string | null>(null);
@@ -63,12 +477,14 @@ export default function VideoCall() {
 
     const [matchmakingReady, setMatchmakingReady] = useState(false);
     const [matchState, setMatchState] = useState<"idle" | "waiting" | "matched">("idle");
-    const [matchedUserId, setMatchedUserId] = useState<string | null>(null);
+    const [_matchedUserId, setMatchedUserId] = useState<string | null>(null);
     const [gatewayRoomId, setGatewayRoomId] = useState<string | null>(null);
 
     const matchmakingSocketRef = useRef<Socket | null>(null);
-
     const stopTracksRef = useRef<() => void>(() => {});
+
+    // Track whether user has intentionally started connecting
+    const connectingIntentRef = useRef(false);
 
     const [, , , _activateMatchmakingRequest] = useAuthFetch<{
         type: "waiting" | "matched";
@@ -92,22 +508,9 @@ export default function VideoCall() {
         deactivateMatchmakingRef.current = _deactivateMatchmakingRequest;
     }, [_deactivateMatchmakingRequest]);
 
-    // const [, , , joinRoomRequest] = useAuthFetch<any>(
-    //     `/video/room/${roomIdRef.current}/join`,
-    //     { method: "POST" },
-    //     { manual: true, useCache: false },
-    // );
-
-    // const [, , , dynamicRequest] = useAuthFetch<any>(
-    //     "/video",
-    //     { method: "POST" },
-    //     { manual: true, useCache: false },
-    // );
-
     const api = useCallback(
         async (path: string, options?: RequestInit) => {
             if (!token) throw new Error("Unauthorized");
-
             const url = `${BASE_URL}${path}`;
             try {
                 const res = await fetch(url, {
@@ -126,14 +529,10 @@ export default function VideoCall() {
                           }
                         : {}),
                 });
-
                 const text = await res.text();
-                console.log("API RESPONSE:", res.status, text);
-
                 if (!res.ok) throw new Error(`${res.status} ${text}`);
                 return text ? JSON.parse(text) : {};
             } catch (error) {
-                console.log("API FETCH FAILED:", url, error);
                 throw error;
             }
         },
@@ -141,11 +540,7 @@ export default function VideoCall() {
     );
 
     const connectMatchmakingGateway = useCallback(async () => {
-        if (!token) {
-            console.log("No JWT token found for matchmaking socket");
-            return;
-        }
-
+        if (!token) return;
         if (matchmakingSocketRef.current?.connected) return;
 
         const socket = io(BASE_URL, {
@@ -157,30 +552,19 @@ export default function VideoCall() {
         matchmakingSocketRef.current = socket;
 
         socket.on("connect", () => console.log("Matchmaking socket connected"));
-        socket.on("connect_error", (err) => {
-            console.log("Matchmaking connect_error:", err.message, err);
-        });
-        socket.on("disconnect", (reason) => {
-            console.log("Matchmaking socket disconnected:", reason);
-            setMatchmakingReady(false);
-        });
-        socket.on("socket_ready", (payload) => {
-            console.log("socket_ready", payload);
-            setMatchmakingReady(true);
-        });
-        socket.on("queue_waiting", (payload) => {
-            console.log("queue_waiting", payload);
-            setMatchState("waiting");
-        });
+        socket.on("connect_error", (err) =>
+            console.log("Matchmaking connect_error:", err.message),
+        );
+        socket.on("disconnect", () => setMatchmakingReady(false));
+        socket.on("socket_ready", () => setMatchmakingReady(true));
+        socket.on("queue_waiting", () => setMatchState("waiting"));
         socket.on("match_found", (payload: { matchedUserId: string; roomId: string }) => {
-            console.log("match_found", payload);
             setMatchState("matched");
             setMatchedUserId(payload.matchedUserId);
             setGatewayRoomId(payload.roomId);
             updateRoomId(payload.roomId);
         });
         socket.on("room_ready", (payload: { roomId: string }) => {
-            console.log("room_ready", payload);
             setGatewayRoomId(payload.roomId);
             updateRoomId(payload.roomId);
         });
@@ -190,7 +574,6 @@ export default function VideoCall() {
         async (producerId: string) => {
             const recvTransport = recvTransportRef.current;
             const device = deviceRef.current;
-
             if (!recvTransport || !device) return;
             if (consumedProducerIdsRef.current.has(producerId)) return;
             if (consumingProducerIdsRef.current.has(producerId)) return;
@@ -246,7 +629,6 @@ export default function VideoCall() {
     const createRecvTransport = useCallback(
         async (device: any) => {
             const currentRoomId = getRoomIdOrThrow();
-
             const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
@@ -297,7 +679,6 @@ export default function VideoCall() {
     const createSendTransportAndProduce = useCallback(
         async (device: any, localStream: any) => {
             const currentRoomId = getRoomIdOrThrow();
-
             const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
                 method: "POST",
                 body: JSON.stringify({ peerId: peerIdRef.current }),
@@ -366,7 +747,6 @@ export default function VideoCall() {
 
             const audioTrack = localStream.getAudioTracks()[0];
             const videoTrack = localStream.getVideoTracks()[0];
-
             if (audioTrack) await sendTransport.produce({ track: audioTrack });
             if (videoTrack) await sendTransport.produce({ track: videoTrack });
         },
@@ -375,12 +755,10 @@ export default function VideoCall() {
 
     const consumeExistingProducers = useCallback(async () => {
         const currentRoomId = getRoomIdOrThrow();
-
         const producers = await api(
             `/video/room/${currentRoomId}/producers?peerId=${peerIdRef.current}`,
             { method: "GET" },
         );
-
         for (const producer of producers) {
             if (producer.peerId === peerIdRef.current) continue;
             await consumeProducer(producer.producerId);
@@ -388,13 +766,10 @@ export default function VideoCall() {
     }, [api, consumeProducer]);
 
     const startCall = useCallback(async () => {
-        if (startingRef.current || started) return;
+        if (startingRef.current || screen === "call") return;
 
         const currentRoomId = roomIdRef.current;
-        if (!currentRoomId) {
-            Alert.alert("No room", "Room ID is missing.");
-            return;
-        }
+        if (!currentRoomId) return;
 
         startingRef.current = true;
 
@@ -452,13 +827,13 @@ export default function VideoCall() {
                 consumeExistingProducers().catch(console.error);
             }, 2000);
 
-            setStarted(true);
+            setScreen("call");
         } catch (error) {
             console.error("startCall error", error);
             startingRef.current = false;
         }
     }, [
-        started,
+        screen,
         api,
         consumeProducer,
         createRecvTransport,
@@ -469,11 +844,7 @@ export default function VideoCall() {
     const activateMatchmaking = useCallback(async () => {
         try {
             const data = await activateMatchmakingRef.current();
-
-            if (data.type === "waiting") {
-                setMatchState("waiting");
-            }
-
+            if (data.type === "waiting") setMatchState("waiting");
             if (data.type === "matched") {
                 setMatchState("matched");
                 setMatchedUserId(data.matchedUserId ?? null);
@@ -484,15 +855,15 @@ export default function VideoCall() {
             }
         } catch (error) {
             console.error("activateMatchmaking error", error);
-            Alert.alert("Matchmaking", "Could not activate matchmaking.");
         }
     }, []);
 
     const stopCall = useCallback(async () => {
         localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
         localStreamRef.current = null;
-
         startingRef.current = false;
+        connectingIntentRef.current = false;
+
         socketRef.current?.disconnect();
         socketRef.current = null;
 
@@ -503,16 +874,12 @@ export default function VideoCall() {
                     method: "DELETE",
                     body: JSON.stringify({ peerId: peerIdRef.current }),
                 });
-            } catch (err) {
-                console.error("leave error", err);
-            }
+            } catch {}
         }
 
         try {
             await deactivateMatchmakingRef.current();
-        } catch (err) {
-            console.error("deactivate matchmaking error", err);
-        }
+        } catch {}
 
         sendTransportRef.current?.close();
         recvTransportRef.current?.close();
@@ -533,20 +900,36 @@ export default function VideoCall() {
 
         setLocalUrl(null);
         setRemoteUrl(null);
-        setStarted(false);
         setGatewayRoomId(null);
         setMatchedUserId(null);
         setMatchState("idle");
+        setMatchmakingReady(false);
         roomIdRef.current = null;
+
+        // Disconnect and clear matchmaking socket so a fresh one is created next time
+        matchmakingSocketRef.current?.disconnect();
+        matchmakingSocketRef.current = null;
+
+        setScreen("setup");
     }, [api]);
+
+    // Called when user taps "Find a match"
+    const handleStartConnecting = useCallback(
+        async (_camera: string, _mic: string, _interests: string[]) => {
+            connectingIntentRef.current = true;
+            setScreen("connecting");
+            await connectMatchmakingGateway();
+        },
+        [connectMatchmakingGateway],
+    );
 
     function toggleMute() {
         const stream = localStreamRef.current;
         if (!stream) return;
         const nextMuted = !isMuted;
-        stream.getAudioTracks().forEach((track: MediaStreamTrack) => {
-            track.enabled = !nextMuted;
-        });
+        stream
+            .getAudioTracks()
+            .forEach((track: MediaStreamTrack) => (track.enabled = !nextMuted));
         setIsMuted(nextMuted);
     }
 
@@ -569,15 +952,12 @@ export default function VideoCall() {
     function handleLike() {
         Alert.alert("Liked", "User wurde geliked.");
     }
-
     function handleNextUser() {
         Alert.alert("Next user", "Hier kannst du den nächsten Match laden.");
     }
-
     function handleReaction() {
         Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
     }
-
     function handleIcebreaker() {
         setIcebreakerIndex((prev) => {
             let next;
@@ -588,65 +968,19 @@ export default function VideoCall() {
         });
     }
 
-    useEffect(() => {
-        const init = async () => {
-            try {
-                await connectMatchmakingGateway();
-            } catch (error) {
-                console.error("VideoCall init error", error);
-            }
-        };
-
-        init().catch((error) => console.error("init error", error));
-
-        const matchmakingSocket = matchmakingSocketRef.current;
-        const callSocket = socketRef.current;
-        const sendTransport = sendTransportRef.current;
-        const recvTransport = recvTransportRef.current;
-        const consumers = consumersRef.current;
-        const consumedProducerIds = consumedProducerIdsRef.current;
-        const consumingProducerIds = consumingProducerIdsRef.current;
-
-        return () => {
-            stopTracksRef.current();
-            stopCall();
-            matchmakingSocket?.disconnect();
-            callSocket?.disconnect();
-            sendTransport?.close();
-            recvTransport?.close();
-            consumers.forEach((consumer) => {
-                try {
-                    consumer.close();
-                } catch {}
-            });
-            consumers.clear();
-            consumedProducerIds.clear();
-            consumingProducerIds.clear();
-            matchmakingSocketRef.current = null;
-            socketRef.current = null;
-            sendTransportRef.current = null;
-            recvTransportRef.current = null;
-            localStreamRef.current = null;
-            remoteStreamRef.current = new MediaStream();
-            remoteVideoStreamRef.current = null;
-            roomIdRef.current = null;
-        };
-    }, [connectMatchmakingGateway, stopCall]);
-
+    // Activate matchmaking once socket is ready (only when connecting screen is shown)
     useEffect(() => {
         if (!matchmakingReady) return;
-        activateMatchmaking().catch((error) => {
-            console.error("activateMatchmaking effect error", error);
-        });
+        if (!connectingIntentRef.current) return;
+        activateMatchmaking().catch(console.error);
     }, [matchmakingReady, activateMatchmaking]);
 
+    // Start call once we have a room
     useEffect(() => {
         if (!gatewayRoomId) return;
-        if (started || startingRef.current) return;
-        startCall().catch((error) => {
-            console.error("startCall effect error", error);
-        });
-    }, [gatewayRoomId, started, startCall]);
+        if (screen === "call" || startingRef.current) return;
+        startCall().catch(console.error);
+    }, [gatewayRoomId, screen, startCall]);
 
     useEffect(() => {
         stopTracksRef.current = () => {
@@ -654,32 +988,39 @@ export default function VideoCall() {
         };
     });
 
-    if (!started) {
-        return (
-            <SafeAreaView style={styles.startContainer}>
-                <Text style={styles.gatewayStatus}>
-                    Matchmaking socket: {matchmakingReady ? "connected" : "disconnected"}
-                </Text>
-                <Text style={styles.gatewayStatus}>Match state: {matchState}</Text>
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            stopTracksRef.current();
+            matchmakingSocketRef.current?.disconnect();
+            socketRef.current?.disconnect();
+            sendTransportRef.current?.close();
+            recvTransportRef.current?.close();
+            const consumers = consumersRef.current;
+            const consumed = consumedProducerIdsRef.current;
+            const consuming = consumingProducerIdsRef.current;
+            consumers.forEach((c) => {
+                try {
+                    c.close();
+                } catch {}
+            });
+            consumers.clear();
+            consumed.clear();
+            consuming.clear();
+        };
+    }, []);
 
-                {matchedUserId && (
-                    <Text style={styles.gatewayStatus}>
-                        Matched user: {matchedUserId}
-                    </Text>
-                )}
+    // ── Screens ────────────────────────────────────────────────────────────
 
-                {gatewayRoomId && (
-                    <Text style={styles.gatewayStatus}>
-                        Gateway room: {gatewayRoomId}
-                    </Text>
-                )}
-                <Text style={styles.startTitle}>Ready for call</Text>
-                <Pressable style={styles.startButton} onPress={startCall}>
-                    <Text style={styles.startButtonText}>Start video call</Text>
-                </Pressable>
-            </SafeAreaView>
-        );
+    if (screen === "setup") {
+        return <SetupScreen onConnect={handleStartConnecting} />;
     }
+
+    if (screen === "connecting") {
+        return <ConnectingScreen matchState={matchState} onCancel={stopCall} />;
+    }
+
+    // ── Call screen (unchanged) ────────────────────────────────────────────
 
     return (
         <SafeAreaView style={styles.container}>
@@ -733,7 +1074,6 @@ export default function VideoCall() {
                                 />
                             }
                         />
-
                         <ControlButton
                             onPress={toggleSpeaker}
                             icon={
@@ -748,7 +1088,6 @@ export default function VideoCall() {
                                 />
                             }
                         />
-
                         <ControlButton
                             onPress={handleLike}
                             variant="success"
@@ -756,13 +1095,11 @@ export default function VideoCall() {
                                 <Ionicons name="heart-outline" size={22} color="#fff" />
                             }
                         />
-
                         <ControlButton
                             onPress={handleNextUser}
                             variant="danger"
                             icon={<Ionicons name="close" size={24} color="#fff" />}
                         />
-
                         <ControlButton
                             onPress={handleReaction}
                             icon={
@@ -773,7 +1110,6 @@ export default function VideoCall() {
                                 />
                             }
                         />
-
                         <ControlButton
                             onPress={handleIcebreaker}
                             icon={
@@ -790,6 +1126,8 @@ export default function VideoCall() {
         </SafeAreaView>
     );
 }
+
+// ─── ControlButton ───────────────────────────────────────────────────────────
 
 function ControlButton({
     onPress,
@@ -813,6 +1151,68 @@ function ControlButton({
         </Pressable>
     );
 }
+// ─── Connecting styles ───────────────────────────────────────────────────────
+
+const connectingStyles = StyleSheet.create({
+    root: {
+        flex: 1,
+        backgroundColor: "#0b0b0b",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 32,
+    },
+    card: {
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 20,
+    },
+    label: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "600",
+        textAlign: "center",
+        letterSpacing: -0.2,
+    },
+    hint: {
+        color: "#555",
+        fontSize: 14,
+        textAlign: "center",
+        marginTop: -8,
+    },
+    cancelBtn: {
+        position: "absolute",
+        bottom: 48,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "#2a2a2a",
+    },
+    cancelText: {
+        color: "#666",
+        fontSize: 15,
+        fontWeight: "500",
+    },
+});
+
+// ─── Loader styles ────────────────────────────────────────────────────────────
+
+const loaderStyles = StyleSheet.create({
+    dotsRow: {
+        flexDirection: "row",
+        gap: 10,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    dot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: "#fff",
+    },
+});
+
+// ─── Call screen styles (unchanged) ──────────────────────────────────────────
 
 const styles = StyleSheet.create({
     container: {
