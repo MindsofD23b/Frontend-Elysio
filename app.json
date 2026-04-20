@@ -62,7 +62,6 @@
             "expo-secure-store",
             "expo-localization",
             "expo-image",
-            "react-native-purchases",
             [
                 "@sentry/react-native/expo",
                 {
