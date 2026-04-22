@@ -26,6 +26,9 @@ import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTheme } from "@/lib/theme/context";
 import { useSafeAreaControl } from "@/components/SafeArea";
+import { useNavigation } from "expo-router";
+import BackWrapper from "@/components/backwrapper";
+import { Theme } from "@/lib/theme/theme";
 
 registerGlobals();
 
@@ -127,22 +130,16 @@ function PulsingDots() {
 
 // ─── Setup screen ────────────────────────────────────────────────────────────
 
-const makeSetupStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+const makeSetupStyles = (theme: Theme) =>
     StyleSheet.create({
-        root: {
-            flex: 1,
-            backgroundColor: "#0b0b0b",
-        },
         scroll: {
-            paddingHorizontal: 24,
-            paddingTop: 12,
             paddingBottom: 48,
         },
         header: {
             marginBottom: 36,
         },
         title: {
-            color: "#fff",
+            color: theme.text,
             fontSize: 28,
             fontWeight: "700",
             letterSpacing: -0.5,
@@ -264,7 +261,7 @@ function SetupScreen({
     }
 
     return (
-        <SafeAreaView style={setupStyles.root}>
+        <BackWrapper m>
             <ScrollView
                 contentContainerStyle={setupStyles.scroll}
                 showsVerticalScrollIndicator={false}
@@ -393,7 +390,7 @@ function SetupScreen({
                     <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </Pressable>
             </ScrollView>
-        </SafeAreaView>
+        </BackWrapper>
     );
 }
 
@@ -434,12 +431,21 @@ function ConnectingScreen({
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function VideoCall() {
-    // const { setDisableSafeArea } = useSafeAreaControl();
+    const { setDisableSafeArea } = useSafeAreaControl();
 
-    // useEffect(() => {
-    //     setDisableSafeArea(true);
-    //     return () => setDisableSafeArea(false);
-    // }, []);
+    const parentNavigation = useNavigation("/(protected)");
+    const navigation = useNavigation();
+
+    useEffect(() => {
+        setDisableSafeArea(true);
+        navigation.setOptions({ gestureEnabled: false });
+        parentNavigation.setOptions({ gestureEnabled: false });
+
+        return () => {
+            setDisableSafeArea(false);
+            parentNavigation.setOptions({ gestureEnabled: true });
+        };
+    }, []);
 
     const ICEBREAKERS = [
         "What's the weirdest thing you've ever eaten?",
@@ -1398,7 +1404,7 @@ const styles = StyleSheet.create({
     },
     topBar: {
         position: "absolute",
-        top: 10,
+        top: 60,
         left: 12,
         right: 12,
         flexDirection: "row",
