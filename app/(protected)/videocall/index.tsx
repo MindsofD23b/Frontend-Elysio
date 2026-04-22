@@ -449,6 +449,7 @@ export default function VideoCall() {
     ];
     const [icebreakerLoading, setIcebreakerLoading] = useState(false);
     const [controlsVisible, setControlsVisible] = useState(true);
+    const controlsOpacity = useRef(new Animated.Value(1)).current;
     const [icebreakerIndex, setIcebreakerIndex] = useState(() =>
         Math.floor(Math.random() * ICEBREAKERS.length),
     );
@@ -969,6 +970,21 @@ export default function VideoCall() {
             .forEach((track: MediaStreamTrack) => (track.enabled = !nextMuted));
         setIsMuted(nextMuted);
     }
+    const isAnimatingRef = useRef(false);
+    function toggleControls() {
+        if (isAnimatingRef.current) return;
+        isAnimatingRef.current = true;
+        const toValue = controlsVisible ? 0 : 1;
+        Animated.timing(controlsOpacity, {
+            toValue,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+        }).start(() => {
+            setControlsVisible((v) => !v);
+            isAnimatingRef.current = false;
+        });
+    }
 
     async function flipCamera() {
         const nextFacing = facingMode === "user" ? "environment" : "user";
@@ -1107,11 +1123,8 @@ export default function VideoCall() {
     // ── Call screen (unchanged) ────────────────────────────────────────────
 
     return (
-        <SafeAreaView style={styles.container}>
-            <Pressable
-                style={styles.videoLayer}
-                onPress={() => setControlsVisible((v) => !v)}
-            >
+        <View style={styles.container}>
+            <Pressable style={styles.videoLayer} onPress={toggleControls}>
                 {remoteUrl ? (
                     <RTCView
                         key={remoteUrl}
@@ -1126,43 +1139,47 @@ export default function VideoCall() {
                     </View>
                 )}
 
-                {localUrl && controlsVisible && (
-                    <Animated.View
-                        style={[
-                            styles.localPreviewWrapper,
-                            { transform: localPreviewAnim.getTranslateTransform() },
-                        ]}
-                        {...panResponder.panHandlers}
-                    >
-                        <RTCView
-                            streamURL={localUrl}
-                            style={styles.localPreview}
-                            objectFit="cover"
-                            mirror={facingMode === "user"}
-                        />
-                    </Animated.View>
-                )}
-                {icebreakerVisible && controlsVisible && (
-                    <Animated.View
-                        style={[styles.icebreakerBubble, { opacity: icebreakerOpacity }]}
-                    >
-                        {icebreakerLoading ? (
-                            <View style={styles.icebreakerSkeleton} />
-                        ) : (
-                            <Text style={styles.icebreakerText}>
-                                {ICEBREAKERS[icebreakerIndex]}
-                            </Text>
-                        )}
-                    </Animated.View>
-                )}
-                {controlsVisible && (
+                <Animated.View
+                    style={{ opacity: controlsOpacity, ...StyleSheet.absoluteFillObject }}
+                    pointerEvents={controlsVisible ? "box-none" : "none"}
+                >
+                    {localUrl && (
+                        <Animated.View
+                            style={[
+                                styles.localPreviewWrapper,
+                                { transform: localPreviewAnim.getTranslateTransform() },
+                            ]}
+                            {...panResponder.panHandlers}
+                        >
+                            <RTCView
+                                streamURL={localUrl}
+                                style={styles.localPreview}
+                                objectFit="cover"
+                                mirror={facingMode === "user"}
+                            />
+                        </Animated.View>
+                    )}
+                    {icebreakerVisible && (
+                        <Animated.View
+                            style={[
+                                styles.icebreakerBubble,
+                                { opacity: icebreakerOpacity },
+                            ]}
+                        >
+                            {icebreakerLoading ? (
+                                <View style={styles.icebreakerSkeleton} />
+                            ) : (
+                                <Text style={styles.icebreakerText}>
+                                    {ICEBREAKERS[icebreakerIndex]}
+                                </Text>
+                            )}
+                        </Animated.View>
+                    )}
                     <View style={styles.topBar}>
                         <Pressable style={styles.topButton} onPress={stopCall}>
                             <Ionicons name="chevron-back" size={22} color="#fff" />
                         </Pressable>
                     </View>
-                )}
-                {controlsVisible && (
                     <View style={styles.bottomControlsWrapper}>
                         <View style={styles.bottomControls}>
                             <ControlButton
@@ -1223,9 +1240,9 @@ export default function VideoCall() {
                             />
                         </View>
                     </View>
-                )}
+                </Animated.View>
             </Pressable>
-        </SafeAreaView>
+        </View>
     );
 }
 
