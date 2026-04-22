@@ -93,35 +93,37 @@ function AppContent() {
     }
 
     async function getOfferings() {
-        const offerings = await Purchases.getOfferings();
-
-        if (
-            offerings.current !== null &&
-            offerings.current.availablePackages.length !== 0
-        ) {
-            console.log("Offerings:", JSON.stringify(offerings, null, 2));
+        try {
+            const offerings = await Purchases.getOfferings();
+            if (
+                offerings.current !== null &&
+                offerings.current.availablePackages.length !== 0
+            ) {
+                console.log("Offerings:", JSON.stringify(offerings, null, 2));
+            }
+        } catch (error) {
+            console.error("Error fetching offerings:", error);
         }
     }
 
     useEffect(() => {
         if (isLoading || serverStatus !== "ok") return;
 
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+        async function setup() {
+            Purchases.setLogLevel(LOG_LEVEL.DEBUG);
 
-        if (Platform.OS === "ios") {
-            Purchases.configure({
-                apiKey: "appl_HHPNNqzuCyRKMvuLLtZFloXfaIA",
-            });
-        } else if (Platform.OS === "android") {
-            Purchases.configure({
-                apiKey: "goog_vuioAmQKQpPnwGqxktfBuiqAKfz",
-            });
-        }
+            const apiKey =
+                Platform.OS === "ios"
+                    ? "appl_HHPNNqzuCyRKMvuLLtZFloXfaIA"
+                    : "goog_vuioAmQKQpPnwGqxktfBuiqAKfz";
 
-        getCustomerInfo();
-        getOfferings();
+            Purchases.configure({ apiKey });
 
-        async function prepare() {
+            await new Promise((res) => setTimeout(res, 500));
+
+            await getCustomerInfo();
+            await getOfferings();
+
             try {
                 if (token) {
                     await initCrypto(SERVER_URL, token);
@@ -132,8 +134,9 @@ function AppContent() {
                 setAppIsReady(true);
             }
         }
-        prepare();
-    }, [isLoading, token, serverStatus]);
+
+        setup();
+    }, [isLoading, serverStatus]);
 
     useEffect(() => {
         if (appIsReady) {

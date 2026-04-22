@@ -15,8 +15,6 @@ import { ShieldCheck, CreditCard, Lock } from "lucide-react-native";
 import { type BillingCycle, type Plan, PLANS_MAP as PLANS } from "./plans";
 import Purchases, { PurchasesPackage } from "react-native-purchases";
 
-// ─── Order Summary ─────────────────────────────────────────────────────────────
-
 function OrderSummary({
     plan,
     billing,
@@ -77,8 +75,6 @@ function OrderSummary({
         </View>
     );
 }
-
-// ─── Feature List ──────────────────────────────────────────────────────────────
 
 function IncludedFeatures({ plan }: { plan: Plan }) {
     const { theme } = useTheme();
@@ -145,13 +141,20 @@ export default function Checkout() {
         async function loadPackage() {
             try {
                 const offerings = await Purchases.getOfferings();
-                const offering = offerings.all[planId ?? "premium"] ?? offerings.current;
+                const offering =
+                    offerings.all[planId ?? "premium"] ??
+                    offerings.all["default"] ??
+                    offerings.current;
                 if (offering) {
-                    const selected =
+                    const planIdLower = (planId ?? "premium").toLowerCase();
+                    const byProductId = offering.availablePackages.find((p) =>
+                        p.product.identifier.toLowerCase().includes(planIdLower),
+                    );
+                    const byBillingCycle =
                         billingCycle === "yearly"
                             ? (offering.annual ?? offering.availablePackages[0])
                             : (offering.monthly ?? offering.availablePackages[0]);
-                    setPkg(selected ?? null);
+                    setPkg(byProductId ?? byBillingCycle ?? null);
                 }
             } catch (error) {
                 console.error("Failed to load offerings:", error);
@@ -163,7 +166,10 @@ export default function Checkout() {
     }, [planId, billingCycle]);
 
     const handleSubscribe = async () => {
-        if (!pkg) return;
+        if (!pkg) {
+            console.warn("No RevenueCat package available — offerings failed to load");
+            return;
+        }
         setLoading(true);
         try {
             const { customerInfo } = await Purchases.purchasePackage(pkg);
@@ -220,11 +226,11 @@ export default function Checkout() {
                     style={[
                         styles.ctaBtn,
                         { backgroundColor: theme.primary },
-                        (loading || offeringLoading || !pkg) && styles.ctaBtnDisabled,
+                        (loading || offeringLoading) && styles.ctaBtnDisabled,
                     ]}
                     onPress={handleSubscribe}
                     activeOpacity={0.85}
-                    disabled={loading || offeringLoading || !pkg}
+                    disabled={loading || offeringLoading}
                 >
                     {loading || offeringLoading ? (
                         <ActivityIndicator color="#fff" />
