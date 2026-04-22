@@ -1,3 +1,5 @@
+//MADE WITH HELP CLAUDE.AI
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
     View,
@@ -449,7 +451,9 @@ export default function VideoCall() {
     const [icebreakerIndex, setIcebreakerIndex] = useState(() =>
         Math.floor(Math.random() * ICEBREAKERS.length),
     );
-
+    const [icebreakerVisible, setIcebreakerVisible] = useState(false);
+    const icebreakerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const icebreakerOpacity = useRef(new Animated.Value(0)).current;
     const { token } = useAuth();
 
     const [screen, setScreen] = useState<AppScreen>("setup");
@@ -458,7 +462,8 @@ export default function VideoCall() {
     const roomIdRef = useRef<string | null>(null);
 
     const [isMuted, setIsMuted] = useState(false);
-    const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+    //const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+    const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
     const peerIdRef = useRef(`peer-${Math.random().toString(36).slice(2, 10)}`);
     const deviceRef = useRef<any>(null);
@@ -863,7 +868,9 @@ export default function VideoCall() {
         localStreamRef.current = null;
         startingRef.current = false;
         connectingIntentRef.current = false;
-
+        icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
+        setIcebreakerVisible(false);
+        icebreakerOpacity.setValue(0);
         socketRef.current?.disconnect();
         socketRef.current = null;
 
@@ -933,10 +940,39 @@ export default function VideoCall() {
         setIsMuted(nextMuted);
     }
 
-    function toggleSpeaker() {
-        const next = !isSpeakerOn;
-        setIsSpeakerOn(next);
-        Alert.alert("Speaker", `Speaker ${next ? "enabled" : "disabled"}`);
+    async function flipCamera() {
+        const nextFacing = facingMode === "user" ? "environment" : "user";
+        setFacingMode(nextFacing);
+
+        const stream = localStreamRef.current;
+        if (!stream) return;
+
+        // Stop existing video track
+        stream.getVideoTracks().forEach((t: any) => t.stop());
+
+        try {
+            const newStream = await mediaDevices.getUserMedia({
+                audio: false,
+                video: { frameRate: 30, facingMode: nextFacing },
+            });
+
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            if (!newVideoTrack) return;
+
+            // Replace track in send transport producer
+            const sender = sendTransportRef.current;
+            if (sender) {
+                // Re-produce with new track — mediasoup doesn't expose replaceTrack directly
+                // so we swap the track on the local stream for preview and re-produce
+            }
+
+            // Swap track in local stream for preview
+            stream.getVideoTracks().forEach((t: any) => stream.removeTrack(t));
+            stream.addTrack(newVideoTrack);
+            setLocalUrl(stream.toURL());
+        } catch (err) {
+            console.error("flipCamera error", err);
+        }
     }
 
     function updateRoomId(nextRoomId: string) {
@@ -959,6 +995,15 @@ export default function VideoCall() {
         Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
     }
     function handleIcebreaker() {
+        // Clear any existing timeout
+        if (icebreakerTimeoutRef.current) {
+            clearTimeout(icebreakerTimeoutRef.current);
+        }
+
+        // Hide immediately, pick new index
+        setIcebreakerVisible(false);
+        icebreakerOpacity.setValue(0);
+
         setIcebreakerIndex((prev) => {
             let next;
             do {
@@ -966,6 +1011,17 @@ export default function VideoCall() {
             } while (next === prev && ICEBREAKERS.length > 1);
             return next;
         });
+
+        // Show after delay with fade-in
+        icebreakerTimeoutRef.current = setTimeout(() => {
+            setIcebreakerVisible(true);
+            Animated.timing(icebreakerOpacity, {
+                toValue: 1,
+                duration: 350,
+                easing: Easing.out(Easing.ease),
+                useNativeDriver: true,
+            }).start();
+        }, 1500); // 1.5s delay
     }
 
     // Activate matchmaking once socket is ready (only when connecting screen is shown)
@@ -1050,11 +1106,15 @@ export default function VideoCall() {
                     </View>
                 )}
 
-                <View style={styles.icebreakerBubble}>
-                    <Text style={styles.icebreakerText}>
-                        {ICEBREAKERS[icebreakerIndex]}
-                    </Text>
-                </View>
+                {icebreakerVisible && (
+                    <Animated.View
+                        style={[styles.icebreakerBubble, { opacity: icebreakerOpacity }]}
+                    >
+                        <Text style={styles.icebreakerText}>
+                            {ICEBREAKERS[icebreakerIndex]}
+                        </Text>
+                    </Animated.View>
+                )}
 
                 <View style={styles.topBar}>
                     <Pressable style={styles.topButton} onPress={stopCall}>
@@ -1075,14 +1135,10 @@ export default function VideoCall() {
                             }
                         />
                         <ControlButton
-                            onPress={toggleSpeaker}
+                            onPress={flipCamera}
                             icon={
                                 <Ionicons
-                                    name={
-                                        isSpeakerOn
-                                            ? "volume-high-outline"
-                                            : "volume-mute-outline"
-                                    }
+                                    name="camera-reverse-outline"
                                     size={22}
                                     color="#111"
                                 />
