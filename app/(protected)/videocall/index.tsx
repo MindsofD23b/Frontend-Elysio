@@ -10,6 +10,7 @@ import {
     ScrollView,
     Animated,
     Easing,
+    PanResponder,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
@@ -480,6 +481,32 @@ export default function VideoCall() {
     const consumersRef = useRef<Map<string, any>>(new Map());
     const remoteVideoStreamRef = useRef<any>(null);
     const videoProducerRef = useRef<any>(null);
+    const localPreviewPos = useRef({ x: 0, y: 0 });
+    const localPreviewAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                localPreviewAnim.setOffset({
+                    x: localPreviewPos.current.x,
+                    y: localPreviewPos.current.y,
+                });
+                localPreviewAnim.setValue({ x: 0, y: 0 });
+            },
+            onPanResponderMove: Animated.event(
+                [null, { dx: localPreviewAnim.x, dy: localPreviewAnim.y }],
+                { useNativeDriver: false },
+            ),
+            onPanResponderRelease: () => {
+                localPreviewAnim.flattenOffset();
+                localPreviewPos.current = {
+                    x: (localPreviewAnim.x as any)._value,
+                    y: (localPreviewAnim.y as any)._value,
+                };
+            },
+        }),
+    ).current;
     const [matchmakingReady, setMatchmakingReady] = useState(false);
     const [matchState, setMatchState] = useState<"idle" | "waiting" | "matched">("idle");
     const [_matchedUserId, setMatchedUserId] = useState<string | null>(null);
@@ -1098,16 +1125,21 @@ export default function VideoCall() {
                 )}
 
                 {localUrl && (
-                    <View style={styles.localPreviewWrapper}>
+                    <Animated.View
+                        style={[
+                            styles.localPreviewWrapper,
+                            { transform: localPreviewAnim.getTranslateTransform() },
+                        ]}
+                        {...panResponder.panHandlers}
+                    >
                         <RTCView
                             streamURL={localUrl}
                             style={styles.localPreview}
                             objectFit="cover"
-                            mirror={true}
+                            mirror={facingMode === "user"}
                         />
-                    </View>
+                    </Animated.View>
                 )}
-
                 {icebreakerVisible && (
                     <Animated.View
                         style={[styles.icebreakerBubble, { opacity: icebreakerOpacity }]}
