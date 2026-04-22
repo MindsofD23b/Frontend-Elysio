@@ -1,34 +1,78 @@
-import { BtnText, Button } from "@/components/button";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/theme/context";
-import { Eye, Gem, Globe, Heart, MessageCircle, Moon, User } from "lucide-react-native";
+import {
+    ChevronRight,
+    Eye,
+    Gem,
+    Globe,
+    Heart,
+    MessageCircle,
+    Moon,
+    User,
+} from "lucide-react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
 import Constants from "expo-constants";
-import { MenuRow } from "@/components/menuRow";
 import * as WebBrowser from "expo-web-browser";
-import { useAuthFetch } from "@/hooks/useAuthFetch";
-
-type UserProfile = {
-    id: string;
-    email: string | null;
-    firstName: string;
-    lastName: string;
-    photoUrl: string | null;
-};
+import { BtnText, Button } from "@/components/button";
 
 const t = createT("auth.settings");
 const version = Constants.expoConfig?.version;
 
-export default function SettingsScreen() {
-    const { gs, theme } = useTheme();
-    const { logout } = useAuth();
-    const [profile] = useAuthFetch<UserProfile>("/users/me", {}, { useCache: false });
+const BROWSER_OPTS = (theme: any): Parameters<typeof WebBrowser.openBrowserAsync>[1] => ({
+    presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+    controlsColor: theme.primary,
+    toolbarColor: theme.background,
+    enableBarCollapsing: true,
+});
 
-    const mutedText = theme.text + "8C";
-    const divider = theme.text + "26";
-    const iconColor = theme.text + "E6";
+function SectionLabel({ label }: { label: string }) {
+    return <Text style={styles.sectionLabel}>{label}</Text>;
+}
+
+function SettingsCard({ children }: { children: React.ReactNode }) {
+    const { theme } = useTheme();
+    return (
+        <View style={[styles.card, { backgroundColor: theme.background }]}>
+            {children}
+        </View>
+    );
+}
+
+type RowProps = {
+    icon: React.ElementType;
+    label: string;
+    last?: boolean;
+    onPress: () => void;
+};
+
+function SettingsRow({ icon: Icon, label, last, onPress }: RowProps) {
+    const { theme } = useTheme();
+    return (
+        <Pressable
+            onPress={onPress}
+            style={({ pressed }) => [
+                styles.row,
+                !last && {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: theme.text + "18",
+                },
+                pressed && { backgroundColor: theme.text + "08" },
+            ]}
+        >
+            <View style={[styles.iconCircle, { backgroundColor: theme.primary + "18" }]}>
+                <Icon size={16} color={theme.primary} strokeWidth={2} />
+            </View>
+            <Text style={[styles.rowLabel, { color: theme.text }]}>{label}</Text>
+            <ChevronRight size={16} color={theme.text + "44"} strokeWidth={2.5} />
+        </Pressable>
+    );
+}
+
+export default function SettingsScreen() {
+    const { theme } = useTheme();
+    const { logout } = useAuth();
 
     const handleLogout = async () => {
         await logout();
@@ -36,216 +80,145 @@ export default function SettingsScreen() {
     };
 
     return (
-        <View style={gs.container}>
-            <Text style={[styles.title, { marginTop: 20, color: theme.text }]}>
-                {t("title")}
-            </Text>
-
-            <View style={styles.profileWrap}>
-                {profile?.photoUrl ? (
-                    <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
-                ) : (
-                    <View
-                        style={[
-                            styles.avatar,
-                            styles.avatarPlaceholder,
-                            { backgroundColor: theme.text + "1A" },
-                        ]}
+        <ScrollView
+            style={[styles.scroll, { backgroundColor: theme.cardBg }]}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            alwaysBounceVertical={true}
+        >
+            <View style={{ gap: 0 }}>
+                {/* ── Account ── */}
+                <SectionLabel label={t("personalDetails")} />
+                <SettingsCard>
+                    <SettingsRow
+                        icon={User}
+                        label={t("personalDetails")}
+                        onPress={() => router.push("/settings/personaldetails")}
                     />
-                )}
-                <Text style={[styles.name, { color: theme.text }]}>
-                    {profile ? `${profile.firstName} ${profile.lastName}` : ""}
-                </Text>
-                <Text style={[styles.email, { color: mutedText }]}>
-                    {profile?.email ?? ""}
-                </Text>
-            </View>
+                    <SettingsRow
+                        icon={Heart}
+                        label={t("interests")}
+                        onPress={() => router.push("/settings/interests")}
+                    />
+                    <SettingsRow
+                        icon={Gem}
+                        label={t("subscription")}
+                        last
+                        onPress={() => router.push("/subscriptions")}
+                    />
+                </SettingsCard>
 
-            <View style={styles.list}>
-                <MenuRow
-                    icon={User}
-                    label={t("personalDetails")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Gem}
-                    label={t("subscription")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/subscriptions"
-                />
-                <MenuRow
-                    icon={Heart}
-                    label={t("interests")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-                <MenuRow
-                    icon={Globe}
-                    label={t("termsAndConditions")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    onPress={() =>
-                        WebBrowser.openBrowserAsync(
-                            "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
-                            {
-                                presentationStyle:
-                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-                                controlsColor: theme.primary,
-                                toolbarColor: theme.background,
-                                enableBarCollapsing: true,
-                            },
-                        )
-                    }
-                />
-                <MenuRow
-                    icon={MessageCircle}
-                    label={t("privacyPolicy")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    onPress={() =>
-                        WebBrowser.openBrowserAsync(
-                            "https://mindsofd23b.github.io/Landing-Elysio/privacypolicy/",
-                            {
-                                presentationStyle:
-                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-                                controlsColor: theme.primary,
-                                toolbarColor: theme.background,
-                                enableBarCollapsing: true,
-                            },
-                        )
-                    }
-                />
-                <MenuRow
-                    icon={Eye}
-                    label={t("aboutUs")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    onPress={() => {
-                        WebBrowser.openBrowserAsync(
-                            "https://mindsofd23b.github.io/Landing-Elysio/aboutus/",
-                            {
-                                presentationStyle:
-                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-                                controlsColor: theme.primary,
-                                toolbarColor: theme.background,
-                                enableBarCollapsing: true,
-                            },
-                        );
-                    }}
-                />
-                <MenuRow
-                    icon={Moon}
-                    label={t("appearance")}
-                    divider={divider}
-                    iconColor={iconColor}
-                    textColor={theme.text}
-                    href="/settings/apperance"
-                />
-            </View>
+                {/* ── App ── */}
+                <SectionLabel label="App" />
+                <SettingsCard>
+                    <SettingsRow
+                        icon={Moon}
+                        label={t("appearance")}
+                        last
+                        onPress={() => router.push("/settings/apperance")}
+                    />
+                </SettingsCard>
 
-            <View style={[styles.list, { marginTop: 0 }]}>
-                {[{ label: "Version", value: version }].map((item) => (
-                    <View
-                        key={item.label}
-                        style={[styles.infoRow, { borderBottomColor: divider }]}
-                    >
-                        <Text style={[styles.infoLabel, { color: theme.text }]}>
-                            {item.label}
+                {/* ── Legal ── */}
+                <SectionLabel label="Legal" />
+                <SettingsCard>
+                    <SettingsRow
+                        icon={Globe}
+                        label={t("termsAndConditions")}
+                        onPress={() =>
+                            WebBrowser.openBrowserAsync(
+                                "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
+                                BROWSER_OPTS(theme),
+                            )
+                        }
+                    />
+                    <SettingsRow
+                        icon={MessageCircle}
+                        label={t("privacyPolicy")}
+                        onPress={() =>
+                            WebBrowser.openBrowserAsync(
+                                "https://mindsofd23b.github.io/Landing-Elysio/privacypolicy/",
+                                BROWSER_OPTS(theme),
+                            )
+                        }
+                    />
+                    <SettingsRow
+                        icon={Eye}
+                        label={t("aboutUs")}
+                        last
+                        onPress={() =>
+                            WebBrowser.openBrowserAsync(
+                                "https://mindsofd23b.github.io/Landing-Elysio/aboutus/",
+                                BROWSER_OPTS(theme),
+                            )
+                        }
+                    />
+                </SettingsCard>
+
+                {/* ── Version ── */}
+                <SectionLabel label="Info" />
+                <View style={[styles.card, { backgroundColor: theme.background }]}>
+                    <View style={styles.infoRow}>
+                        <Text style={[styles.rowLabel, { color: theme.text }]}>
+                            Version
                         </Text>
-                        <Text
-                            style={[styles.infoValue, { color: mutedText }]}
-                            numberOfLines={1}
-                        >
-                            {item.value}
+                        <Text style={[styles.infoValue, { color: theme.text + "66" }]}>
+                            {version}
                         </Text>
                     </View>
-                ))}
+                </View>
             </View>
 
-            <Button style={{ marginTop: "auto" }} onPress={handleLogout}>
+            {/* ── Logout ── */}
+            <Button onPress={handleLogout}>
                 <BtnText>{t("logOut")}</BtnText>
             </Button>
-        </View>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    infoRow: {
-        width: "100%",
-        flexDirection: "row",
-        alignItems: "center",
+    scroll: { flex: 1 },
+    content: {
+        padding: 16,
+        paddingBottom: 24,
+        gap: 0,
+        flexGrow: 1,
         justifyContent: "space-between",
-        paddingVertical: 14,
-        paddingHorizontal: 7,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    infoLabel: {
-        fontSize: 16,
-        fontWeight: "600",
-    },
-    infoValue: {
-        fontSize: 14,
-        fontWeight: "400",
-        flexShrink: 1,
-        marginLeft: 8,
-        textAlign: "right",
-    },
-    title: {
-        fontSize: 26,
-        fontWeight: "800",
-        textAlign: "center",
     },
 
-    profileWrap: {
-        alignItems: "center",
-        marginTop: 10,
-    },
-
-    avatar: {
-        width: 110,
-        height: 110,
-        borderRadius: 55,
-    },
-    avatarPlaceholder: {
-        width: 110,
-        height: 110,
-        borderRadius: 55,
-    },
-
-    name: {
-        fontSize: 22,
-        fontWeight: "700",
-        marginTop: 6,
-    },
-
-    email: {
+    sectionLabel: {
         fontSize: 13,
-        marginTop: 2,
+        color: "rgba(100,100,100,0.9)",
+        marginBottom: 8,
+        marginLeft: 4,
+        fontWeight: "400",
     },
-
-    list: {
-        width: "100%",
-        marginTop: 10,
+    card: {
+        borderRadius: 16,
+        marginBottom: 24,
+        overflow: "hidden",
     },
-
-    modeRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        marginTop: 16,
-    },
-    modeItem: {
+    row: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 13,
     },
+    iconCircle: {
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    rowLabel: { flex: 1, fontSize: 15, fontWeight: "500" },
+    infoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 14,
+        paddingVertical: 13,
+    },
+    infoValue: { fontSize: 14 },
 });

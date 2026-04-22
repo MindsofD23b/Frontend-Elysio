@@ -364,7 +364,7 @@ export default function ChatsScreen() {
 
     return (
         <KeyboardAvoidingView
-            style={{ flex: 1, backgroundColor: theme.background }}
+            style={{ flex: 1, backgroundColor: theme.rootBg }}
             behavior="padding"
             keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom : 25}
         >
@@ -375,7 +375,7 @@ export default function ChatsScreen() {
                         alignItems: "center",
                         width: "100%",
                         paddingTop: 16,
-                        backgroundColor: theme.background,
+                        backgroundColor: theme.rootBg,
                         borderBottomWidth: 1,
                         borderBottomColor: theme.base + "1A",
                     }}
@@ -557,7 +557,7 @@ function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => vo
                 alignItems: "center",
                 paddingHorizontal: 28,
                 paddingBottom: 48,
-                backgroundColor: theme.background,
+                backgroundColor: theme.rootBg,
             }}
         >
             <View
@@ -626,7 +626,7 @@ function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => vo
                         width: 112,
                         height: 112,
                         borderRadius: 999,
-                        backgroundColor: theme.background,
+                        backgroundColor: theme.rootBg,
                         borderWidth: 6,
                         borderColor: theme.primary,
                         left: 34,

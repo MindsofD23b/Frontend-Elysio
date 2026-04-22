@@ -285,7 +285,7 @@ function EmptyChatsState({ isSearching, onPrimaryPress }: EmptyChatsStateProps) 
                     style={[
                         styles.backBubble,
                         {
-                            backgroundColor: theme.background,
+                            backgroundColor: theme.rootBg,
                             shadowColor: theme.primary,
                         },
                     ]}
@@ -297,7 +297,7 @@ function EmptyChatsState({ isSearching, onPrimaryPress }: EmptyChatsStateProps) 
                     style={[
                         styles.frontBubble,
                         {
-                            backgroundColor: theme.background,
+                            backgroundColor: theme.rootBg,
                             borderColor: theme.primary,
                         },
                     ]}
@@ -333,7 +333,7 @@ const makeStyles = (theme: Theme) =>
     StyleSheet.create({
         screen: {
             flex: 1,
-            backgroundColor: theme.background,
+            backgroundColor: theme.rootBg,
         },
         searchWrapper: {
             borderBottomColor: theme.base + "14",
@@ -342,7 +342,7 @@ const makeStyles = (theme: Theme) =>
         searchContainer: {
             paddingHorizontal: 16,
             paddingVertical: 14,
-            backgroundColor: theme.background,
+            backgroundColor: theme.rootBg,
         },
         inputContainer: {
             backgroundColor: theme.base + "10",
@@ -363,11 +363,11 @@ const makeStyles = (theme: Theme) =>
             flex: 1,
             justifyContent: "center",
             alignItems: "center",
-            backgroundColor: theme.background,
+            backgroundColor: theme.rootBg,
         },
         listContent: {
             paddingBottom: 24,
-            backgroundColor: theme.background,
+            backgroundColor: theme.rootBg,
         },
         emptyListContent: {
             flexGrow: 1,
@@ -463,7 +463,7 @@ const makeStyles = (theme: Theme) =>
             justifyContent: "center",
         },
         emptyButtonText: {
-            color: theme.background,
+            color: theme.rootBg,
             fontSize: 16,
             fontWeight: "700",
         },

@@ -5,7 +5,7 @@ import Select from "@/components/SelectInput";
 import { get, store } from "@/utils/store";
 import { Image } from "expo-image";
 import { useEffect, useState } from "react";
-import { Pressable, Switch, Text, useColorScheme, View } from "react-native";
+import { Pressable, StyleSheet, Switch, Text, useColorScheme, View } from "react-native";
 
 export default function Apperance() {
     const COLOR_SCHEME = useColorScheme();
@@ -15,10 +15,8 @@ export default function Apperance() {
 
     useEffect(() => {
         if (!loaded) return;
-
         const resolved =
             mode === ThemeOptions.automatic ? strToOption(COLOR_SCHEME ?? "light") : mode;
-
         setTheme(colors[resolved === ThemeOptions.dark ? "dark" : "light"]);
     }, [mode, loaded, COLOR_SCHEME, setTheme]);
 
@@ -42,100 +40,103 @@ export default function Apperance() {
         setMode(ThemeOptions.automatic);
     }
 
-    return (
-        <>
-            <BackWrapper>
-                <View
-                    style={{
-                        backgroundColor: theme.card,
-                        paddingVertical: 16,
-                        borderRadius: 24,
-                    }}
-                >
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            gap: 24,
-                            justifyContent: "center",
-                            marginTop: 16,
-                        }}
-                    >
-                        <Pressable
-                            onPress={() => setMode(ThemeOptions.light)}
-                            style={{
-                                flex: 1,
-                                maxWidth: 100,
-                                flexDirection: "column",
-                                gap: 8,
-                                justifyContent: "center",
-                                alignItems: "center",
-                            }}
-                        >
-                            <Image
-                                source={require("@/assets/images/preview-ligth.png")}
-                                style={{ height: 150, width: 80 }}
-                                contentFit="fill"
-                            />
-                            <Text style={{ color: theme.text }}>Light</Text>
-                            <Select
-                                checked={mode === ThemeOptions.light}
-                                onChange={() => setMode(ThemeOptions.light)}
-                                label=""
-                            />
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setMode(ThemeOptions.dark)}
-                            style={{
-                                flexDirection: "column",
-                                flex: 1,
-                                maxWidth: 100,
-                                gap: 8,
-                                justifyContent: "center",
-                                alignItems: "center",
-                            }}
-                        >
-                            <Image
-                                source={require("@/assets/images/preview-dark.png")}
-                                style={{ height: 150, width: 80 }}
-                                contentFit="fill"
-                            />
-                            <Text style={{ color: theme.text }}>Dark</Text>
-                            <Select
-                                checked={mode === ThemeOptions.dark}
-                                label=""
-                                onChange={() => setMode(ThemeOptions.dark)}
-                            />
-                        </Pressable>
-                    </View>
-                    <View
-                        style={{
-                            backgroundColor: theme.cardAccent,
-                            height: 1,
-                            borderRadius: 10,
-                            marginHorizontal: 16,
-                        }}
-                    />
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            paddingHorizontal: 20,
-                            paddingTop: 10,
-                            alignItems: "center",
-                        }}
-                    >
-                        <Text style={{ color: theme.text }}>System Theme</Text>
+    const s = makeStyles(theme);
 
-                        <Switch
-                            value={mode === ThemeOptions.automatic}
-                            onValueChange={() => setAutomatic()}
-                            trackColor={{ false: theme.cardAccent, true: theme.primary }}
-                            ios_backgroundColor={theme.cardAccent}
-                            thumbColor={theme.dbase}
+    return (
+        <BackWrapper bg={theme.cardBg}>
+            <Text style={s.sectionLabel}>Theme</Text>
+            <View style={[s.card, { backgroundColor: theme.background }]}>
+                <View style={s.pickerRow}>
+                    <Pressable
+                        style={s.themeOption}
+                        onPress={() => setMode(ThemeOptions.light)}
+                    >
+                        <Image
+                            source={require("@/assets/images/preview-ligth.png")}
+                            style={s.preview}
+                            contentFit="fill"
                         />
-                    </View>
+                        <Text style={[s.optionLabel, { color: theme.text }]}>Light</Text>
+                        <Select
+                            checked={mode === ThemeOptions.light}
+                            onChange={() => setMode(ThemeOptions.light)}
+                            label=""
+                        />
+                    </Pressable>
+
+                    <View style={[s.dividerV, { backgroundColor: theme.text + "14" }]} />
+
+                    <Pressable
+                        style={s.themeOption}
+                        onPress={() => setMode(ThemeOptions.dark)}
+                    >
+                        <Image
+                            source={require("@/assets/images/preview-dark.png")}
+                            style={s.preview}
+                            contentFit="fill"
+                        />
+                        <Text style={[s.optionLabel, { color: theme.text }]}>Dark</Text>
+                        <Select
+                            checked={mode === ThemeOptions.dark}
+                            label=""
+                            onChange={() => setMode(ThemeOptions.dark)}
+                        />
+                    </Pressable>
                 </View>
-            </BackWrapper>
-        </>
+
+                <View style={[s.dividerH, { backgroundColor: theme.text + "14" }]} />
+
+                <View style={s.switchRow}>
+                    <Text style={[s.switchLabel, { color: theme.text }]}>
+                        System Theme
+                    </Text>
+                    <Switch
+                        value={mode === ThemeOptions.automatic}
+                        onValueChange={() => setAutomatic()}
+                        trackColor={{ false: theme.cardAccent, true: theme.primary }}
+                        ios_backgroundColor={theme.cardAccent}
+                        thumbColor={theme.dbase}
+                    />
+                </View>
+            </View>
+        </BackWrapper>
     );
 }
+
+const makeStyles = (theme: any) =>
+    StyleSheet.create({
+        sectionLabel: {
+            fontSize: 13,
+            color: "rgba(100,100,100,0.9)",
+            marginBottom: 8,
+            marginLeft: 4,
+            fontWeight: "400",
+        },
+        card: {
+            borderRadius: 16,
+            overflow: "hidden",
+        },
+        pickerRow: {
+            flexDirection: "row",
+            justifyContent: "center",
+            paddingVertical: 24,
+            paddingHorizontal: 16,
+        },
+        themeOption: {
+            flex: 1,
+            alignItems: "center",
+            gap: 10,
+        },
+        preview: { height: 150, width: 80 },
+        optionLabel: { fontSize: 14, fontWeight: "500" },
+        dividerV: { width: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+        dividerH: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+        switchRow: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+        },
+        switchLabel: { fontSize: 15, fontWeight: "500" },
+    });

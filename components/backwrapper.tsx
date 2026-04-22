@@ -7,9 +7,10 @@ interface BackWrapperProps {
     children?: React.ReactNode;
     p?: boolean;
     m?: boolean;
+    bg?: string;
 }
 
-export default function BackWrapper({ children, p = true, m = false }: BackWrapperProps) {
+export default function BackWrapper({ children, p = true, m = false, bg }: BackWrapperProps) {
     const { theme } = useTheme();
 
     return (
@@ -17,7 +18,7 @@ export default function BackWrapper({ children, p = true, m = false }: BackWrapp
             <View
                 style={{
                     height: "100%",
-                    backgroundColor: theme.background,
+                    backgroundColor: bg ?? theme.background,
                     paddingTop: m ? 30 : 0,
                 }}
             >

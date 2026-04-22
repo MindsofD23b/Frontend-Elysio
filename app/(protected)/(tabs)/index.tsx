@@ -13,7 +13,7 @@ import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { router } from "expo-router";
 import { CONSTANTS, PlanType } from "@/lib/constants";
-import { CloudOff, Heart } from "lucide-react-native";
+import { Heart } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import * as StoreReview from "expo-store-review";
 
@@ -225,6 +225,7 @@ export default function Index() {
             refetch().catch(() => {});
         }
     }, [refetch]);
+
     const styles = makeStyles(theme);
 
     const leftBase = images.filter((i) => i.col === "left");
@@ -240,8 +241,7 @@ export default function Index() {
     const SPEED_R = 9000;
 
     useEffect(() => {
-        let cancelledL = false;
-        let cancelledR = false;
+        let active = true;
 
         const runL = () => {
             driftL.setValue(0);
@@ -251,7 +251,7 @@ export default function Index() {
                 easing: Easing.linear,
                 useNativeDriver: true,
             }).start(({ finished }) => {
-                if (finished && !cancelledL) runL();
+                if (finished && active) requestAnimationFrame(runL);
             });
         };
 
@@ -263,7 +263,7 @@ export default function Index() {
                 easing: Easing.linear,
                 useNativeDriver: true,
             }).start(({ finished }) => {
-                if (finished && !cancelledR) runR();
+                if (finished && active) requestAnimationFrame(runR);
             });
         };
 
@@ -271,8 +271,7 @@ export default function Index() {
         runR();
 
         return () => {
-            cancelledL = true;
-            cancelledR = true;
+            active = false;
             driftL.stopAnimation();
             driftR.stopAnimation();
         };
@@ -307,48 +306,22 @@ export default function Index() {
     const zoom = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
-        let cancelled = false;
+        let active = true;
 
-        const runSpin1 = () => {
-            spin.setValue(0);
-            Animated.timing(spin, {
+        const runSpin = (val: Animated.Value, duration: number) => {
+            val.setValue(0);
+            Animated.timing(val, {
                 toValue: 1,
-                duration: 2500,
+                duration,
                 easing: Easing.linear,
                 useNativeDriver: true,
             }).start(({ finished }) => {
-                if (!finished || cancelled) return;
-                runSpin1();
+                if (finished && active)
+                    requestAnimationFrame(() => runSpin(val, duration));
             });
         };
 
-        const runSpin2 = () => {
-            spin2.setValue(0);
-            Animated.timing(spin2, {
-                toValue: 1,
-                duration: 2200,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            }).start(({ finished }) => {
-                if (!finished || cancelled) return;
-                runSpin2();
-            });
-        };
-
-        const runSpin3 = () => {
-            spin3.setValue(0);
-            Animated.timing(spin3, {
-                toValue: 1,
-                duration: 2000,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            }).start(({ finished }) => {
-                if (!finished || cancelled) return;
-                runSpin3();
-            });
-        };
-
-        Animated.loop(
+        const zoomAnim = Animated.loop(
             Animated.sequence([
                 Animated.timing(zoom, {
                     toValue: 1.3,
@@ -363,17 +336,19 @@ export default function Index() {
                     useNativeDriver: true,
                 }),
             ]),
-        ).start();
+        );
 
-        runSpin1();
-        runSpin2();
-        runSpin3();
+        runSpin(spin, 2500);
+        runSpin(spin2, 2200);
+        runSpin(spin3, 2000);
+        zoomAnim.start();
 
         return () => {
-            cancelled = true;
+            active = false;
             spin.stopAnimation();
             spin2.stopAnimation();
             spin3.stopAnimation();
+            zoomAnim.stop();
         };
     }, [spin, spin2, spin3, zoom]);
     //SPIN
@@ -405,53 +380,6 @@ export default function Index() {
                     colHeight={rightColHeight}
                 />
             </View>
-
-            <Pressable
-                style={styles.topInidicator}
-                onPress={() => router.push("/(protected)/info")}
-            >
-                <View
-                    style={{
-                        shadowColor: theme.orange,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.6,
-                        shadowRadius: 20,
-                        elevation: 12,
-                    }}
-                >
-                    <View
-                        style={{
-                            shadowColor: theme.orange,
-                            shadowOffset: { width: 0, height: 0 },
-                            shadowOpacity: 0.4,
-                            shadowRadius: 10,
-                        }}
-                    >
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                gap: 6,
-                                backgroundColor: theme.orange,
-                                paddingHorizontal: 14,
-                                paddingVertical: 8,
-                                borderRadius: 999,
-                            }}
-                        >
-                            <CloudOff size={14} color={theme.white} />
-                            <Text
-                                style={{
-                                    color: theme.white,
-                                    fontWeight: "700",
-                                    fontSize: 13,
-                                }}
-                            >
-                                Offline
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-            </Pressable>
 
             <View style={styles.bottomIndicator} pointerEvents="none">
                 <View style={styles.indicatorPill}>

@@ -84,7 +84,7 @@ export default function InfoScreen() {
 
     return (
         <ScrollView
-            style={[styles.scroll, { backgroundColor: theme.gray }]}
+            style={[styles.scroll, { backgroundColor: theme.cardBg }]}
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
         >
