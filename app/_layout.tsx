@@ -13,9 +13,7 @@ import Purchases, { LOG_LEVEL } from "react-native-purchases";
 import { initCrypto } from "@/services/chat-crypto.client";
 import OutageScreen from "@/app/(auth)/outage";
 import UpdateScreen from "@/app/(auth)/update";
-
-const SERVER_URL = "https://elysio.jamiepoeffel.ch";
-const SERVER_CHECK_INTERVAL = 20_000;
+import { ServerStatusProvider, useServerStatus } from "@/lib/ServerStatusContext";
 
 LogBox.ignoreAllLogs();
 
@@ -42,39 +40,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppContent() {
     const [appIsReady, setAppIsReady] = useState(false);
-    const [serverStatus, setServerStatus] = useState<
-        "pending" | "ok" | "down" | "update"
-    >("pending");
     const [updateDuration, setUpdateDuration] = useState<string | undefined>(undefined);
     const { isLoading, token } = useAuth();
-    const serverCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-    async function checkServer() {
-        try {
-            const res = await fetch(SERVER_URL, { method: "GET", cache: "no-store" });
-            const text = await res.text();
-            const trimmed = text.trim();
-            if (res.ok && trimmed === "Hello World!") {
-                setServerStatus("ok");
-            } else if (trimmed.startsWith("update")) {
-                const parts = trimmed.split(" ");
-                setUpdateDuration(parts[1] ?? undefined);
-                setServerStatus("update");
-            } else {
-                setServerStatus("down");
-            }
-        } catch {
-            setServerStatus("down");
-        }
-    }
-
-    useEffect(() => {
-        checkServer();
-        serverCheckRef.current = setInterval(checkServer, SERVER_CHECK_INTERVAL);
-        return () => {
-            if (serverCheckRef.current) clearInterval(serverCheckRef.current);
-        };
-    }, []);
+    const serverStatus = useServerStatus();
 
     const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
     const [, , cache] = useCacheFetch("/chat/rooms", chatRequest, {
@@ -158,14 +126,16 @@ function AppContent() {
 
 export default Sentry.wrap(function RootLayout() {
     return (
-        <AuthProvider>
-            <BaseTheme>
-                <SafeAreaProvider>
-                    <SafeAreaWrapper>
-                        <AppContent />
-                    </SafeAreaWrapper>
-                </SafeAreaProvider>
-            </BaseTheme>
-        </AuthProvider>
+        <ServerStatusProvider>
+            <AuthProvider>
+                <BaseTheme>
+                    <SafeAreaProvider>
+                        <SafeAreaWrapper>
+                            <AppContent />
+                        </SafeAreaWrapper>
+                    </SafeAreaProvider>
+                </BaseTheme>
+            </AuthProvider>
+        </ServerStatusProvider>
     );
 });

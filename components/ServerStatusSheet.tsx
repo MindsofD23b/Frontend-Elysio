@@ -1,5 +1,5 @@
-import { AlertTriangle, CheckCircle2, CloudOff } from "lucide-react-native";
-import { ActivityIndicator, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { AlertTriangle, CheckCircle2 } from "lucide-react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 export const ACCENT = "#d97706";
 

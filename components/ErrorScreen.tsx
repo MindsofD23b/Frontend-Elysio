@@ -1,14 +1,20 @@
-import { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+import { useEffect, useRef } from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    Animated,
+    Easing,
+    Pressable,
+    ScrollView,
+} from "react-native";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme/context";
+import { router } from "expo-router";
 
-const RETRY_INTERVAL = 20;
 const CRACK_LENGTH = 50;
 
-// viewBox "0 0 64 60" — symmetric heart, bottom point (32,57), top-center dip (32,14)
-// Left bump peak (19,4), right bump peak (45,4), left/right extremes x=3/x=61
 const LEFT_PATH = "M 32 57 C 9 44 3 30 3 20 C 3 10 11 4 19 4 C 25 4 29 8 32 14";
 const RIGHT_PATH = "M 32 14 C 35 8 39 4 45 4 C 53 4 61 10 61 20 C 61 30 55 44 32 57";
 const CRACK_PATH = "M 32 15 L 29 26 L 35 31 L 28 43 L 33 49 L 32 57";
@@ -54,7 +60,6 @@ function BrokenHeart({ color }: { color: string }) {
             );
 
             Animated.sequence([
-                // Two heartbeats
                 Animated.sequence([
                     Animated.timing(pulse, {
                         toValue: 1.2,
@@ -82,7 +87,6 @@ function BrokenHeart({ color }: { color: string }) {
                     }),
                 ]),
                 Animated.delay(250),
-                // Crack draws itself on
                 Animated.parallel([
                     Animated.timing(crackOpacity, {
                         toValue: 1,
@@ -97,7 +101,6 @@ function BrokenHeart({ color }: { color: string }) {
                     }),
                 ]),
                 Animated.delay(120),
-                // Break apart — halves fly open + crack fades
                 Animated.parallel([
                     Animated.timing(splitLeft, {
                         toValue: -12,
@@ -136,9 +139,7 @@ function BrokenHeart({ color }: { color: string }) {
                         useNativeDriver: false,
                     }),
                 ]),
-                // Hold broken
                 Animated.delay(1400),
-                // Reassemble
                 Animated.parallel([
                     Animated.timing(splitLeft, {
                         toValue: 0,
@@ -264,37 +265,62 @@ function BrokenHeart({ color }: { color: string }) {
     );
 }
 
-export default function OutageScreen() {
+type Props = {
+    error: Error;
+    retry?: () => void;
+};
+
+export function ErrorScreen({ error, retry }: Props) {
     const { theme } = useTheme();
-    const [countdown, setCountdown] = useState(RETRY_INTERVAL);
-
-    useEffect(() => {
-        setCountdown(RETRY_INTERVAL);
-        const interval = setInterval(() => {
-            setCountdown((prev) => (prev <= 1 ? RETRY_INTERVAL : prev - 1));
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const s = styles(theme);
+    const s = makeStyles(theme);
 
     return (
         <View style={s.container}>
             <BrokenHeart color={theme.primary} />
-            <Text style={s.title}>We{"'"}re experiencing issues</Text>
+            <Text style={s.title}>Something went wrong</Text>
             <Text style={s.body}>
-                Our team is on it and working as fast as possible to get everything back
-                up. We apologize for the inconvenience.
+                An unexpected error occurred. Try going back or tap retry to try again.
             </Text>
-            <View style={s.retryBox}>
-                <Text style={s.retryLabel}>Retrying in</Text>
-                <Text style={s.retryCount}>{countdown}s</Text>
+
+            {__DEV__ && (
+                <ScrollView style={s.devBox} contentContainerStyle={s.devContent}>
+                    <Text style={s.devLabel}>DEV — error details</Text>
+                    <Text style={s.devMessage}>{error.message}</Text>
+                    {error.stack ? <Text style={s.devStack}>{error.stack}</Text> : null}
+                </ScrollView>
+            )}
+
+            <View style={s.actions}>
+                {retry && (
+                    <Pressable
+                        style={({ pressed }) => [
+                            s.btn,
+                            s.btnPrimary,
+                            pressed && { opacity: 0.8 },
+                        ]}
+                        onPress={retry}
+                    >
+                        <Text style={s.btnPrimaryText}>Try again</Text>
+                    </Pressable>
+                )}
+                <Pressable
+                    style={({ pressed }) => [
+                        s.btn,
+                        s.btnSecondary,
+                        pressed && { opacity: 0.8 },
+                    ]}
+                    onPress={() =>
+                        router.canGoBack() ? router.back() : router.replace("/")
+                    }
+                >
+                    <Text style={s.btnSecondaryText}>Go back</Text>
+                </Pressable>
             </View>
         </View>
     );
 }
 
-const styles = (theme: any) =>
+const makeStyles = (theme: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
@@ -316,23 +342,34 @@ const styles = (theme: any) =>
             textAlign: "center",
             lineHeight: 22,
         },
-        retryBox: {
-            marginTop: 12,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
+        devBox: {
+            width: "100%",
+            maxHeight: 200,
             backgroundColor: theme.card,
-            paddingHorizontal: 20,
-            paddingVertical: 10,
             borderRadius: 12,
         },
-        retryLabel: {
-            fontSize: 14,
-            color: theme.grayscale,
-        },
-        retryCount: {
-            fontSize: 18,
-            fontWeight: "700",
+        devContent: { padding: 14, gap: 6 },
+        devLabel: {
             color: theme.primary,
+            fontSize: 10,
+            fontWeight: "800",
+            letterSpacing: 1,
+            textTransform: "uppercase",
         },
+        devMessage: { color: theme.text, fontSize: 13, fontWeight: "600" },
+        devStack: { color: theme.grayscale, fontSize: 11, lineHeight: 16 },
+        actions: { flexDirection: "row", gap: 10, marginTop: 4 },
+        btn: {
+            borderRadius: 22,
+            paddingVertical: 12,
+            paddingHorizontal: 22,
+        },
+        btnPrimary: { backgroundColor: theme.primary },
+        btnPrimaryText: { color: theme.white ?? "#fff", fontWeight: "700", fontSize: 14 },
+        btnSecondary: {
+            backgroundColor: theme.card,
+            borderWidth: 1,
+            borderColor: theme.text + "18",
+        },
+        btnSecondaryText: { color: theme.text, fontWeight: "600", fontSize: 14 },
     });
