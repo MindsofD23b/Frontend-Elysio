@@ -25,6 +25,7 @@ import {
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTheme } from "@/lib/theme/context";
+import { useSafeAreaControl } from "@/components/SafeArea";
 
 registerGlobals();
 
@@ -433,6 +434,13 @@ function ConnectingScreen({
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function VideoCall() {
+    // const { setDisableSafeArea } = useSafeAreaControl();
+
+    // useEffect(() => {
+    //     setDisableSafeArea(true);
+    //     return () => setDisableSafeArea(false);
+    // }, []);
+
     const ICEBREAKERS = [
         "What's the weirdest thing you've ever eaten?",
         "If you could live in any movie universe, which would you pick?",
