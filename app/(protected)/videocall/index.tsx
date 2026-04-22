@@ -36,7 +36,6 @@ const CAMERAS = [
     { id: "front", label: "Front camera" },
     { id: "back", label: "Back camera" },
 ];
-
 const MICROPHONES = [
     { id: "default", label: "Built-in microphone" },
     { id: "headset", label: "Headset microphone" },
@@ -448,7 +447,8 @@ export default function VideoCall() {
         "What's a hobby you've always wanted to try?",
         "What's the last thing that made you laugh out loud?",
     ];
-
+    const [icebreakerLoading, setIcebreakerLoading] = useState(false);
+    const [controlsVisible, setControlsVisible] = useState(true);
     const [icebreakerIndex, setIcebreakerIndex] = useState(() =>
         Math.floor(Math.random() * ICEBREAKERS.length),
     );
@@ -1024,14 +1024,20 @@ export default function VideoCall() {
         Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
     }
     function handleIcebreaker() {
-        // Clear any existing timeout
         if (icebreakerTimeoutRef.current) {
             clearTimeout(icebreakerTimeoutRef.current);
         }
 
-        // Hide immediately, pick new index
-        setIcebreakerVisible(false);
-        icebreakerOpacity.setValue(0);
+        if (icebreakerVisible && !icebreakerLoading) {
+            setIcebreakerVisible(false);
+            setIcebreakerLoading(false);
+            icebreakerOpacity.setValue(0);
+            return;
+        }
+
+        icebreakerOpacity.setValue(1);
+        setIcebreakerLoading(true);
+        setIcebreakerVisible(true);
 
         setIcebreakerIndex((prev) => {
             let next;
@@ -1041,16 +1047,9 @@ export default function VideoCall() {
             return next;
         });
 
-        // Show after delay with fade-in
         icebreakerTimeoutRef.current = setTimeout(() => {
-            setIcebreakerVisible(true);
-            Animated.timing(icebreakerOpacity, {
-                toValue: 1,
-                duration: 350,
-                easing: Easing.out(Easing.ease),
-                useNativeDriver: true,
-            }).start();
-        }, 1500); // 1.5s delay
+            setIcebreakerLoading(false);
+        }, 1500);
     }
 
     // Activate matchmaking once socket is ready (only when connecting screen is shown)
@@ -1109,7 +1108,10 @@ export default function VideoCall() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.videoLayer}>
+            <Pressable
+                style={styles.videoLayer}
+                onPress={() => setControlsVisible((v) => !v)}
+            >
                 {remoteUrl ? (
                     <RTCView
                         key={remoteUrl}
@@ -1124,7 +1126,7 @@ export default function VideoCall() {
                     </View>
                 )}
 
-                {localUrl && (
+                {localUrl && controlsVisible && (
                     <Animated.View
                         style={[
                             styles.localPreviewWrapper,
@@ -1140,79 +1142,89 @@ export default function VideoCall() {
                         />
                     </Animated.View>
                 )}
-                {icebreakerVisible && (
+                {icebreakerVisible && controlsVisible && (
                     <Animated.View
                         style={[styles.icebreakerBubble, { opacity: icebreakerOpacity }]}
                     >
-                        <Text style={styles.icebreakerText}>
-                            {ICEBREAKERS[icebreakerIndex]}
-                        </Text>
+                        {icebreakerLoading ? (
+                            <View style={styles.icebreakerSkeleton} />
+                        ) : (
+                            <Text style={styles.icebreakerText}>
+                                {ICEBREAKERS[icebreakerIndex]}
+                            </Text>
+                        )}
                     </Animated.View>
                 )}
-
-                <View style={styles.topBar}>
-                    <Pressable style={styles.topButton} onPress={stopCall}>
-                        <Ionicons name="chevron-back" size={22} color="#fff" />
-                    </Pressable>
-                </View>
-
-                <View style={styles.bottomControlsWrapper}>
-                    <View style={styles.bottomControls}>
-                        <ControlButton
-                            onPress={toggleMute}
-                            icon={
-                                <Feather
-                                    name={isMuted ? "mic-off" : "mic"}
-                                    size={22}
-                                    color="#111"
-                                />
-                            }
-                        />
-                        <ControlButton
-                            onPress={flipCamera}
-                            icon={
-                                <Ionicons
-                                    name="camera-reverse-outline"
-                                    size={22}
-                                    color="#111"
-                                />
-                            }
-                        />
-                        <ControlButton
-                            onPress={handleLike}
-                            variant="success"
-                            icon={
-                                <Ionicons name="heart-outline" size={22} color="#fff" />
-                            }
-                        />
-                        <ControlButton
-                            onPress={handleNextUser}
-                            variant="danger"
-                            icon={<Ionicons name="close" size={24} color="#fff" />}
-                        />
-                        <ControlButton
-                            onPress={handleReaction}
-                            icon={
-                                <FontAwesome6
-                                    name="face-smile-beam"
-                                    size={20}
-                                    color="#111"
-                                />
-                            }
-                        />
-                        <ControlButton
-                            onPress={handleIcebreaker}
-                            icon={
-                                <MaterialCommunityIcons
-                                    name="magic-staff"
-                                    size={22}
-                                    color="#111"
-                                />
-                            }
-                        />
+                {controlsVisible && (
+                    <View style={styles.topBar}>
+                        <Pressable style={styles.topButton} onPress={stopCall}>
+                            <Ionicons name="chevron-back" size={22} color="#fff" />
+                        </Pressable>
                     </View>
-                </View>
-            </View>
+                )}
+                {controlsVisible && (
+                    <View style={styles.bottomControlsWrapper}>
+                        <View style={styles.bottomControls}>
+                            <ControlButton
+                                onPress={toggleMute}
+                                icon={
+                                    <Feather
+                                        name={isMuted ? "mic-off" : "mic"}
+                                        size={22}
+                                        color="#111"
+                                    />
+                                }
+                            />
+                            <ControlButton
+                                onPress={flipCamera}
+                                icon={
+                                    <Ionicons
+                                        name="camera-reverse-outline"
+                                        size={22}
+                                        color="#111"
+                                    />
+                                }
+                            />
+                            <ControlButton
+                                onPress={handleLike}
+                                variant="success"
+                                icon={
+                                    <Ionicons
+                                        name="heart-outline"
+                                        size={22}
+                                        color="#fff"
+                                    />
+                                }
+                            />
+                            <ControlButton
+                                onPress={handleNextUser}
+                                variant="danger"
+                                icon={<Ionicons name="close" size={24} color="#fff" />}
+                            />
+                            <ControlButton
+                                onPress={handleReaction}
+                                icon={
+                                    <FontAwesome6
+                                        name="face-smile-beam"
+                                        size={20}
+                                        color="#111"
+                                    />
+                                }
+                            />
+                            <ControlButton
+                                onPress={handleIcebreaker}
+                                icon={
+                                    <MaterialCommunityIcons
+                                        name="magic-staff"
+                                        size={22}
+                                        color="#111"
+                                    />
+                                }
+                            />
+                        </View>
+                    </View>
+                )}
+            </Pressable>
         </SafeAreaView>
     );
 }
@@ -1437,6 +1449,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.18,
         shadowRadius: 6,
         elevation: 4,
+    },
+    icebreakerSkeleton: {
+        width: 160,
+        height: 36,
+        borderRadius: 6,
+        backgroundColor: "#ddd",
     },
     icebreakerText: {
         color: "#111",
