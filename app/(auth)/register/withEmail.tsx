@@ -20,7 +20,7 @@ export default function WithEmail() {
     const [errors, setErrors] = useState<EmailFormErrors>({});
     const [loading, setLoading] = useState(false);
 
-    const [_, fetchError, checkEmail] = usePublicFetch<RegisterResponse>(
+    const [_, , fetchError, checkEmail] = usePublicFetch<RegisterResponse>(
         "/auth/check-email",
         {
             method: "POST",

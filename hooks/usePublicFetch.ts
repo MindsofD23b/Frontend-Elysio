@@ -31,7 +31,7 @@ export function usePublicFetch<S>(
         null,
     );
 
-    // const [loading, setLoading] = useState(!(options?.manual ?? false));
+    const [loading, setLoading] = useState(!(options?.manual ?? false));
     const [error, setError] = useState<Error | null>(null);
 
     const isCached =
@@ -41,7 +41,7 @@ export function usePublicFetch<S>(
 
     const run = useCallback(
         async (overrideInit?: RequestInit) => {
-            // setLoading(true);
+            setLoading(true);
             setError(null);
 
             try {
@@ -87,10 +87,9 @@ export function usePublicFetch<S>(
                     err instanceof Error ? err : new Error("Unknown error");
                 setError(finalError);
                 throw finalError;
+            } finally {
+                setLoading(false);
             }
-            // finally {
-            //     setLoading(false);
-            // }
         },
         [
             free,
@@ -112,5 +111,5 @@ export function usePublicFetch<S>(
         run().catch(() => {});
     }, [isCached, options?.manual, run]);
 
-    return [fetchData?.data ?? null, error, run] as const;
+    return [fetchData?.data ?? null, loading, error, run] as const;
 }

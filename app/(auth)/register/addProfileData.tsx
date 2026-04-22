@@ -28,12 +28,11 @@ export default function AddProfileDataPage() {
     const [language, setLanguage] = useState(
         data.language || getLocales()[0]?.languageCode || "en",
     );
-    const fullLanguageName = new Intl.DisplayNames(
-        [getLocales()[0]?.languageTag ?? "en"],
-        {
-            type: "language",
-        },
-    ).of(language);
+    const fullLanguageName = Intl.DisplayNames
+        ? new Intl.DisplayNames([getLocales()[0]?.languageTag ?? "en"], {
+              type: "language",
+          }).of(language)
+        : language;
     const [jobTitle, setJobTitle] = useState(data.jobTitle || "");
     const [aboutMe, setAboutMe] = useState(data.aboutMe || "");
     const [acceptedTerms, setAcceptedTerms] = useState(data.acceptedTerms || false);
@@ -185,6 +184,8 @@ export default function AddProfileDataPage() {
             const response = await registerUser({
                 body: JSON.stringify(finalPayload),
             });
+            console.log("response:", JSON.stringify(response));
+            console.log("userId:", response?.userId);
 
             if (response?.statusCode && response.statusCode >= 400) {
                 setErrors({
@@ -193,43 +194,56 @@ export default function AddProfileDataPage() {
                 return;
             }
 
-            // ✅ Upload profile picture if one was picked
+            console.log("=== PHOTO UPLOAD START ===");
+            console.log("profilePictureUri:", data.profilePictureUri);
+            console.log("userId:", response?.userId);
+
             if (data.profilePictureUri && response?.userId) {
-                try {
-                    const uri = data.profilePictureUri;
-                    const ext = uri.split(".").pop() ?? "jpg";
-                    const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+                const uri = data.profilePictureUri;
+                const ext = uri.split(".").pop()?.split("?")[0] ?? "jpg";
+                const mimeType = ext === "png" ? "image/png" : "image/jpeg";
 
-                    const formData = new FormData();
-                    formData.append("file", {
-                        uri,
-                        name: `profile.${ext}`,
-                        type: mimeType,
-                    } as any);
+                console.log("ext:", ext, "mimeType:", mimeType);
 
-                    await fetch(
-                        `https://elysio.jamiepoeffel.ch/users/${response.userId}/photos`,
-                        {
-                            method: "POST",
-                            body: formData,
-                        },
-                    );
-                } catch {}
+                const formData = new FormData();
+                formData.append("file", {
+                    uri,
+                    name: `profile.${ext}`,
+                    type: mimeType,
+                } as any);
+
+                console.log(
+                    "Sending fetch to:",
+                    `https://elysio.jamiepoeffel.ch/users/${response.userId}/photos`,
+                );
+
+                const photoRes = await fetch(
+                    `https://elysio.jamiepoeffel.ch/users/${response.userId}/photos`,
+                    {
+                        method: "POST",
+                        body: formData,
+                    },
+                );
+
+                const photoBody = await photoRes.text();
+                console.log("=== PHOTO UPLOAD RESPONSE ===");
+                console.log("status:", photoRes.status);
+                console.log("body:", photoBody);
+            } else {
+                console.log("SKIPPED — profilePictureUri or userId missing");
+                console.log("profilePictureUri:", data.profilePictureUri);
+                console.log("userId:", response?.userId);
             }
-
-            const registeredEmail = data.email;
-            reset();
-            router.replace({
-                pathname: "/register/sendVerificationEmail",
-                params: { email: registeredEmail },
-            });
         } catch (err) {
-            setErrors({
-                general: {
-                    message: err instanceof Error ? err.message : t("fallback.regFailed"),
-                },
-            });
+            console.error("Photo upload error:", err);
         }
+
+        const registeredEmail = data.email;
+        reset();
+        router.replace({
+            pathname: "/register/sendVerificationEmail",
+            params: { email: registeredEmail },
+        });
     };
 
     return (
