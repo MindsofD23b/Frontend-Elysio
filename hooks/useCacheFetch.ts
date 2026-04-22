@@ -1,11 +1,12 @@
+import { useCallback, useMemo, useState } from "react";
 import { useStore } from "@/hooks/useStore";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 type FetchOptions = {
     manual?: boolean;
-    useCache?: boolean;
+    useCache: boolean;
     cacheKey?: string;
-    ttlMs?: number;
+    ttlMs: number;
 };
 
 type CachedData<S> = {
@@ -16,13 +17,15 @@ type CachedData<S> = {
 // made with Pinterest and ChatGPT
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
-export function usePublicFetch<S>(
+export function useCacheFetch<S>(
     route: string,
     requestInit: RequestInit = {},
-    options?: FetchOptions,
+    options: FetchOptions,
 ) {
+    const { token } = useAuth();
+
     const cacheKey = useMemo(
-        () => options?.cacheKey ?? `public:${route}`,
+        () => options?.cacheKey ?? `auth:${route}`,
         [options?.cacheKey, route],
     );
 
@@ -31,7 +34,6 @@ export function usePublicFetch<S>(
         null,
     );
 
-    const [loading, setLoading] = useState(!(options?.manual ?? false));
     const [error, setError] = useState<Error | null>(null);
 
     const isCached =
@@ -40,17 +42,19 @@ export function usePublicFetch<S>(
         Date.now() - fetchData.created_at < fetchData.ttl;
 
     const run = useCallback(
-        async (overrideInit?: RequestInit) => {
-            setLoading(true);
+        async (overrideInit?: RequestInit, path?: RequestInfo) => {
+            if (!token) {
+                const authError = new Error("Unauthorized");
+                setError(authError);
+                throw authError;
+            }
+
             setError(null);
 
             try {
-                if (!isCached) {
-                    free();
-                }
-
                 const finalHeaders = {
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
                     ...(requestInit.headers || {}),
                     ...(overrideInit?.headers || {}),
                 };
@@ -61,7 +65,12 @@ export function usePublicFetch<S>(
                     headers: finalHeaders,
                 };
 
-                const response = await fetch(`${BASE_URL}${route}`, finalInit);
+                console.log("cache route", route);
+
+                const response = await fetch(
+                    path ? `${BASE_URL}${path}` : `${BASE_URL}${route}`,
+                    finalInit,
+                );
                 const text = await response.text();
                 const json = text ? JSON.parse(text) : null;
 
@@ -87,8 +96,6 @@ export function usePublicFetch<S>(
                     err instanceof Error ? err : new Error("Unknown error");
                 setError(finalError);
                 throw finalError;
-            } finally {
-                setLoading(false);
             }
         },
         [
@@ -99,17 +106,9 @@ export function usePublicFetch<S>(
             requestInit,
             route,
             setFetchData,
+            token,
         ],
     );
 
-    useEffect(() => {
-        if (options?.manual || isCached) {
-            // setLoading(false);
-            return;
-        }
-
-        run().catch(() => {});
-    }, [isCached, options?.manual, run]);
-
-    return [fetchData?.data ?? null, loading, error, run] as const;
+    return [fetchData?.data, error, run] as const;
 }

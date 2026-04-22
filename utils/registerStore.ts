@@ -18,6 +18,7 @@ export type RegisterData = {
     aboutMe: string;
     acceptedTerms: boolean;
     acceptedPrivacyPolicy: boolean;
+    profilePictureUri: string;
 };
 
 type PersonalDetailsPayload = {
@@ -41,6 +42,7 @@ type RegisterStore = {
     setGender: (gender: "male" | "female") => void;
     setInterests: (interests: string[]) => void;
     setPersonalDetails: (payload: PersonalDetailsPayload) => void;
+    setProfilePictureUri: (uri: string) => void;
     reset: () => void;
 };
 
@@ -57,6 +59,7 @@ const initialData: RegisterData = {
     country: "CH",
     language: "de",
     jobTitle: "",
+    profilePictureUri: "",
     aboutMe: "",
     acceptedTerms: false,
     acceptedPrivacyPolicy: false,
@@ -103,6 +106,11 @@ export const useRegisterStore = create<RegisterStore>((set) => ({
                 ...state.data,
                 ...payload,
             },
+        })),
+
+    setProfilePictureUri: (profilePictureUri: string) =>
+        set((state) => ({
+            data: { ...state.data, profilePictureUri },
         })),
 
     reset: () =>

@@ -1,6 +1,6 @@
 {
     "expo": {
-        "name": "Elysio",
+        "name": "Elysio - Dating",
         "slug": "elysio",
         "version": "0.0.1",
         "orientation": "portrait",
@@ -13,6 +13,9 @@
                 "NSCameraUsageDescription": "Allow access to camera for video calls",
                 "NSMicrophoneUsageDescription": "Allow access to microphone for calls",
                 "ITSAppUsesNonExemptEncryption": false
+            },
+            "entitlements": {
+                "com.apple.developer.in-app-payments": []
             },
             "bundleIdentifier": "com.mindsofd23b.elysio",
             "usesAppleSignIn": true
@@ -58,7 +61,17 @@
             "@react-native-community/datetimepicker",
             "expo-secure-store",
             "expo-localization",
-            "expo-image"
+            "expo-image",
+            [
+                "@sentry/react-native/expo",
+                {
+                    "url": "https://sentry.io/",
+                    "project": "elysio",
+                    "organization": "mindsofd23b"
+                }
+            ],
+            "@sentry/react-native",
+            "expo-web-browser"
         ],
         "experiments": {
             "typedRoutes": true,

@@ -1,21 +1,22 @@
 import { Image } from "expo-image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
     Animated,
     Dimensions,
     Easing,
-    Pressable,
     StyleSheet,
     View,
     Text,
+    Pressable,
 } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { router } from "expo-router";
-import { canCall } from "@/lib/premium/canCall";
 import { CONSTANTS, PlanType } from "@/lib/constants";
-import { Heart } from "lucide-react-native";
+import { CloudOff, Heart } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import * as StoreReview from "expo-store-review";
+
 // TODO: Implement plan based constants
 const user = {
     plan: PlanType.FREE,
@@ -79,7 +80,7 @@ const images = [
     {
         id: "l9",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1583185136875-8ac7cae3ef13?q=80&w=687&auto=format&fit=crop",
+        uri: "https://images.unsplash.com/photo-1591711696773-c4b7fe4d3d74?q=80&w=2342&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         h: 155,
     },
     {
@@ -198,6 +199,12 @@ function InfiniteColumn({
     );
 }
 
+const handleReview = async () => {
+    if (await StoreReview.isAvailableAsync()) {
+        await StoreReview.requestReview();
+    }
+};
+
 interface FullFillUserResponse {
     message: string;
 }
@@ -271,20 +278,25 @@ export default function Index() {
         };
     }, [driftL, driftR, leftColHeight, rightColHeight]);
 
-    const [count, setCount] = useState(0);
+    function canCall(plan: PlanType, count: number | undefined) {
+        return (
+            CONSTANTS.PLANS[plan].maxCalls >
+            (count !== undefined ? count : CONSTANTS.PLANS[plan].maxCalls)
+        );
+    }
 
     const onStart = () => {
-        // TODO: Implement i18n here
-        if (!canCall(user.plan, count)) {
-            if (user.plan === PlanType.FREE) {
-                router.push("/subscriptions");
-            } else {
-                alert("You have no more Calls to day");
-            }
-            return;
+        // TODO: implement i18n here
+        if (!canCall(user.plan, callsData?.callsToday)) {
+            return user.plan === PlanType.FREE
+                ? alert("Upgrade to Paid plan!")
+                : alert("You have no more Calls today");
         }
 
-        setCount((prev) => prev + 1);
+        if (callsData?.callsToday === 3) {
+            handleReview();
+        }
+
         router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
     };
 
@@ -378,14 +390,6 @@ export default function Index() {
         outputRange: ["0deg", "360deg"],
     });
 
-    const [_rawData, _loading, _error, run] = useAuthFetch<FullFillUserResponse>(
-        "/users/user-full",
-        { method: "GET" },
-        { manual: true, useCache: false },
-    );
-    useEffect(() => {
-        run().catch(() => {});
-    }, [run]);
     return (
         <View style={gs.container}>
             {/* Grid */}
@@ -401,6 +405,53 @@ export default function Index() {
                     colHeight={rightColHeight}
                 />
             </View>
+
+            <Pressable
+                style={styles.topInidicator}
+                onPress={() => router.push("/(protected)/info")}
+            >
+                <View
+                    style={{
+                        shadowColor: theme.orange,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: 0.6,
+                        shadowRadius: 20,
+                        elevation: 12,
+                    }}
+                >
+                    <View
+                        style={{
+                            shadowColor: theme.orange,
+                            shadowOffset: { width: 0, height: 0 },
+                            shadowOpacity: 0.4,
+                            shadowRadius: 10,
+                        }}
+                    >
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 6,
+                                backgroundColor: theme.orange,
+                                paddingHorizontal: 14,
+                                paddingVertical: 8,
+                                borderRadius: 999,
+                            }}
+                        >
+                            <CloudOff size={14} color={theme.white} />
+                            <Text
+                                style={{
+                                    color: theme.white,
+                                    fontWeight: "700",
+                                    fontSize: 13,
+                                }}
+                            >
+                                Offline
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            </Pressable>
 
             <View style={styles.bottomIndicator} pointerEvents="none">
                 <View style={styles.indicatorPill}>
@@ -497,6 +548,14 @@ const makeStyles = (theme: Theme) =>
         ring2: { width: 260, height: 260, borderWidth: 6, opacity: 0.9 },
         ring3: { width: 320, height: 320, borderWidth: 4, opacity: 0.75 },
 
+        topInidicator: {
+            position: "absolute",
+            top: 8,
+            left: 0,
+            right: 0,
+            alignItems: "center",
+        },
+
         bottomIndicator: {
             position: "absolute",
             bottom: 8,
@@ -509,6 +568,16 @@ const makeStyles = (theme: Theme) =>
             paddingVertical: 4,
             borderRadius: 99,
             backgroundColor: theme.base + "80",
+            elevation: 0.9,
+        },
+        indicatorPillOrange: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+            backgroundColor: theme.orange,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 99,
             elevation: 0.9,
         },
         indicatorText: {

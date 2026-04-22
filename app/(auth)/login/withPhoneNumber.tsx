@@ -30,7 +30,7 @@ export default function WithPhoneNumber() {
     const [errors, setErrors] = useState<FormErrors>({});
     const [loading, setLoading] = useState(false);
 
-    const [, fetchError, loginRequest] = usePublicFetch<LoginResponse>(
+    const [, , fetchError, loginRequest] = usePublicFetch<LoginResponse>(
         "/auth/login",
         {
             method: "POST",
