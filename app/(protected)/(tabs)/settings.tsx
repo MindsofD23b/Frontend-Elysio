@@ -7,6 +7,16 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
 import Constants from "expo-constants";
 import { MenuRow } from "@/components/menuRow";
+import * as WebBrowser from "expo-web-browser";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
+
+type UserProfile = {
+    id: string;
+    email: string | null;
+    firstName: string;
+    lastName: string;
+    photoUrl: string | null;
+};
 
 const t = createT("auth.settings");
 const version = Constants.expoConfig?.version;
@@ -14,6 +24,7 @@ const version = Constants.expoConfig?.version;
 export default function SettingsScreen() {
     const { gs, theme } = useTheme();
     const { logout } = useAuth();
+    const [profile] = useAuthFetch<UserProfile>("/users/me", {}, { useCache: false });
 
     const mutedText = theme.text + "8C";
     const divider = theme.text + "26";
@@ -31,15 +42,22 @@ export default function SettingsScreen() {
             </Text>
 
             <View style={styles.profileWrap}>
-                <Image
-                    source={{
-                        uri: "https://images.unsplash.com/photo-1517849845537-4d257902454a",
-                    }}
-                    style={styles.avatar}
-                />
-                <Text style={[styles.name, { color: theme.text }]}>Lara Gut</Text>
+                {profile?.photoUrl ? (
+                    <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
+                ) : (
+                    <View
+                        style={[
+                            styles.avatar,
+                            styles.avatarPlaceholder,
+                            { backgroundColor: theme.text + "1A" },
+                        ]}
+                    />
+                )}
+                <Text style={[styles.name, { color: theme.text }]}>
+                    {profile ? `${profile.firstName} ${profile.lastName}` : ""}
+                </Text>
                 <Text style={[styles.email, { color: mutedText }]}>
-                    Lara.gut@example.com
+                    {profile?.email ?? ""}
                 </Text>
             </View>
 
@@ -74,7 +92,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() =>
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        )
+                    }
                 />
                 <MenuRow
                     icon={MessageCircle}
@@ -82,7 +111,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() =>
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/privacypolicy/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        )
+                    }
                 />
                 <MenuRow
                     icon={Eye}
@@ -90,7 +130,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() => {
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/aboutus/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        );
+                    }}
                 />
                 <MenuRow
                     icon={Moon}
@@ -161,6 +212,11 @@ const styles = StyleSheet.create({
     },
 
     avatar: {
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+    },
+    avatarPlaceholder: {
         width: 110,
         height: 110,
         borderRadius: 55,
