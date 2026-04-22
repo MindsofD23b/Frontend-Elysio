@@ -942,13 +942,12 @@ export default function VideoCall() {
 
     async function flipCamera() {
         const nextFacing = facingMode === "user" ? "environment" : "user";
-        setFacingMode(nextFacing);
 
         const stream = localStreamRef.current;
         if (!stream) return;
 
-        // Stop existing video track
         stream.getVideoTracks().forEach((t: any) => t.stop());
+        setLocalUrl(null); // force RTCView unmount
 
         try {
             const newStream = await mediaDevices.getUserMedia({
@@ -959,19 +958,14 @@ export default function VideoCall() {
             const newVideoTrack = newStream.getVideoTracks()[0];
             if (!newVideoTrack) return;
 
-            // Replace track in send transport producer
-            const sender = sendTransportRef.current;
-            if (sender) {
-                // Re-produce with new track — mediasoup doesn't expose replaceTrack directly
-                // so we swap the track on the local stream for preview and re-produce
-            }
-
-            // Swap track in local stream for preview
             stream.getVideoTracks().forEach((t: any) => stream.removeTrack(t));
             stream.addTrack(newVideoTrack);
-            setLocalUrl(stream.toURL());
+
+            setFacingMode(nextFacing);
+            setLocalUrl(stream.toURL() + `?t=${Date.now()}`);
         } catch (err) {
             console.error("flipCamera error", err);
+            setFacingMode(facingMode); // revert
         }
     }
 
