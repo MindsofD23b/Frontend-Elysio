@@ -88,8 +88,20 @@ export default function Favorites() {
                 contentContainerStyle={s.cardScroll}
             >
                 {DATE_IDEAS.map((idea, i) => (
-                    <View key={i} style={{ width: cardWidth }}>
-                        <DateIdeaCard {...idea} />
+                    <View key={i} style={{ width: cardWidth, paddingHorizontal: 6 }}>
+                        <DateIdeaCard
+                            {...idea}
+                            onPress={() =>
+                                router.push({
+                                    pathname: "/favorites/ideadetail",
+                                    params: {
+                                        ...idea,
+                                        price: String(idea.price),
+                                        isTopPick: String(idea.isTopPick),
+                                    },
+                                })
+                            }
+                        />
                     </View>
                 ))}
             </ScrollView>

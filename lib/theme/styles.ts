@@ -35,7 +35,7 @@ export const makeGlobalStyles = (theme: Theme) =>
             alignItems: "center",
             justifyContent: "center",
             padding: 16,
-            backgroundColor: theme.background,
+            backgroundColor: theme.rootBg,
         },
         card: { backgroundColor: theme.accent, borderRadius: 12, padding: 16 },
         row: { flexDirection: "row" as const, alignItems: "center" as const },

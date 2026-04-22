@@ -1,7 +1,12 @@
 import { Tabs } from "expo-router";
+import { ErrorScreen } from "@/components/ErrorScreen";
 import { Heart, HomeIcon, MessageCircle, PieChart, Settings } from "lucide-react-native";
 import { Platform } from "react-native";
 import { useTheme } from "@/lib/theme/context";
+
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+    return <ErrorScreen error={error} retry={retry} />;
+}
 
 export default function TabLayout() {
     const { theme } = useTheme();

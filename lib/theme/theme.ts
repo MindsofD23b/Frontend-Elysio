@@ -51,7 +51,7 @@ export const colors = {
 
         // screens
         rootBg: "#141414",
-        cardBg: "#1E1E1E",
+        cardBg: "#141414",
         cardBgDeep: "#131313",
         circleBg: "#222222",
         barInactive: "#3A3A3A",
