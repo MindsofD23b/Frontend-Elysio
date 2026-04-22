@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { CategoryGridCard } from "@/components/favorites/CategoryCard";
 import { DateIdeaCard } from "@/components/favorites/DateIdeaCard";
 import { TipRow } from "@/components/favorites/TipRow";
+import { Theme } from "@/lib/theme/theme";
 import { useTheme } from "@/lib/theme/context";
 import { useRef, useState } from "react";
 import { Plane, Dumbbell, Armchair } from "lucide-react-native";
@@ -139,7 +140,7 @@ export default function Favorites() {
     );
 }
 
-const makeStyles = (theme: any) =>
+const makeStyles = (theme: Theme) =>
     StyleSheet.create({
         root: { flex: 1, backgroundColor: theme.rootBg },
         content: { paddingTop: 40, paddingBottom: 30, gap: 6 },

@@ -267,7 +267,7 @@ const makeStyles = (theme: any) =>
             alignItems: "center",
             justifyContent: "center",
         },
-        statLabel: { color: "#aaa", fontSize: 12, lineHeight: 16 },
+        statLabel: { color: theme.text + "AA", fontSize: 12, lineHeight: 16 },
         statValue: { fontWeight: "800", fontSize: 20 },
         statUnit: { fontWeight: "600", fontSize: 11 },
 
@@ -279,15 +279,15 @@ const makeStyles = (theme: any) =>
         },
         streakHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
         streakTitle: { color: theme.text, fontWeight: "800", fontSize: 17 },
-        streakSub: { color: "#aaa", fontSize: 12 },
+        streakSub: { color: theme.text + "AA", fontSize: 12 },
 
         daysContainer: { position: "relative" },
 
         pillTrack: {
             position: "absolute",
             top: 0,
-            left: `${(LINE_START / DAYS_LEN) * 105}%` as any,
-            width: `${((LINE_END - LINE_START + 1) / DAYS_LEN) * 90}%` as any,
+            left: `${(LINE_START / DAYS_LEN) * 100}%` as any,
+            width: `${((LINE_END - LINE_START + 1) / DAYS_LEN) * 100}%` as any,
             height: 34,
             backgroundColor: theme.primary + "22",
             borderRadius: 17,
@@ -318,7 +318,7 @@ const makeStyles = (theme: any) =>
         },
         lineCircle: { backgroundColor: "transparent" },
 
-        dayLabel: { color: "#555", fontSize: 10 },
+        dayLabel: { color: theme.text + "99", fontSize: 10 },
 
         chartCard: {
             backgroundColor: theme.cardBg,
@@ -336,8 +336,13 @@ const makeStyles = (theme: any) =>
         barsRow: { flexDirection: "row", alignItems: "flex-end", gap: 6, flex: 1 },
         barCol: { flex: 1, alignItems: "center", gap: 4, justifyContent: "flex-end" },
         bar: { width: "60%", borderRadius: 6 },
-        barLabel: { color: "#555", fontSize: 9 },
-        chartNote: { color: "#666", fontSize: 11, lineHeight: 15, marginTop: 2 },
+        barLabel: { color: theme.text + "99", fontSize: 9 },
+        chartNote: {
+            color: theme.text + "AA",
+            fontSize: 11,
+            lineHeight: 15,
+            marginTop: 2,
+        },
 
         interestsCard: {
             backgroundColor: theme.cardBg,
