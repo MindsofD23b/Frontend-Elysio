@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 import * as Device from "expo-device";
-import Notifications, { type EventSubscription } from "expo-notifications";
+import * as Notifications from "expo-notifications";
+import { type EventSubscription } from "expo-modules-core";
 
 import Constants from "expo-constants";
 
