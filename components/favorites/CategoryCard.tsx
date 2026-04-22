@@ -1,3 +1,5 @@
+// Made with the help of Claude.ai and ChatGPT
+
 import { useTheme } from "@/lib/theme/context";
 import { LucideIcon } from "lucide-react-native";
 import { router } from "expo-router";

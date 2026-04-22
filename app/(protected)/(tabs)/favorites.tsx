@@ -1,3 +1,5 @@
+// Made with the help of Claude.ai and ChatGPT
+
 import { router } from "expo-router";
 import { CategoryGridCard } from "@/components/favorites/CategoryCard";
 import { DateIdeaCard } from "@/components/favorites/DateIdeaCard";
@@ -6,7 +8,6 @@ import { useTheme } from "@/lib/theme/context";
 import { useRef, useState } from "react";
 import { Plane, Dumbbell, Armchair, X } from "lucide-react-native";
 import {
-    Dimensions,
     Modal,
     NativeScrollEvent,
     NativeSyntheticEvent,
@@ -15,10 +16,8 @@ import {
     StyleSheet,
     Text,
     View,
+    useWindowDimensions,
 } from "react-native";
-
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = width - 28;
 
 const DATE_IDEAS = [
     {
@@ -131,9 +130,11 @@ export default function Favorites() {
     const [activeIndex, setActiveIndex] = useState(0);
     const [activeTip, setActiveTip] = useState<string | null>(null);
     const scrollRef = useRef<ScrollView>(null);
+    const { width } = useWindowDimensions();
+    const cardWidth = width - 28;
 
     const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const index = Math.round(e.nativeEvent.contentOffset.x / CARD_WIDTH);
+        const index = Math.round(e.nativeEvent.contentOffset.x / cardWidth);
         setActiveIndex(index);
     };
 
@@ -153,14 +154,14 @@ export default function Favorites() {
                     horizontal
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
-                    snapToInterval={CARD_WIDTH}
+                    snapToInterval={cardWidth}
                     decelerationRate="fast"
                     onScroll={onScroll}
                     scrollEventThrottle={16}
                     contentContainerStyle={s.cardScroll}
                 >
                     {DATE_IDEAS.map((idea, i) => (
-                        <View key={i} style={{ width: CARD_WIDTH }}>
+                        <View key={i} style={{ width: cardWidth }}>
                             <DateIdeaCard {...idea} />
                         </View>
                     ))}
@@ -330,7 +331,7 @@ const makeStyles = (theme: any) =>
             justifyContent: "space-between",
             alignItems: "center",
         },
-        sectionTitle: { color: theme.white, fontWeight: "900", fontSize: 18 },
+        sectionTitle: { color: theme.text, fontWeight: "900", fontSize: 18 },
         viewAll: { color: theme.primary, fontWeight: "700", fontSize: 13 },
         categoryRow: { flexDirection: "row", gap: 10 },
 

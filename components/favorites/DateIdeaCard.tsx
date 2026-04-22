@@ -1,6 +1,8 @@
+// Made with the help of Claude.ai and ChatGPT
+
 import { useTheme } from "@/lib/theme/context";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
     title: string;
@@ -10,6 +12,7 @@ type Props = {
     duration: string;
     vibe: string;
     isTopPick?: boolean;
+    onPress?: () => void;
 };
 
 export function DateIdeaCard({
@@ -20,6 +23,7 @@ export function DateIdeaCard({
     duration,
     vibe,
     isTopPick,
+    onPress,
 }: Props) {
     const { theme } = useTheme();
     const s = makeStyles(theme);
@@ -56,9 +60,9 @@ export function DateIdeaCard({
                     </Text>
                 </View>
             </View>
-            <View style={s.exploreBtn}>
+            <Pressable style={s.exploreBtn} onPress={onPress}>
                 <Text style={s.exploreBtnText}>Explore Details →</Text>
-            </View>
+            </Pressable>
         </View>
     );
 }
@@ -102,19 +106,24 @@ const makeStyles = (theme: any) =>
         },
         priceText: { color: theme.white, fontWeight: "800", fontSize: 14 },
         title: {
-            color: theme.white,
+            color: theme.text,
             fontSize: 26,
             fontWeight: "900",
             lineHeight: 30,
             marginTop: 4,
         },
         locationRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-        locationText: { color: "#aaa", fontSize: 12 },
+        locationText: { color: theme.text + "66", fontSize: 12 },
         metaRow: { flexDirection: "row", gap: 20, marginTop: 4 },
         metaItem: { gap: 2 },
-        metaLabel: { color: "#555", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
+        metaLabel: {
+            color: theme.text + "55",
+            fontSize: 9,
+            fontWeight: "800",
+            letterSpacing: 1,
+        },
         metaValue: { fontSize: 13, fontWeight: "700" },
-        metaValueWhite: { color: theme.white, fontSize: 13, fontWeight: "700" },
+        metaValueWhite: { color: theme.text, fontSize: 13, fontWeight: "700" },
         exploreBtn: {
             backgroundColor: theme.primary,
             borderRadius: 12,

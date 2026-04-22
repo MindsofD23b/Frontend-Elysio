@@ -1,3 +1,5 @@
+// Made with the help of Claude.ai and ChatGPT
+
 import { useTheme } from "@/lib/theme/context";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -46,6 +48,6 @@ const makeStyles = (theme: any) =>
             justifyContent: "center",
         },
         textCol: { flex: 1, gap: 2 },
-        title: { color: theme.white, fontWeight: "800", fontSize: 14 },
-        subtitle: { color: "#aaa", fontSize: 12, lineHeight: 16 },
+        title: { color: theme.text, fontWeight: "800", fontSize: 14 },
+        subtitle: { color: theme.text + "66", fontSize: 12, lineHeight: 16 },
     });

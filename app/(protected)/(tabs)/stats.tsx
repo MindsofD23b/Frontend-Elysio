@@ -1,3 +1,5 @@
+// Made with the help of Claude.ai and ChatGPT
+
 import { useRouter } from "expo-router";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useTheme } from "@/lib/theme/context";
@@ -232,12 +234,12 @@ const makeStyles = (theme: any) =>
             marginBottom: 3,
         },
         premiumTitle: {
-            color: theme.white,
+            color: theme.text,
             fontWeight: "800",
             fontSize: 15,
             lineHeight: 20,
         },
-        premiumSub: { color: theme.white + "55", fontSize: 11, marginTop: 4 },
+        premiumSub: { color: theme.text + "55", fontSize: 11, marginTop: 4 },
         premiumBtn: {
             backgroundColor: theme.primary,
             borderRadius: 20,
@@ -277,7 +279,7 @@ const makeStyles = (theme: any) =>
             gap: 12,
         },
         streakHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-        streakTitle: { color: theme.white, fontWeight: "800", fontSize: 17 },
+        streakTitle: { color: theme.text, fontWeight: "800", fontSize: 17 },
         streakSub: { color: "#aaa", fontSize: 12 },
 
         daysContainer: { position: "relative" },
@@ -327,7 +329,7 @@ const makeStyles = (theme: any) =>
             flex: 1,
         },
         sectionTitle: {
-            color: theme.white,
+            color: theme.text,
             fontWeight: "700",
             fontSize: 14,
             marginBottom: 2,

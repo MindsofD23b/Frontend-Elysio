@@ -1,11 +1,11 @@
-// Made with the help of ChatGPT.
+// Made with the help of ChatGPT and Claude.ai
 
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import Input from "@/components/input";
 import { router, Stack } from "expo-router";
-// import * as ImagePicker from "expo-image-picker";
+import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
@@ -66,7 +66,7 @@ export default function PersonalDetails() {
     const [phone, setPhone] = useState("+41 79 123 45 67");
     const [country, setCountry] = useState("Switzerland");
     const [birthday, setBirthday] = useState("14.02.2002");
-    const [profileImage] = useState(
+    const [profileImage, setProfileImage] = useState(
         "https://images.unsplash.com/photo-1517849845537-4d257902454a",
     );
 
@@ -87,19 +87,19 @@ export default function PersonalDetails() {
         );
     }
 
-    // async function changePicture() {
-    //     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    //     if (!permission.granted) return;
+    async function changePicture() {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) return;
 
-    //     const result = await ImagePicker.launchImageLibraryAsync({
-    //         mediaTypes: ["images"],
-    //         allowsEditing: true,
-    //         aspect: [1, 1],
-    //         quality: 1,
-    //     });
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+        });
 
-    //     if (!result.canceled) setProfileImage(result.assets[0].uri);
-    // }
+        if (!result.canceled) setProfileImage(result.assets[0].uri);
+    }
 
     return (
         <>
@@ -124,6 +124,7 @@ export default function PersonalDetails() {
                                     styles.editIcon,
                                     { backgroundColor: theme.primary },
                                 ]}
+                                onPress={changePicture}
                             >
                                 <Ionicons name="pencil" size={18} color="#fff" />
                             </Pressable>

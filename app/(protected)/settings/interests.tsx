@@ -1,3 +1,5 @@
+// Made with the help of ChatGPT and Claude.ai
+
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useTheme } from "@/lib/theme/context";
@@ -14,23 +16,22 @@ import {
 import { Theme } from "@/lib/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
 import { useFetch } from "@/hooks/useFetch";
-import { useRegisterStore } from "@/utils/registerStore";
 import { createT } from "@/i18n";
 import { ActivitiesByTitle } from "@/types/register";
 
 const MIN = 3;
 const MAX = 12;
 
-const t = createT("auth.register.interests");
+const t = createT("settings.interests");
 
 export default function Interests() {
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
     const tintColor = useColorScheme()?.toString();
 
-    const { data: registerData, setInterests } = useRegisterStore();
+    // useRegisterStore komplett entfernen
+    const [selected, setSelected] = useState<string[]>([]); // später mit echten User-Daten befüllen
 
-    const [selected, setSelected] = useState<string[]>(registerData.interests || []);
     const [errorOpen, setErrorOpen] = useState(false);
 
     const [data, loading, fetchError] = useFetch<ActivitiesByTitle>("/interests", {
@@ -55,15 +56,13 @@ export default function Interests() {
             return [...prev, id];
         });
     };
-
-    const onContinue = () => {
+    const onContinue = async () => {
         if (!canContinue) {
             setErrorOpen(true);
             return;
         }
-
-        setInterests(selected);
-        router.push("/register/addProfileData");
+        //Add API call here to save selected interests to user profile
+        router.back();
     };
 
     return (
@@ -75,7 +74,9 @@ export default function Interests() {
                         contentContainerStyle={styles.scrollContent}
                         showsVerticalScrollIndicator={false}
                     >
-                        <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
+                        <Text style={[gs.h1, { marginTop: 35 }]}>
+                            {(t as any)("title")}
+                        </Text>
 
                         <Text
                             style={[
@@ -83,7 +84,7 @@ export default function Interests() {
                                 { marginTop: 10, color: theme.text + "54" },
                             ]}
                         >
-                            {t("body", { min: MIN, max: MAX })}
+                            {(t as any)("body", { min: MIN, max: MAX })}
                         </Text>
 
                         <View style={styles.scrollArea}>
@@ -181,7 +182,7 @@ export default function Interests() {
                                     <Text style={{ color: "red", fontSize: 14 }}>
                                         {fetchError instanceof Error
                                             ? fetchError.message
-                                            : t("fallbacks.failToLoad")}
+                                            : (t as any)("fallbacks.failToLoad")}
                                     </Text>
                                 </View>
                             ) : (
@@ -250,7 +251,11 @@ export default function Interests() {
                         disabled={!canContinue || loading}
                         onPress={onContinue}
                     >
-                        {loading ? <Loader /> : <BtnText>{t("continue")}</BtnText>}
+                        {loading ? (
+                            <Loader />
+                        ) : (
+                            <BtnText>{(t as any)("continue")}</BtnText>
+                        )}
                     </Button>
 
                     {errorOpen ? (
@@ -264,7 +269,7 @@ export default function Interests() {
                                 style={styles.errorCard}
                             >
                                 <Text style={[styles.errorTitle, { color: theme.text }]}>
-                                    {t("errorTitle")}
+                                    {(t as any)("errorTitle")}
                                 </Text>
                                 <Text
                                     style={[
@@ -272,7 +277,7 @@ export default function Interests() {
                                         { color: theme.text + "B3" },
                                     ]}
                                 >
-                                    {t("errorBody", { min: MIN, max: MAX })}
+                                    {(t as any)("errorBody", { min: MIN, max: MAX })}
                                 </Text>
                                 <Pressable
                                     style={[
@@ -281,7 +286,9 @@ export default function Interests() {
                                     ]}
                                     onPress={() => setErrorOpen(false)}
                                 >
-                                    <Text style={styles.errorOkText}>{t("ok")}</Text>
+                                    <Text style={styles.errorOkText}>
+                                        {(t as any)("ok")}
+                                    </Text>
                                 </Pressable>
                             </BlurView>
                         </Pressable>
