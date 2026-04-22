@@ -1,15 +1,13 @@
 import { useTheme } from "@/lib/theme/context";
-import { Loader2 as Load } from "lucide-react-native";
-import { createContext, useContext, useEffect, useRef } from "react";
+import { createContext, useContext } from "react";
 import {
-    Animated,
+    ActivityIndicator,
     Pressable,
     PressableProps,
     StyleProp,
     Text,
     TextStyle,
     View,
-    ViewProps,
     ViewStyle,
 } from "react-native";
 
@@ -82,30 +80,10 @@ function BtnText({ children, style }: BtnTextProps) {
     );
 }
 
-function Loader({ style }: { style?: StyleProp<ViewProps> }) {
+function Loader() {
     const { theme } = useTheme();
-    const spin = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        Animated.loop(
-            Animated.timing(spin, {
-                toValue: 1,
-                duration: 800,
-                useNativeDriver: true,
-            }),
-        ).start();
-    });
-
-    const rotate = spin.interpolate({
-        inputRange: [0, 1],
-        outputRange: ["0deg", "360deg"],
-    });
-
-    return (
-        <Animated.View style={[{ transform: [{ rotate }] }, style]}>
-            <Load size={18} color={theme.white} />
-        </Animated.View>
-    );
+    return <ActivityIndicator color={theme.white} />;
 }
 
 export { Button, BtnText, Loader };

@@ -1,6 +1,6 @@
 // Made with the help of Claude.ai and ChatGPT
 
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Check, Clock, Flame, Heart, Snowflake } from "lucide-react-native";
@@ -19,7 +19,6 @@ const PEAK_INDEX = 5;
 const DAYS_LEN = 7;
 
 export default function Index() {
-    const router = useRouter();
     const { theme } = useTheme();
     const s = makeStyles(theme);
     const maxBar = Math.max(...BAR_VALUES);
@@ -29,7 +28,7 @@ export default function Index() {
             {/* ── Premium Banner ── */}
             <TouchableOpacity
                 style={s.premiumBanner}
-                onPress={() => router.push("/analytics/premium")}
+                onPress={() => router.push("../(protected)/subscriptions")}
                 activeOpacity={0.8}
             >
                 <View style={s.premiumTextCol}>

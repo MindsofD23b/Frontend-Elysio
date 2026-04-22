@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { get } from "@/utils/store";
+import { initDeviceToken } from "@/services/notifications";
 
 type AuthContextType = {
     token: string | null;
@@ -10,6 +12,8 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const BASE_URL = "https://elysio.jamiepoeffel.ch";
+const TOKEN_KEY = "token";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setToken] = useState<string | null>(null);
@@ -18,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const hydrateAuth = async () => {
             try {
-                const storedToken = await AsyncStorage.getItem("token");
+                const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
                 setToken(storedToken);
             } catch (error) {
                 console.error("Failed to load auth token", error);
@@ -33,11 +37,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (nextToken: string) => {
         setToken(nextToken);
-        await AsyncStorage.setItem("token", nextToken);
+        await AsyncStorage.setItem(TOKEN_KEY, nextToken);
+        console.log("Calling initCrypto...");
+        await initCrypto("https://elysio.jamiepoeffel.ch", nextToken);
+        console.log("initCrypto done");
+        console.log("Calling initDeviceToken...");
+        const pushToken: string | null = await get("expo-push-token");
+        if (pushToken) {
+            await initDeviceToken(BASE_URL, pushToken, nextToken);
+        }
+        console.log("initDeviceToken done");
     };
 
     const logout = async () => {
-        await AsyncStorage.removeItem("token");
+        await AsyncStorage.clear();
         setToken(null);
     };
 

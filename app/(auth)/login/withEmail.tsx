@@ -5,7 +5,7 @@ import Input from "@/components/input";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
-import { useFetch } from "@/hooks/useFetch";
+import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
 
@@ -14,7 +14,7 @@ type FormData = {
     password: string;
 };
 
-type LoginResponse = {
+export type LoginResponse = {
     token: string;
 };
 
@@ -32,8 +32,9 @@ export default function WithEmail() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState<FormErrors>({});
+    const [loading, setLoading] = useState(false);
 
-    const [, loading, fetchError, loginRequest] = useFetch<LoginResponse>(
+    const [, , fetchError, loginRequest] = usePublicFetch<LoginResponse>(
         "/auth/login",
         {
             method: "POST",
@@ -48,6 +49,7 @@ export default function WithEmail() {
     );
 
     const onSubmit = async (data: FormData) => {
+        setLoading(true);
         const nextErrors: FormErrors = {};
 
         if (!/^\S+@\S+\.\S+$/.test(data.email.trim())) {
@@ -87,6 +89,8 @@ export default function WithEmail() {
                     message: err instanceof Error ? err.message : t("errors.loginFailed"),
                 },
             });
+        } finally {
+            setLoading(false);
         }
     };
 

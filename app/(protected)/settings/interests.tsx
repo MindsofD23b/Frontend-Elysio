@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { Theme } from "@/lib/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
-import { useFetch } from "@/hooks/useFetch";
+import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { createT } from "@/i18n";
 import { ActivitiesByTitle } from "@/types/register";
 
@@ -34,7 +34,7 @@ export default function Interests() {
 
     const [errorOpen, setErrorOpen] = useState(false);
 
-    const [data, loading, fetchError] = useFetch<ActivitiesByTitle>("/interests", {
+    const [data, loading, fetchError] = usePublicFetch<ActivitiesByTitle>("/interests", {
         method: "GET",
     });
 

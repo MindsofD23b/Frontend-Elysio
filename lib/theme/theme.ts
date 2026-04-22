@@ -32,6 +32,9 @@ export const colors = {
         planFree: "#E67FC9",
         planEssential: "#EC136A",
         planPremium: "#9B4DCA",
+        grayscale: "#9CA3AF",
+        gray: "#ced4da",
+        orange: "#f3722c",
     },
     dark: {
         background: "#1E1E1E",
@@ -66,6 +69,9 @@ export const colors = {
         planFree: "#E67FC9",
         planEssential: "#EC136A",
         planPremium: "#9B4DCA",
+        grayscale: "#9CA3AF",
+        gray: "#ced4da",
+        orange: "#f3722c",
     },
 };
 

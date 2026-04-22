@@ -6,12 +6,12 @@ import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
-import { useFetch } from "@/hooks/useFetch";
+import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { useRegisterStore } from "@/utils/registerStore";
 import { RegisterResponse, ProfileDataFormErrors } from "@/types/register";
 import { createT } from "@/i18n";
 import { CountryCode } from "libphonenumber-js";
-// import { getLocales } from "expo-localization";
+import { getLocales } from "expo-localization";
 
 const t = createT("auth.register.profileData");
 
@@ -28,12 +28,11 @@ export default function AddProfileDataPage() {
     const [language, setLanguage] = useState(
         data.language || getLocales()[0]?.languageCode || "en",
     );
-    const fullLanguageName = new Intl.DisplayNames(
-        [getLocales()[0]?.languageTag ?? "en"],
-        {
-            type: "language",
-        },
-    ).of(language);
+    const fullLanguageName = Intl.DisplayNames
+        ? new Intl.DisplayNames([getLocales()[0]?.languageTag ?? "en"], {
+              type: "language",
+          }).of(language)
+        : language;
     const [jobTitle, setJobTitle] = useState(data.jobTitle || "");
     const [aboutMe, setAboutMe] = useState(data.aboutMe || "");
     const [acceptedTerms, setAcceptedTerms] = useState(data.acceptedTerms || false);
@@ -43,7 +42,7 @@ export default function AddProfileDataPage() {
 
     const [errors, setErrors] = useState<ProfileDataFormErrors>({});
 
-    const [, loading, fetchError, registerUser] = useFetch<RegisterResponse>(
+    const [, loading, fetchError, registerUser] = usePublicFetch<RegisterResponse>(
         "/auth/register",
         {
             method: "POST",
@@ -185,30 +184,66 @@ export default function AddProfileDataPage() {
             const response = await registerUser({
                 body: JSON.stringify(finalPayload),
             });
+            console.log("response:", JSON.stringify(response));
+            console.log("userId:", response?.userId);
 
             if (response?.statusCode && response.statusCode >= 400) {
                 setErrors({
-                    general: {
-                        message: response.message || t("fallback.regFailed"),
-                    },
+                    general: { message: response.message || t("fallback.regFailed") },
                 });
                 return;
             }
 
-            const registeredEmail = data.email;
-            reset();
+            console.log("=== PHOTO UPLOAD START ===");
+            console.log("profilePictureUri:", data.profilePictureUri);
+            console.log("userId:", response?.userId);
 
-            router.replace({
-                pathname: "/register/sendVerificationEmail",
-                params: { email: registeredEmail },
-            });
+            if (data.profilePictureUri && response?.userId) {
+                const uri = data.profilePictureUri;
+                const ext = uri.split(".").pop()?.split("?")[0] ?? "jpg";
+                const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+
+                console.log("ext:", ext, "mimeType:", mimeType);
+
+                const formData = new FormData();
+                formData.append("file", {
+                    uri,
+                    name: `profile.${ext}`,
+                    type: mimeType,
+                } as any);
+
+                console.log(
+                    "Sending fetch to:",
+                    `https://elysio.jamiepoeffel.ch/users/${response.userId}/photos`,
+                );
+
+                const photoRes = await fetch(
+                    `https://elysio.jamiepoeffel.ch/users/${response.userId}/photos`,
+                    {
+                        method: "POST",
+                        body: formData,
+                    },
+                );
+
+                const photoBody = await photoRes.text();
+                console.log("=== PHOTO UPLOAD RESPONSE ===");
+                console.log("status:", photoRes.status);
+                console.log("body:", photoBody);
+            } else {
+                console.log("SKIPPED — profilePictureUri or userId missing");
+                console.log("profilePictureUri:", data.profilePictureUri);
+                console.log("userId:", response?.userId);
+            }
         } catch (err) {
-            setErrors({
-                general: {
-                    message: err instanceof Error ? err.message : t("fallback.regFailed"),
-                },
-            });
+            console.error("Photo upload error:", err);
         }
+
+        const registeredEmail = data.email;
+        reset();
+        router.replace({
+            pathname: "/register/sendVerificationEmail",
+            params: { email: registeredEmail },
+        });
     };
 
     return (

@@ -100,7 +100,16 @@ export default function SendVerificationEmail() {
                 >
                     {t("noEmail")}
                 </Text>
-                <Pressable onPress={() => alert("resend email")}>{t("resend")}</Pressable>
+                <Pressable onPress={() => alert("resend email")}>
+                    <Text
+                        style={[
+                            gs.bodyText,
+                            { color: theme.primary, textAlign: "center", marginTop: 8 },
+                        ]}
+                    >
+                        {t("resend")}
+                    </Text>
+                </Pressable>
                 <Button
                     style={{ marginTop: "auto", marginBottom: 12 }}
                     onPress={() => router.replace("/login")}

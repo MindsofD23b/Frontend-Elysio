@@ -1,20 +1,34 @@
 import { BtnText, Button } from "@/components/button";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/theme/context";
-import { Eye, Globe, Heart, MessageCircle, Moon, User } from "lucide-react-native";
-import { Href, router } from "expo-router";
+import { Eye, Gem, Globe, Heart, MessageCircle, Moon, User } from "lucide-react-native";
+import { router } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
+import Constants from "expo-constants";
+import { MenuRow } from "@/components/menuRow";
+import * as WebBrowser from "expo-web-browser";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
+
+type UserProfile = {
+    id: string;
+    email: string | null;
+    firstName: string;
+    lastName: string;
+    photoUrl: string | null;
+};
 
 const t = createT("auth.settings");
+const version = Constants.expoConfig?.version;
 
 export default function SettingsScreen() {
     const { gs, theme } = useTheme();
     const { logout } = useAuth();
+    const [profile] = useAuthFetch<UserProfile>("/users/me", {}, { useCache: false });
 
-    const mutedText = withAlpha(theme.text, 0.55);
-    const divider = withAlpha(theme.text, 0.15);
-    const iconColor = withAlpha(theme.text, 0.9);
+    const mutedText = theme.text + "8C";
+    const divider = theme.text + "26";
+    const iconColor = theme.text + "E6";
 
     const handleLogout = async () => {
         await logout();
@@ -28,15 +42,22 @@ export default function SettingsScreen() {
             </Text>
 
             <View style={styles.profileWrap}>
-                <Image
-                    source={{
-                        uri: "https://images.unsplash.com/photo-1517849845537-4d257902454a",
-                    }}
-                    style={styles.avatar}
-                />
-                <Text style={[styles.name, { color: theme.text }]}>Lara Gut</Text>
+                {profile?.photoUrl ? (
+                    <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
+                ) : (
+                    <View
+                        style={[
+                            styles.avatar,
+                            styles.avatarPlaceholder,
+                            { backgroundColor: theme.text + "1A" },
+                        ]}
+                    />
+                )}
+                <Text style={[styles.name, { color: theme.text }]}>
+                    {profile ? `${profile.firstName} ${profile.lastName}` : ""}
+                </Text>
                 <Text style={[styles.email, { color: mutedText }]}>
-                    Lara.gut@example.com
+                    {profile?.email ?? ""}
                 </Text>
             </View>
 
@@ -48,6 +69,22 @@ export default function SettingsScreen() {
                     iconColor={iconColor}
                     textColor={theme.text}
                     href="/settings/personaldetails"
+                />
+                <MenuRow
+                    icon={Gem}
+                    label={t("subscription")}
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/subscriptions"
+                />
+                <MenuRow
+                    icon={Gem}
+                    label={t("subscription")}
+                    divider={divider}
+                    iconColor={iconColor}
+                    textColor={theme.text}
+                    href="/subscriptions"
                 />
                 <MenuRow
                     icon={Heart}
@@ -63,7 +100,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() =>
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        )
+                    }
                 />
                 <MenuRow
                     icon={MessageCircle}
@@ -71,7 +119,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() =>
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/privacypolicy/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        )
+                    }
                 />
                 <MenuRow
                     icon={Eye}
@@ -79,7 +138,18 @@ export default function SettingsScreen() {
                     divider={divider}
                     iconColor={iconColor}
                     textColor={theme.text}
-                    href="/settings/apperance"
+                    onPress={() => {
+                        WebBrowser.openBrowserAsync(
+                            "https://mindsofd23b.github.io/Landing-Elysio/aboutus/",
+                            {
+                                presentationStyle:
+                                    WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+                                controlsColor: theme.primary,
+                                toolbarColor: theme.background,
+                                enableBarCollapsing: true,
+                            },
+                        );
+                    }}
                 />
                 <MenuRow
                     icon={Moon}
@@ -91,6 +161,25 @@ export default function SettingsScreen() {
                 />
             </View>
 
+            <View style={[styles.list, { marginTop: 0 }]}>
+                {[{ label: "Version", value: version }].map((item) => (
+                    <View
+                        key={item.label}
+                        style={[styles.infoRow, { borderBottomColor: divider }]}
+                    >
+                        <Text style={[styles.infoLabel, { color: theme.text }]}>
+                            {item.label}
+                        </Text>
+                        <Text
+                            style={[styles.infoValue, { color: mutedText }]}
+                            numberOfLines={1}
+                        >
+                            {item.value}
+                        </Text>
+                    </View>
+                ))}
+            </View>
+
             <Button style={{ marginTop: "auto" }} onPress={handleLogout}>
                 <BtnText>{t("logOut")}</BtnText>
             </Button>
@@ -98,49 +187,27 @@ export default function SettingsScreen() {
     );
 }
 
-function MenuRow({
-    icon: Icon,
-    label,
-    divider,
-    iconColor,
-    textColor,
-    href,
-}: {
-    icon: React.ElementType;
-    label: string;
-    divider: string;
-    iconColor: string;
-    textColor: string;
-    href: Href;
-}) {
-    const { theme } = useTheme();
-
-    return (
-        <Pressable
-            onPress={() => router.push(href)}
-            style={({ pressed }) => [
-                styles.row,
-                { borderBottomColor: divider, width: "100%" },
-                pressed && { backgroundColor: theme.base + "0A", borderRadius: 16 },
-            ]}
-        >
-            <View style={styles.rowLeft}>
-                <Icon size={20} color={iconColor} />
-                <Text style={[styles.rowLabel, { color: textColor }]}>{label}</Text>
-            </View>
-        </Pressable>
-    );
-}
-
-function withAlpha(hex: string, alpha: number) {
-    const clean = hex.replace("#", "");
-    const r = parseInt(clean.slice(0, 2), 16);
-    const g = parseInt(clean.slice(2, 4), 16);
-    const b = parseInt(clean.slice(4, 6), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-}
-
 const styles = StyleSheet.create({
+    infoRow: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: 14,
+        paddingHorizontal: 7,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    infoLabel: {
+        fontSize: 16,
+        fontWeight: "600",
+    },
+    infoValue: {
+        fontSize: 14,
+        fontWeight: "400",
+        flexShrink: 1,
+        marginLeft: 8,
+        textAlign: "right",
+    },
     title: {
         fontSize: 26,
         fontWeight: "800",
@@ -153,6 +220,11 @@ const styles = StyleSheet.create({
     },
 
     avatar: {
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+    },
+    avatarPlaceholder: {
         width: 110,
         height: 110,
         borderRadius: 55,
@@ -172,25 +244,6 @@ const styles = StyleSheet.create({
     list: {
         width: "100%",
         marginTop: 10,
-    },
-
-    row: {
-        width: "100%",
-        paddingVertical: 14,
-        paddingHorizontal: 7,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-
-    rowLeft: {
-        width: "100%",
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-    },
-
-    rowLabel: {
-        fontSize: 16,
-        fontWeight: "600",
     },
 
     modeRow: {

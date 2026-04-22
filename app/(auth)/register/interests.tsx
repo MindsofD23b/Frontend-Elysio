@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Theme } from "@/lib/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
-import { useFetch } from "@/hooks/useFetch";
+import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { useRegisterStore } from "@/utils/registerStore";
 import { createT } from "@/i18n";
 import { ActivitiesByTitle } from "@/types/register";
@@ -33,7 +33,7 @@ export default function Interests() {
     const [selected, setSelected] = useState<string[]>(registerData.interests || []);
     const [errorOpen, setErrorOpen] = useState(false);
 
-    const [data, loading, fetchError] = useFetch<ActivitiesByTitle>("/interests", {
+    const [data, loading, fetchError] = usePublicFetch<ActivitiesByTitle>("/interests", {
         method: "GET",
     });
 
@@ -63,7 +63,7 @@ export default function Interests() {
         }
 
         setInterests(selected);
-        router.push("/register/addProfileData");
+        router.push("/register/addProfilePicture");
     };
 
     return (

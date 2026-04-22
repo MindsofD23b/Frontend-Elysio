@@ -2,6 +2,7 @@ export type RegisterResponse = {
     message?: string;
     error?: string;
     statusCode?: number;
+    userId?: string;
 };
 
 export type ProfileDataFormErrors = {

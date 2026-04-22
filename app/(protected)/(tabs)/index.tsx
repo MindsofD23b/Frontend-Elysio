@@ -1,20 +1,22 @@
 import { Image } from "expo-image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
     Animated,
     Dimensions,
     Easing,
-    Pressable,
     StyleSheet,
     View,
     Text,
+    Pressable,
 } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { router } from "expo-router";
-import { canCall } from "@/lib/premium/canCall";
 import { CONSTANTS, PlanType } from "@/lib/constants";
-import { Heart } from "lucide-react-native";
+import { CloudOff, Heart } from "lucide-react-native";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
+import * as StoreReview from "expo-store-review";
+
 // TODO: Implement plan based constants
 const user = {
     plan: PlanType.FREE,
@@ -30,52 +32,124 @@ const images = [
     {
         id: "l1",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1513682121497-80211f36a7d3?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        uri: "https://images.unsplash.com/photo-1591969851586-adbbd4accf81?q=80&w=687&auto=format&fit=crop",
         h: 150,
     },
     {
         id: "l2",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1604440401661-8f6f07c285a2?q=80&w=663&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        uri: "https://images.unsplash.com/photo-1525206809752-65312b959c88?q=80&w=687&auto=format&fit=crop",
         h: 220,
     },
     {
         id: "l3",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1601887389937-0b02c26b602c?q=80&w=627&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        uri: "https://images.unsplash.com/photo-1566759996874-04d713cc224a?q=80&w=687&auto=format&fit=crop",
         h: 160,
     },
     {
         id: "l4",
         col: "left",
-        uri: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        uri: "https://images.unsplash.com/photo-1541679368093-5c967ac6de11?q=80&w=687&auto=format&fit=crop",
         h: 210,
+    },
+    {
+        id: "l5",
+        col: "left",
+        uri: "https://images.unsplash.com/photo-1510276113764-7ac28415a9ec?q=80&w=1170&auto=format&fit=crop",
+        h: 180,
+    },
+    {
+        id: "l6",
+        col: "left",
+        uri: "https://images.unsplash.com/photo-1469989011449-f7b46079781c?q=80&w=687&auto=format&fit=crop",
+        h: 200,
+    },
+    {
+        id: "l7",
+        col: "left",
+        uri: "https://images.unsplash.com/photo-1501901609772-df0848060b33?q=80&w=687&auto=format&fit=crop",
+        h: 170,
+    },
+    {
+        id: "l8",
+        col: "left",
+        uri: "https://images.unsplash.com/photo-1649289787860-ecad6fad173f?q=80&w=687&auto=format&fit=crop",
+        h: 230,
+    },
+    {
+        id: "l9",
+        col: "left",
+        uri: "https://images.unsplash.com/photo-1591711696773-c4b7fe4d3d74?q=80&w=2342&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        h: 155,
+    },
+    {
+        id: "l10",
+        col: "left",
+        uri: "https://images.unsplash.com/photo-1512790941078-1158a9cc3255?q=80&w=685&auto=format&fit=crop",
+        h: 195,
     },
 
     // right column
     {
         id: "r1",
         col: "right",
-        uri: "https://images.unsplash.com/photo-1494500764479-0c8f2919a3d8?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        uri: "https://images.unsplash.com/photo-1622503958522-9f847e7e18de?q=80&w=687&auto=format&fit=crop",
         h: 180,
     },
     {
         id: "r2",
         col: "right",
-        uri: "https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?auto=format&fit=crop&w=800&q=80",
+        uri: "https://images.unsplash.com/photo-1513521523607-ba30a1159755?q=80&w=1170&auto=format&fit=crop",
         h: 140,
     },
     {
         id: "r3",
         col: "right",
-        uri: "https://images.unsplash.com/photo-1496307653780-42ee777d4833?auto=format&fit=crop&w=800&q=80",
+        uri: "https://images.unsplash.com/photo-1624228652393-eab1721b1899?q=80&w=687&auto=format&fit=crop",
         h: 240,
     },
     {
         id: "r4",
         col: "right",
-        uri: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
+        uri: "https://images.unsplash.com/photo-1481689481678-374244adae6d?q=80&w=687&auto=format&fit=crop",
         h: 120,
+    },
+    {
+        id: "r5",
+        col: "right",
+        uri: "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?q=80&w=687&auto=format&fit=crop",
+        h: 200,
+    },
+    {
+        id: "r6",
+        col: "right",
+        uri: "https://images.unsplash.com/photo-1580250864656-cd501faa9c76?q=80&w=687&auto=format&fit=crop",
+        h: 160,
+    },
+    {
+        id: "r7",
+        col: "right",
+        uri: "https://images.unsplash.com/photo-1513521465117-afd07b1ce6dc?q=80&w=687&auto=format&fit=crop",
+        h: 210,
+    },
+    {
+        id: "r8",
+        col: "right",
+        uri: "https://images.unsplash.com/photo-1561240055-102e7eaa2961?q=80&w=687&auto=format&fit=crop",
+        h: 175,
+    },
+    {
+        id: "r9",
+        col: "right",
+        uri: "https://images.unsplash.com/photo-1567888818950-737cde12f04c?q=80&w=687&auto=format&fit=crop",
+        h: 145,
+    },
+    {
+        id: "r10",
+        col: "right",
+        uri: "https://images.unsplash.com/photo-1611067460204-e43ec4a2efa3?q=80&w=1170&auto=format&fit=crop",
+        h: 220,
     },
 ];
 function calcColHeight(imgs: typeof images) {
@@ -125,8 +199,32 @@ function InfiniteColumn({
     );
 }
 
+const handleReview = async () => {
+    if (await StoreReview.isAvailableAsync()) {
+        await StoreReview.requestReview();
+    }
+};
+
+interface FullFillUserResponse {
+    message: string;
+}
+
 export default function Index() {
     const { theme, gs } = useTheme();
+    const [callsData, , , refetch] = useAuthFetch<{ callsToday: number }>(
+        "/users/calls-left",
+        undefined,
+        { manual: true },
+    );
+
+    const hasFetched = useRef(false);
+
+    useEffect(() => {
+        if (!hasFetched.current) {
+            hasFetched.current = true;
+            refetch().catch(() => {});
+        }
+    }, [refetch]);
     const styles = makeStyles(theme);
 
     const leftBase = images.filter((i) => i.col === "left");
@@ -178,19 +276,27 @@ export default function Index() {
             driftL.stopAnimation();
             driftR.stopAnimation();
         };
-    });
+    }, [driftL, driftR, leftColHeight, rightColHeight]);
 
-    const [count, setCount] = useState(0);
+    function canCall(plan: PlanType, count: number | undefined) {
+        return (
+            CONSTANTS.PLANS[plan].maxCalls >
+            (count !== undefined ? count : CONSTANTS.PLANS[plan].maxCalls)
+        );
+    }
 
     const onStart = () => {
-        // TODO: Implement i18n here
-        if (!canCall(user.plan, count)) {
+        // TODO: implement i18n here
+        if (!canCall(user.plan, callsData?.callsToday)) {
             return user.plan === PlanType.FREE
                 ? alert("Upgrade to Paid plan!")
-                : alert("You have no more Calls to day");
+                : alert("You have no more Calls today");
         }
 
-        setCount((prev) => prev + 1);
+        if (callsData?.callsToday === 3) {
+            handleReview();
+        }
+
         router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
     };
 
@@ -269,7 +375,7 @@ export default function Index() {
             spin2.stopAnimation();
             spin3.stopAnimation();
         };
-    });
+    }, [spin, spin2, spin3, zoom]);
     //SPIN
     const r1 = spin.interpolate({
         inputRange: [0, 1],
@@ -283,6 +389,7 @@ export default function Index() {
         inputRange: [0, 1],
         outputRange: ["0deg", "360deg"],
     });
+
     return (
         <View style={gs.container}>
             {/* Grid */}
@@ -299,10 +406,57 @@ export default function Index() {
                 />
             </View>
 
+            <Pressable
+                style={styles.topInidicator}
+                onPress={() => router.push("/(protected)/info")}
+            >
+                <View
+                    style={{
+                        shadowColor: theme.orange,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: 0.6,
+                        shadowRadius: 20,
+                        elevation: 12,
+                    }}
+                >
+                    <View
+                        style={{
+                            shadowColor: theme.orange,
+                            shadowOffset: { width: 0, height: 0 },
+                            shadowOpacity: 0.4,
+                            shadowRadius: 10,
+                        }}
+                    >
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 6,
+                                backgroundColor: theme.orange,
+                                paddingHorizontal: 14,
+                                paddingVertical: 8,
+                                borderRadius: 999,
+                            }}
+                        >
+                            <CloudOff size={14} color={theme.white} />
+                            <Text
+                                style={{
+                                    color: theme.white,
+                                    fontWeight: "700",
+                                    fontSize: 13,
+                                }}
+                            >
+                                Offline
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            </Pressable>
+
             <View style={styles.bottomIndicator} pointerEvents="none">
                 <View style={styles.indicatorPill}>
                     <Text style={styles.indicatorText}>
-                        {count}/{CONSTANTS.PLANS[user.plan].maxCalls}
+                        {callsData?.callsToday}/{CONSTANTS.PLANS[user.plan].maxCalls}
                     </Text>
                 </View>
             </View>
@@ -394,6 +548,14 @@ const makeStyles = (theme: Theme) =>
         ring2: { width: 260, height: 260, borderWidth: 6, opacity: 0.9 },
         ring3: { width: 320, height: 320, borderWidth: 4, opacity: 0.75 },
 
+        topInidicator: {
+            position: "absolute",
+            top: 8,
+            left: 0,
+            right: 0,
+            alignItems: "center",
+        },
+
         bottomIndicator: {
             position: "absolute",
             bottom: 8,
@@ -406,6 +568,16 @@ const makeStyles = (theme: Theme) =>
             paddingVertical: 4,
             borderRadius: 99,
             backgroundColor: theme.base + "80",
+            elevation: 0.9,
+        },
+        indicatorPillOrange: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+            backgroundColor: theme.orange,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 99,
             elevation: 0.9,
         },
         indicatorText: {

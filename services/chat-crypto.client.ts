@@ -1,0 +1,201 @@
+import * as SecureStore from "expo-secure-store";
+import RSA, { Hash } from "react-native-fast-rsa";
+import {
+    AESEncryptionKey,
+    AESSealedData,
+    aesEncryptAsync,
+    aesDecryptAsync,
+} from "expo-crypto";
+import { Message, RoomMessagesResponse } from "@/types/messages";
+
+const PRIVATE_KEY_STORE_KEY = "chat_private_key";
+const PUBLIC_KEY_STORE_KEY = "chat_public_key";
+
+let cachedPrivateKey: string | null = null;
+const aesKeyCache = new Map<string, AESEncryptionKey>();
+
+export interface EncryptedPayload {
+    type: "text";
+    ciphertext: string;
+    iv: string;
+    authTag: string;
+    encryptedKeys: { userId: string; encryptedKey: string }[];
+}
+
+export async function initCrypto(apiBaseUrl: string, authToken: string): Promise<void> {
+    let publicKey: string;
+
+    const existingPrivate = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
+    const existingPublic = await SecureStore.getItemAsync(PUBLIC_KEY_STORE_KEY);
+
+    if (existingPrivate && existingPublic) {
+        publicKey = existingPublic;
+    } else {
+        const keys = await RSA.generate(2048);
+        await SecureStore.setItemAsync(PRIVATE_KEY_STORE_KEY, keys.privateKey);
+        await SecureStore.setItemAsync(PUBLIC_KEY_STORE_KEY, keys.publicKey);
+        publicKey = keys.publicKey;
+    }
+
+    const res = await fetch(`${apiBaseUrl}/users/me/public-key`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ publicKey }),
+    });
+
+    if (!res.ok) {
+        throw new Error("Public key upload failed");
+    }
+}
+
+export async function encryptMessage(
+    plainText: string,
+    recipients: { userId: string; publicKey: string }[],
+): Promise<EncryptedPayload> {
+    const aesKey = await AESEncryptionKey.generate(256);
+    const aesKeyBase64 = await aesKey.encoded("base64");
+    const plaintextBase64 = btoa(unescape(encodeURIComponent(plainText)));
+    const sealedData = await aesEncryptAsync(plaintextBase64, aesKey);
+
+    const iv = (await sealedData.iv("base64")) as string;
+    const authTag = (await sealedData.tag("base64")) as string;
+    const ciphertextBytes = (await sealedData.ciphertext({
+        encoding: "bytes",
+        includeTag: false,
+    })) as Uint8Array;
+    const ciphertext = bytesToBase64(ciphertextBytes);
+
+    const encryptedKeys = await Promise.all(
+        recipients.map(async (r) => ({
+            userId: r.userId,
+            encryptedKey: await RSA.encryptOAEP(
+                aesKeyBase64,
+                "",
+                Hash.SHA256,
+                r.publicKey,
+            ),
+        })),
+    );
+
+    return {
+        type: "text",
+        ciphertext,
+        iv,
+        authTag,
+        encryptedKeys,
+    };
+}
+
+export async function decryptMessage(msg: {
+    ciphertext: string;
+    iv: string;
+    authTag: string;
+    encryptedKey: string;
+}): Promise<string> {
+    if (!cachedPrivateKey) {
+        cachedPrivateKey = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
+    }
+    if (!cachedPrivateKey) throw new Error("Kein Private Key gefunden");
+
+    let aesKey = aesKeyCache.get(msg.encryptedKey);
+    if (!aesKey) {
+        const aesKeyBase64 = await RSA.decryptOAEP(
+            msg.encryptedKey,
+            "",
+            Hash.SHA256,
+            cachedPrivateKey,
+        );
+        aesKey = await AESEncryptionKey.import(aesKeyBase64, "base64");
+        aesKeyCache.set(msg.encryptedKey, aesKey);
+    }
+
+    const sealedData = AESSealedData.fromParts(
+        base64ToBytes(msg.iv),
+        base64ToBytes(msg.ciphertext),
+        base64ToBytes(msg.authTag),
+    );
+    const decryptedBase64 = (await aesDecryptAsync(sealedData, aesKey, {
+        output: "base64",
+    })) as string;
+
+    return decodeURIComponent(escape(atob(decryptedBase64)));
+}
+
+async function prewarmAesCache(messages: RoomMessagesResponse["messages"]) {
+    const uniqueKeys = [...new Set(messages.map((m) => m.encryptedKey).filter(Boolean))];
+
+    if (!cachedPrivateKey) {
+        cachedPrivateKey = await SecureStore.getItemAsync(PRIVATE_KEY_STORE_KEY);
+    }
+    if (!cachedPrivateKey) {
+        throw new Error("Kein Private Key gefunden");
+    }
+
+    const privateKey = cachedPrivateKey;
+
+    await Promise.all(
+        uniqueKeys.map(async (encKey) => {
+            if (encKey && !aesKeyCache.has(encKey)) {
+                const aesKeyBase64 = await RSA.decryptOAEP(
+                    encKey,
+                    "",
+                    Hash.SHA256,
+                    privateKey,
+                );
+                const aesKey = await AESEncryptionKey.import(aesKeyBase64, "base64");
+                aesKeyCache.set(encKey, aesKey);
+            }
+        }),
+    );
+}
+
+export async function decryptBatch(
+    messages: RoomMessagesResponse["messages"],
+): Promise<Message[]> {
+    await prewarmAesCache(messages);
+    return await Promise.all(
+        messages.map(async (msg) => {
+            let text = "[Encrypted message]";
+            if (msg.type !== "text") {
+                text = "Voice message";
+            } else if (msg.encryptedKey) {
+                try {
+                    text = await decryptMessage({
+                        ciphertext: msg.ciphertext,
+                        iv: msg.iv,
+                        authTag: msg.authTag,
+                        encryptedKey: msg.encryptedKey,
+                    });
+                } catch {
+                    text = "[Unable to decrypt]";
+                }
+            }
+            return {
+                id: msg.id,
+                senderId: msg.senderId,
+                text,
+                createdAt: msg.createdAt,
+            };
+        }),
+    );
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
