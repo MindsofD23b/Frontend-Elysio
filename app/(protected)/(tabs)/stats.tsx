@@ -28,7 +28,7 @@ export default function Index() {
             {/* ── Premium Banner ── */}
             <TouchableOpacity
                 style={s.premiumBanner}
-                onPress={() => router.push("../(protected)/subscriptions")}
+                onPress={() => router.push("/(protected)/subscriptions")}
                 activeOpacity={0.8}
             >
                 <View style={s.premiumTextCol}>
