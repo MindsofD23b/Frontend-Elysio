@@ -55,3 +55,4 @@ app-example
 .claude
 *.claude
 claude
+,claude-*
