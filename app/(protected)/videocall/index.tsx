@@ -479,7 +479,7 @@ export default function VideoCall() {
     const consumingProducerIdsRef = useRef<Set<string>>(new Set());
     const consumersRef = useRef<Map<string, any>>(new Map());
     const remoteVideoStreamRef = useRef<any>(null);
-
+    const videoProducerRef = useRef<any>(null);
     const [matchmakingReady, setMatchmakingReady] = useState(false);
     const [matchState, setMatchState] = useState<"idle" | "waiting" | "matched">("idle");
     const [_matchedUserId, setMatchedUserId] = useState<string | null>(null);
@@ -753,7 +753,10 @@ export default function VideoCall() {
             const audioTrack = localStream.getAudioTracks()[0];
             const videoTrack = localStream.getVideoTracks()[0];
             if (audioTrack) await sendTransport.produce({ track: audioTrack });
-            if (videoTrack) await sendTransport.produce({ track: videoTrack });
+            if (videoTrack) {
+                const producer = await sendTransport.produce({ track: videoTrack });
+                videoProducerRef.current = producer;
+            }
         },
         [api],
     );
@@ -947,7 +950,7 @@ export default function VideoCall() {
         if (!stream) return;
 
         stream.getVideoTracks().forEach((t: any) => t.stop());
-        setLocalUrl(null); // force RTCView unmount
+        setLocalUrl(null);
 
         try {
             const newStream = await mediaDevices.getUserMedia({
@@ -958,14 +961,19 @@ export default function VideoCall() {
             const newVideoTrack = newStream.getVideoTracks()[0];
             if (!newVideoTrack) return;
 
-            stream.getVideoTracks().forEach((t: any) => stream.removeTrack(t));
-            stream.addTrack(newVideoTrack);
+            // Replace track for remote peer
+            if (videoProducerRef.current) {
+                await videoProducerRef.current.replaceTrack({ track: newVideoTrack });
+            }
+
+            // Update local stream ref with new stream entirely
+            localStreamRef.current = newStream;
 
             setFacingMode(nextFacing);
-            setLocalUrl(stream.toURL() + `?t=${Date.now()}`);
+            setLocalUrl(newStream.toURL());
         } catch (err) {
             console.error("flipCamera error", err);
-            setFacingMode(facingMode); // revert
+            setFacingMode(facingMode);
         }
     }
 
