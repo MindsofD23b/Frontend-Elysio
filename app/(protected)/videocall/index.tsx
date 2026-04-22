@@ -472,6 +472,7 @@ export default function VideoCall() {
     const sendTransportRef = useRef<any>(null);
     const recvTransportRef = useRef<any>(null);
     const socketRef = useRef<Socket | null>(null);
+    const previewBottomAnim = useRef(new Animated.Value(128)).current;
 
     const localStreamRef = useRef<any>(null);
     const remoteStreamRef = useRef<any>(new MediaStream());
@@ -486,7 +487,7 @@ export default function VideoCall() {
     const localPreviewAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => false,
+            onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: () => true,
             onPanResponderGrant: () => {
                 localPreviewAnim.setOffset({
@@ -975,12 +976,21 @@ export default function VideoCall() {
         if (isAnimatingRef.current) return;
         isAnimatingRef.current = true;
         const toValue = controlsVisible ? 0 : 1;
-        Animated.timing(controlsOpacity, {
-            toValue,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-        }).start(() => {
+        const toBottom = controlsVisible ? 24 : 128;
+        Animated.parallel([
+            Animated.timing(controlsOpacity, {
+                toValue,
+                duration: 1000,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+            }),
+            Animated.timing(previewBottomAnim, {
+                toValue: toBottom,
+                duration: 1000,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: false, // bottom can't use native driver
+            }),
+        ]).start(() => {
             setControlsVisible((v) => !v);
             isAnimatingRef.current = false;
         });
@@ -1143,22 +1153,6 @@ export default function VideoCall() {
                     style={{ opacity: controlsOpacity, ...StyleSheet.absoluteFillObject }}
                     pointerEvents={controlsVisible ? "box-none" : "none"}
                 >
-                    {localUrl && (
-                        <Animated.View
-                            style={[
-                                styles.localPreviewWrapper,
-                                { transform: localPreviewAnim.getTranslateTransform() },
-                            ]}
-                            {...panResponder.panHandlers}
-                        >
-                            <RTCView
-                                streamURL={localUrl}
-                                style={styles.localPreview}
-                                objectFit="cover"
-                                mirror={facingMode === "user"}
-                            />
-                        </Animated.View>
-                    )}
                     {icebreakerVisible && (
                         <Animated.View
                             style={[
@@ -1241,6 +1235,28 @@ export default function VideoCall() {
                         </View>
                     </View>
                 </Animated.View>
+                {localUrl && (
+                    <Animated.View
+                        style={[
+                            styles.localPreviewWrapper,
+                            {
+                                transform: localPreviewAnim.getTranslateTransform(),
+                                bottom: previewBottomAnim,
+                            },
+                        ]}
+                        {...panResponder.panHandlers}
+                        onStartShouldSetResponder={() => true}
+                    >
+                        <View pointerEvents="none" style={{ flex: 1 }}>
+                            <RTCView
+                                streamURL={localUrl}
+                                style={styles.localPreview}
+                                objectFit="cover"
+                                mirror={facingMode === "user"}
+                            />
+                        </View>
+                    </Animated.View>
+                )}
             </Pressable>
         </View>
     );
@@ -1359,7 +1375,6 @@ const styles = StyleSheet.create({
     localPreviewWrapper: {
         position: "absolute",
         right: 16,
-        bottom: 128,
         width: 94,
         height: 154,
         borderRadius: 16,
