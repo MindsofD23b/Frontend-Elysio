@@ -15,12 +15,8 @@ import { router } from "expo-router";
 import { CONSTANTS, PlanType } from "@/lib/constants";
 import { Heart } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useActivePlan } from "@/hooks/useActivePlan";
 import * as StoreReview from "expo-store-review";
-
-// TODO: Implement plan based constants
-const user = {
-    plan: PlanType.FREE,
-};
 
 const { width, height } = Dimensions.get("window");
 const H_SCALE = height / 800;
@@ -211,6 +207,7 @@ interface FullFillUserResponse {
 
 export default function Index() {
     const { theme, gs } = useTheme();
+    const { plan } = useActivePlan();
     const [callsData, , , refetch] = useAuthFetch<{ callsToday: number }>(
         "/users/calls-left",
         undefined,
@@ -286,10 +283,8 @@ export default function Index() {
 
     const onStart = () => {
         // TODO: implement i18n here
-        if (!canCall(user.plan, callsData?.callsToday)) {
-            return user.plan === PlanType.FREE
-                ? alert("Upgrade to Paid plan!")
-                : alert("You have no more Calls today");
+        if (!canCall(plan, callsData?.callsToday)) {
+            return alert("You have no more calls today. Upgrade your plan for more!");
         }
 
         if (callsData?.callsToday === 3) {
@@ -384,7 +379,7 @@ export default function Index() {
             <View style={styles.bottomIndicator} pointerEvents="none">
                 <View style={styles.indicatorPill}>
                     <Text style={styles.indicatorText}>
-                        {callsData?.callsToday}/{CONSTANTS.PLANS[user.plan].maxCalls}
+                        {callsData?.callsToday}/{CONSTANTS.PLANS[plan].maxCalls}
                     </Text>
                 </View>
             </View>

@@ -36,6 +36,8 @@ Sentry.init({
     // spotlight: __DEV__,
 });
 
+const SERVER_URL = "https://elysio.jamiepoeffel.ch";
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppContent() {
@@ -43,6 +45,7 @@ function AppContent() {
     const [updateDuration, setUpdateDuration] = useState<string | undefined>(undefined);
     const { isLoading, token } = useAuth();
     const serverStatus = useServerStatus();
+    const purchasesConfigured = useRef(false);
 
     const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
     const [, , cache] = useCacheFetch("/chat/rooms", chatRequest, {
@@ -74,16 +77,15 @@ function AppContent() {
     useEffect(() => {
         if (isLoading || serverStatus !== "ok") return;
 
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-
-        if (Platform.OS === "ios") {
-            Purchases.configure({
-                apiKey: "appl_HHPNNqzuCyRKMvuLLtZFloXfaIA",
-            });
-        } else if (Platform.OS === "android") {
-            Purchases.configure({
-                apiKey: "goog_vuioAmQKQpPnwGqxktfBuiqAKfz",
-            });
+        if (!purchasesConfigured.current && !Purchases.isConfigured) {
+            Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+            const key =
+                Platform.OS === "ios"
+                    ? process.env.PURCHASES_IOS_KEY || "test_aXuDLwLyBHRtkxHFImAdpWwufVT"
+                    : process.env.PURCHASES_ANDROID_KEY ||
+                      "test_aXuDLwLyBHRtkxHFImAdpWwufVT";
+            Purchases.configure({ apiKey: key });
+            purchasesConfigured.current = true;
         }
 
         getCustomerInfo();

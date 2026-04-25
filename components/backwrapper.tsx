@@ -11,10 +11,11 @@ interface BackWrapperProps {
 
 export default function BackWrapper({ children, p = true, bg }: BackWrapperProps) {
     const { theme } = useTheme();
+    const background = bg ?? theme.background;
 
     return (
         <>
-            <View style={{ height: "100%", backgroundColor: bg ?? theme.background }}>
+            <View style={{ height: "100%", backgroundColor: background }}>
                 <Pressable onPress={() => router.back()}>
                     <ChevronLeft
                         color={theme.base}

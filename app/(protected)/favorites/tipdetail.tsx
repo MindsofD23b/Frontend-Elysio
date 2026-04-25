@@ -1,9 +1,10 @@
 import { useTheme } from "@/lib/theme/context";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Sparkles } from "lucide-react-native";
+import { Sparkles } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { TipSection } from "@/components/favorites/TipSection";
 import { TIP_CONTENT } from "@/lib/favorites/tips";
+import BackWrapper from "@/components/backwrapper";
 
 export default function TipDetail() {
     const { theme } = useTheme();
@@ -14,9 +15,9 @@ export default function TipDetail() {
 
     if (!data) {
         return (
-            <View style={s.root}>
+            <BackWrapper bg={theme.rootBg ?? theme.background}>
                 <Text style={{ color: theme.text }}>Tip not found.</Text>
-            </View>
+            </BackWrapper>
         );
     }
 
@@ -24,17 +25,7 @@ export default function TipDetail() {
 
     return (
         <>
-            <Stack.Screen options={{ headerShown: false }} />
-            <View style={s.root}>
-                <View style={s.header}>
-                    <Link href=".." asChild>
-                        <Pressable style={s.backBtn}>
-                            <ChevronLeft size={28} color={theme.text} strokeWidth={2.5} />
-                        </Pressable>
-                    </Link>
-                    <View style={{ width: 44 }} />
-                </View>
-
+            <BackWrapper p={false} bg={theme.rootBg ?? theme.background}>
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={s.scroll}
@@ -81,7 +72,7 @@ export default function TipDetail() {
                             ))}
                         </View>
 
-                        <Link href="/subscriptions" asChild>
+                        <Link href="/(protected)/subscriptions" asChild>
                             <Pressable
                                 style={[
                                     s.premiumOverlay,
@@ -114,23 +105,13 @@ export default function TipDetail() {
 
                     <View style={{ height: 40 }} />
                 </ScrollView>
-            </View>
+            </BackWrapper>
         </>
     );
 }
 
 const makeStyles = (theme: any) =>
     StyleSheet.create({
-        root: { flex: 1, backgroundColor: theme.rootBg ?? theme.background },
-        header: {
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 16,
-            paddingTop: 56,
-            paddingBottom: 8,
-        },
-        backBtn: { width: 44, height: 44, justifyContent: "center" },
         scroll: { paddingHorizontal: 20, paddingBottom: 30 },
         hero: { alignItems: "center", paddingVertical: 24, gap: 12 },
         iconCircle: {

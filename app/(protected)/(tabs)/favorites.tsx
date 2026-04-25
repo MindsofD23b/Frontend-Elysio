@@ -158,7 +158,7 @@ const makeStyles = (theme: Theme) =>
         content: { paddingTop: 40, paddingBottom: 30, gap: 6 },
         cardScroll: { paddingHorizontal: 14, gap: 0 },
         dots: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 },
-        dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#333" },
+        dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.text + "44" },
         dotActive: { backgroundColor: theme.primary, width: 18 },
         section: { paddingHorizontal: 14, gap: 12, marginTop: 10 },
         sectionHeader: {

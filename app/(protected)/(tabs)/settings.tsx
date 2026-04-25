@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import {
     ChevronRight,
@@ -75,8 +75,17 @@ export default function SettingsScreen() {
     const { logout } = useAuth();
 
     const handleLogout = async () => {
-        await logout();
-        router.replace("/login");
+        Alert.alert(t("logOut"), t("confirmLogOut"), [
+            { text: t("cancel"), style: "cancel" },
+            {
+                text: t("logOut"),
+                style: "destructive",
+                onPress: async () => {
+                    await logout();
+                    router.replace("/login");
+                },
+            },
+        ]);
     };
 
     return (

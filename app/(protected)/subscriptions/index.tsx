@@ -8,6 +8,7 @@ import {
     Dimensions,
     NativeSyntheticEvent,
     NativeScrollEvent,
+    ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import Animated, {
@@ -17,7 +18,12 @@ import Animated, {
 } from "react-native-reanimated";
 import BackWrapper from "@/components/backwrapper";
 import { router } from "expo-router";
-import { type BillingCycle, type Plan, PLANS } from "./plans";
+import { type BillingCycle, type Plan, PLANS } from "@/lib/plans";
+import Purchases from "react-native-purchases";
+import { useActivePlan } from "@/hooks/useActivePlan";
+
+type RcPrice = { price: number; currencyCode: string };
+type RcPrices = Record<string, { monthly?: RcPrice; yearly?: RcPrice }>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -86,14 +92,22 @@ function BillingToggle({
 function PlanCard({
     plan,
     billing,
+    rcPrices,
+    isActive,
     onSubscribe,
 }: {
     plan: Plan;
     billing: BillingCycle;
+    rcPrices: RcPrices;
+    isActive: boolean;
     onSubscribe: () => void;
 }) {
     const { theme } = useTheme();
     const price = billing === "monthly" ? plan.monthlyPrice : plan.yearlyMonthPrice;
+    const rcData =
+        billing === "monthly" ? rcPrices[plan.id]?.monthly : rcPrices[plan.id]?.yearly;
+    const displayPrice = rcData?.price ?? price;
+    const displayCurrency = rcData?.currencyCode ?? "CHF";
     const isHighlight = plan.highlight;
     const isMonthly = billing === "monthly";
 
@@ -105,8 +119,8 @@ function PlanCard({
     const btnTextColor = isHighlight ? theme.primary : "#fff";
     const priceText = isMonthly ? "/mo" : "/annually";
 
-    const whole = Math.floor(price);
-    const cents = (price % 1).toFixed(2).slice(1);
+    const whole = Math.floor(displayPrice);
+    const cents = (displayPrice % 1).toFixed(2).slice(1);
 
     const opacity = useSharedValue(1);
 
@@ -129,11 +143,42 @@ function PlanCard({
                     width: CARD_WIDTH,
                     shadowColor: isHighlight ? theme.primary : "#000",
                     shadowOpacity: isHighlight ? 0.25 : 0.1,
+                    borderWidth: isActive ? 2 : 0,
+                    borderColor: isActive
+                        ? isHighlight
+                            ? "#fff"
+                            : theme.primary
+                        : "transparent",
                 },
             ]}
         >
             {/* Badge */}
-            {plan.badge ? (
+            {isActive ? (
+                <View style={styles.badgeRow}>
+                    <View
+                        style={[
+                            styles.badge,
+                            {
+                                backgroundColor: isHighlight
+                                    ? "rgba(255,255,255,0.3)"
+                                    : theme.primary + "22",
+                                borderColor: isHighlight
+                                    ? "rgba(255,255,255,0.5)"
+                                    : theme.primary,
+                            },
+                        ]}
+                    >
+                        <Text
+                            style={[
+                                styles.badgeText,
+                                { color: isHighlight ? "#fff" : theme.primary },
+                            ]}
+                        >
+                            ✓ ACTIVE
+                        </Text>
+                    </View>
+                </View>
+            ) : plan.badge ? (
                 <View style={styles.badgeRow}>
                     <View style={styles.badge}>
                         <Text style={styles.badgeText}>{plan.badge}</Text>
@@ -166,14 +211,14 @@ function PlanCard({
                     activeOpacity={0.85}
                 >
                     <Text style={[styles.ctaBtnText, { color: btnTextColor }]}>
-                        Subscribe
+                        {isActive ? "Active" : "Subscribe"}
                     </Text>
                 </TouchableOpacity>
 
                 <Animated.View style={[styles.priceBlock, animatedStyle]}>
                     <View style={styles.priceBlock}>
                         <Text style={[styles.priceDollar, { color: mutedColor }]}>
-                            CHF
+                            {displayCurrency}
                         </Text>
                         <Text style={[styles.priceAmount, { color: textColor }]}>
                             {whole}
@@ -246,14 +291,67 @@ function PaginationDots({ total, active }: { total: number; active: number }) {
 
 export default function SubscriptionPlans() {
     const { theme } = useTheme();
+    const { plan: activePlan } = useActivePlan();
     const [billing, setBilling] = useState<BillingCycle>("monthly");
     const [activeIndex, setActiveIndex] = useState(1);
+    const [rcPrices, setRcPrices] = useState<RcPrices>({});
+    const [offeringsLoading, setOfferingsLoading] = useState(true);
     const flatListRef = useRef<FlatList>(null);
+
+    useEffect(() => {
+        async function loadOfferings() {
+            try {
+                const offerings = await Purchases.getOfferings();
+                const prices: RcPrices = {};
+                for (const plan of PLANS) {
+                    const monthlyOffering = offerings.all[`${plan.id}_monthly`];
+                    const yearlyOffering = offerings.all[`${plan.id}_yearly`];
+                    prices[plan.id] = {
+                        monthly: monthlyOffering?.monthly
+                            ? {
+                                  price: monthlyOffering.monthly.product.price,
+                                  currencyCode:
+                                      monthlyOffering.monthly.product.currencyCode,
+                              }
+                            : undefined,
+                        yearly: yearlyOffering?.annual
+                            ? {
+                                  price: yearlyOffering.annual.product.price,
+                                  currencyCode:
+                                      yearlyOffering.annual.product.currencyCode,
+                              }
+                            : undefined,
+                    };
+                }
+                setRcPrices(prices);
+            } catch {
+                // fall back to hardcoded prices silently
+            } finally {
+                setOfferingsLoading(false);
+            }
+        }
+        loadOfferings();
+    }, []);
 
     const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
         const index = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));
         setActiveIndex(Math.max(0, Math.min(index, PLANS.length - 1)));
     };
+
+    if (offeringsLoading) {
+        return (
+            <View
+                style={{
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: theme.background,
+                }}
+            >
+                <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+        );
+    }
 
     return (
         <View style={{ flex: 1 }}>
@@ -300,6 +398,8 @@ export default function SubscriptionPlans() {
                         <PlanCard
                             plan={item}
                             billing={billing}
+                            rcPrices={rcPrices}
+                            isActive={activePlan === item.id}
                             onSubscribe={() => {
                                 router.push({
                                     pathname: "/subscriptions/checkout",
