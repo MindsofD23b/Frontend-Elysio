@@ -23,7 +23,7 @@ export const PLANS: Plan[] = [
         tagline: "One request at a time",
         monthlyPrice: 5.9,
         yearlyMonthPrice: 4.9,
-        yearlyPrice: 58.8,
+        yearlyPrice: 58.9,
         features: [
             "Up to 10 video calls per day",
             "Basic profile customization",
@@ -39,7 +39,7 @@ export const PLANS: Plan[] = [
         tagline: "Double your output 2×",
         monthlyPrice: 12.9,
         yearlyMonthPrice: 10.9,
-        yearlyPrice: 130.8,
+        yearlyPrice: 130.9,
         badge: "BEST VALUE",
         highlight: true,
         features: [
@@ -59,7 +59,7 @@ export const PLANS: Plan[] = [
         tagline: "Fitting your individual needs",
         monthlyPrice: 29.9,
         yearlyMonthPrice: 24.9,
-        yearlyPrice: 298.8,
+        yearlyPrice: 298.9,
         features: [
             "Everything in Premium",
             "Up to 100 video calls per day",

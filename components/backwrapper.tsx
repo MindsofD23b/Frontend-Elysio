@@ -6,15 +6,22 @@ import { Pressable, View } from "react-native";
 interface BackWrapperProps {
     children?: React.ReactNode;
     p?: boolean;
+    m?: boolean;
     bg?: string;
 }
 
-export default function BackWrapper({ children, p = true, bg }: BackWrapperProps) {
+export default function BackWrapper({ children, p = true, m = false, bg }: BackWrapperProps) {
     const { theme } = useTheme();
 
     return (
         <>
-            <View style={{ height: "100%", backgroundColor: bg ?? theme.background }}>
+            <View
+                style={{
+                    height: "100%",
+                    backgroundColor: bg ?? theme.background,
+                    paddingTop: m ? 30 : 0,
+                }}
+            >
                 <Pressable onPress={() => router.back()}>
                     <ChevronLeft
                         color={theme.base}
