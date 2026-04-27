@@ -1,3 +1,5 @@
+//MADE WITH HELP CLAUDE.AI
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
     View,
@@ -8,6 +10,7 @@ import {
     ScrollView,
     Animated,
     Easing,
+    PanResponder,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
@@ -22,6 +25,10 @@ import {
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTheme } from "@/lib/theme/context";
+import { useSafeAreaControl } from "@/components/SafeArea";
+import { useNavigation } from "expo-router";
+import BackWrapper from "@/components/backwrapper";
+import { Theme } from "@/lib/theme/theme";
 
 registerGlobals();
 
@@ -33,7 +40,6 @@ const CAMERAS = [
     { id: "front", label: "Front camera" },
     { id: "back", label: "Back camera" },
 ];
-
 const MICROPHONES = [
     { id: "default", label: "Built-in microphone" },
     { id: "headset", label: "Headset microphone" },
@@ -124,22 +130,16 @@ function PulsingDots() {
 
 // ─── Setup screen ────────────────────────────────────────────────────────────
 
-const makeSetupStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+const makeSetupStyles = (theme: Theme) =>
     StyleSheet.create({
-        root: {
-            flex: 1,
-            backgroundColor: "#0b0b0b",
-        },
         scroll: {
-            paddingHorizontal: 24,
-            paddingTop: 12,
             paddingBottom: 48,
         },
         header: {
             marginBottom: 36,
         },
         title: {
-            color: "#fff",
+            color: theme.text,
             fontSize: 28,
             fontWeight: "700",
             letterSpacing: -0.5,
@@ -261,7 +261,7 @@ function SetupScreen({
     }
 
     return (
-        <SafeAreaView style={setupStyles.root}>
+        <BackWrapper m>
             <ScrollView
                 contentContainerStyle={setupStyles.scroll}
                 showsVerticalScrollIndicator={false}
@@ -390,7 +390,7 @@ function SetupScreen({
                     <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </Pressable>
             </ScrollView>
-        </SafeAreaView>
+        </BackWrapper>
     );
 }
 
@@ -431,6 +431,22 @@ function ConnectingScreen({
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function VideoCall() {
+    const { setDisableSafeArea } = useSafeAreaControl();
+
+    const parentNavigation = useNavigation("/(protected)");
+    const navigation = useNavigation();
+
+    useEffect(() => {
+        setDisableSafeArea(true);
+        navigation.setOptions({ gestureEnabled: false });
+        parentNavigation.setOptions({ gestureEnabled: false });
+
+        return () => {
+            setDisableSafeArea(false);
+            parentNavigation.setOptions({ gestureEnabled: true });
+        };
+    }, []);
+
     const ICEBREAKERS = [
         "What's the weirdest thing you've ever eaten?",
         "If you could live in any movie universe, which would you pick?",
@@ -445,11 +461,15 @@ export default function VideoCall() {
         "What's a hobby you've always wanted to try?",
         "What's the last thing that made you laugh out loud?",
     ];
-
+    const [icebreakerLoading, setIcebreakerLoading] = useState(false);
+    const [controlsVisible, setControlsVisible] = useState(true);
+    const controlsOpacity = useRef(new Animated.Value(1)).current;
     const [icebreakerIndex, setIcebreakerIndex] = useState(() =>
         Math.floor(Math.random() * ICEBREAKERS.length),
     );
-
+    const [icebreakerVisible, setIcebreakerVisible] = useState(false);
+    const icebreakerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const icebreakerOpacity = useRef(new Animated.Value(0)).current;
     const { token } = useAuth();
 
     const [screen, setScreen] = useState<AppScreen>("setup");
@@ -458,13 +478,15 @@ export default function VideoCall() {
     const roomIdRef = useRef<string | null>(null);
 
     const [isMuted, setIsMuted] = useState(false);
-    const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+    //const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+    const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
     const peerIdRef = useRef(`peer-${Math.random().toString(36).slice(2, 10)}`);
     const deviceRef = useRef<any>(null);
     const sendTransportRef = useRef<any>(null);
     const recvTransportRef = useRef<any>(null);
     const socketRef = useRef<Socket | null>(null);
+    const previewBottomAnim = useRef(new Animated.Value(128)).current;
 
     const localStreamRef = useRef<any>(null);
     const remoteStreamRef = useRef<any>(new MediaStream());
@@ -474,7 +496,33 @@ export default function VideoCall() {
     const consumingProducerIdsRef = useRef<Set<string>>(new Set());
     const consumersRef = useRef<Map<string, any>>(new Map());
     const remoteVideoStreamRef = useRef<any>(null);
-
+    const videoProducerRef = useRef<any>(null);
+    const localPreviewPos = useRef({ x: 0, y: 0 });
+    const localPreviewAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                localPreviewAnim.setOffset({
+                    x: localPreviewPos.current.x,
+                    y: localPreviewPos.current.y,
+                });
+                localPreviewAnim.setValue({ x: 0, y: 0 });
+            },
+            onPanResponderMove: Animated.event(
+                [null, { dx: localPreviewAnim.x, dy: localPreviewAnim.y }],
+                { useNativeDriver: false },
+            ),
+            onPanResponderRelease: () => {
+                localPreviewAnim.flattenOffset();
+                localPreviewPos.current = {
+                    x: (localPreviewAnim.x as any)._value,
+                    y: (localPreviewAnim.y as any)._value,
+                };
+            },
+        }),
+    ).current;
     const [matchmakingReady, setMatchmakingReady] = useState(false);
     const [matchState, setMatchState] = useState<"idle" | "waiting" | "matched">("idle");
     const [_matchedUserId, setMatchedUserId] = useState<string | null>(null);
@@ -748,7 +796,10 @@ export default function VideoCall() {
             const audioTrack = localStream.getAudioTracks()[0];
             const videoTrack = localStream.getVideoTracks()[0];
             if (audioTrack) await sendTransport.produce({ track: audioTrack });
-            if (videoTrack) await sendTransport.produce({ track: videoTrack });
+            if (videoTrack) {
+                const producer = await sendTransport.produce({ track: videoTrack });
+                videoProducerRef.current = producer;
+            }
         },
         [api],
     );
@@ -863,7 +914,9 @@ export default function VideoCall() {
         localStreamRef.current = null;
         startingRef.current = false;
         connectingIntentRef.current = false;
-
+        icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
+        setIcebreakerVisible(false);
+        icebreakerOpacity.setValue(0);
         socketRef.current?.disconnect();
         socketRef.current = null;
 
@@ -932,11 +985,63 @@ export default function VideoCall() {
             .forEach((track: MediaStreamTrack) => (track.enabled = !nextMuted));
         setIsMuted(nextMuted);
     }
+    const isAnimatingRef = useRef(false);
+    function toggleControls() {
+        if (isAnimatingRef.current) return;
+        isAnimatingRef.current = true;
+        const toValue = controlsVisible ? 0 : 1;
+        const toBottom = controlsVisible ? 24 : 128;
+        Animated.parallel([
+            Animated.timing(controlsOpacity, {
+                toValue,
+                duration: 1000,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+            }),
+            Animated.timing(previewBottomAnim, {
+                toValue: toBottom,
+                duration: 1000,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: false, // bottom can't use native driver
+            }),
+        ]).start(() => {
+            setControlsVisible((v) => !v);
+            isAnimatingRef.current = false;
+        });
+    }
 
-    function toggleSpeaker() {
-        const next = !isSpeakerOn;
-        setIsSpeakerOn(next);
-        Alert.alert("Speaker", `Speaker ${next ? "enabled" : "disabled"}`);
+    async function flipCamera() {
+        const nextFacing = facingMode === "user" ? "environment" : "user";
+
+        const stream = localStreamRef.current;
+        if (!stream) return;
+
+        stream.getVideoTracks().forEach((t: any) => t.stop());
+        setLocalUrl(null);
+
+        try {
+            const newStream = await mediaDevices.getUserMedia({
+                audio: false,
+                video: { frameRate: 30, facingMode: nextFacing },
+            });
+
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            if (!newVideoTrack) return;
+
+            // Replace track for remote peer
+            if (videoProducerRef.current) {
+                await videoProducerRef.current.replaceTrack({ track: newVideoTrack });
+            }
+
+            // Update local stream ref with new stream entirely
+            localStreamRef.current = newStream;
+
+            setFacingMode(nextFacing);
+            setLocalUrl(newStream.toURL());
+        } catch (err) {
+            console.error("flipCamera error", err);
+            setFacingMode(facingMode);
+        }
     }
 
     function updateRoomId(nextRoomId: string) {
@@ -959,6 +1064,21 @@ export default function VideoCall() {
         Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
     }
     function handleIcebreaker() {
+        if (icebreakerTimeoutRef.current) {
+            clearTimeout(icebreakerTimeoutRef.current);
+        }
+
+        if (icebreakerVisible && !icebreakerLoading) {
+            setIcebreakerVisible(false);
+            setIcebreakerLoading(false);
+            icebreakerOpacity.setValue(0);
+            return;
+        }
+
+        icebreakerOpacity.setValue(1);
+        setIcebreakerLoading(true);
+        setIcebreakerVisible(true);
+
         setIcebreakerIndex((prev) => {
             let next;
             do {
@@ -966,6 +1086,10 @@ export default function VideoCall() {
             } while (next === prev && ICEBREAKERS.length > 1);
             return next;
         });
+
+        icebreakerTimeoutRef.current = setTimeout(() => {
+            setIcebreakerLoading(false);
+        }, 1500);
     }
 
     // Activate matchmaking once socket is ready (only when connecting screen is shown)
@@ -1023,8 +1147,8 @@ export default function VideoCall() {
     // ── Call screen (unchanged) ────────────────────────────────────────────
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.videoLayer}>
+        <View style={styles.container}>
+            <Pressable style={styles.videoLayer} onPress={toggleControls}>
                 {remoteUrl ? (
                     <RTCView
                         key={remoteUrl}
@@ -1039,91 +1163,116 @@ export default function VideoCall() {
                     </View>
                 )}
 
+                <Animated.View
+                    style={{ opacity: controlsOpacity, ...StyleSheet.absoluteFillObject }}
+                    pointerEvents={controlsVisible ? "box-none" : "none"}
+                >
+                    {icebreakerVisible && (
+                        <Animated.View
+                            style={[
+                                styles.icebreakerBubble,
+                                { opacity: icebreakerOpacity },
+                            ]}
+                        >
+                            {icebreakerLoading ? (
+                                <View style={styles.icebreakerSkeleton} />
+                            ) : (
+                                <Text style={styles.icebreakerText}>
+                                    {ICEBREAKERS[icebreakerIndex]}
+                                </Text>
+                            )}
+                        </Animated.View>
+                    )}
+                    <View style={styles.topBar}>
+                        <Pressable style={styles.topButton} onPress={stopCall}>
+                            <Ionicons name="chevron-back" size={22} color="#fff" />
+                        </Pressable>
+                    </View>
+                    <View style={styles.bottomControlsWrapper}>
+                        <View style={styles.bottomControls}>
+                            <ControlButton
+                                onPress={toggleMute}
+                                icon={
+                                    <Feather
+                                        name={isMuted ? "mic-off" : "mic"}
+                                        size={22}
+                                        color="#111"
+                                    />
+                                }
+                            />
+                            <ControlButton
+                                onPress={flipCamera}
+                                icon={
+                                    <Ionicons
+                                        name="camera-reverse-outline"
+                                        size={22}
+                                        color="#111"
+                                    />
+                                }
+                            />
+                            <ControlButton
+                                onPress={handleLike}
+                                variant="success"
+                                icon={
+                                    <Ionicons
+                                        name="heart-outline"
+                                        size={22}
+                                        color="#fff"
+                                    />
+                                }
+                            />
+                            <ControlButton
+                                onPress={handleNextUser}
+                                variant="danger"
+                                icon={<Ionicons name="close" size={24} color="#fff" />}
+                            />
+                            <ControlButton
+                                onPress={handleReaction}
+                                icon={
+                                    <FontAwesome6
+                                        name="face-smile-beam"
+                                        size={20}
+                                        color="#111"
+                                    />
+                                }
+                            />
+                            <ControlButton
+                                onPress={handleIcebreaker}
+                                icon={
+                                    <MaterialCommunityIcons
+                                        name="magic-staff"
+                                        size={22}
+                                        color="#111"
+                                    />
+                                }
+                            />
+                        </View>
+                    </View>
+                </Animated.View>
                 {localUrl && (
-                    <View style={styles.localPreviewWrapper}>
-                        <RTCView
-                            streamURL={localUrl}
-                            style={styles.localPreview}
-                            objectFit="cover"
-                            mirror={true}
-                        />
-                    </View>
+                    <Animated.View
+                        style={[
+                            styles.localPreviewWrapper,
+                            {
+                                transform: localPreviewAnim.getTranslateTransform(),
+                                bottom: previewBottomAnim,
+                            },
+                        ]}
+                        {...panResponder.panHandlers}
+                        onStartShouldSetResponder={() => true}
+                    >
+                        <View pointerEvents="none" style={{ flex: 1 }}>
+                            <RTCView
+                                streamURL={localUrl}
+                                style={styles.localPreview}
+                                objectFit="cover"
+                                mirror={facingMode === "user"}
+                            />
+                        </View>
+                    </Animated.View>
                 )}
-
-                <View style={styles.icebreakerBubble}>
-                    <Text style={styles.icebreakerText}>
-                        {ICEBREAKERS[icebreakerIndex]}
-                    </Text>
-                </View>
-
-                <View style={styles.topBar}>
-                    <Pressable style={styles.topButton} onPress={stopCall}>
-                        <Ionicons name="chevron-back" size={22} color="#fff" />
-                    </Pressable>
-                </View>
-
-                <View style={styles.bottomControlsWrapper}>
-                    <View style={styles.bottomControls}>
-                        <ControlButton
-                            onPress={toggleMute}
-                            icon={
-                                <Feather
-                                    name={isMuted ? "mic-off" : "mic"}
-                                    size={22}
-                                    color="#111"
-                                />
-                            }
-                        />
-                        <ControlButton
-                            onPress={toggleSpeaker}
-                            icon={
-                                <Ionicons
-                                    name={
-                                        isSpeakerOn
-                                            ? "volume-high-outline"
-                                            : "volume-mute-outline"
-                                    }
-                                    size={22}
-                                    color="#111"
-                                />
-                            }
-                        />
-                        <ControlButton
-                            onPress={handleLike}
-                            variant="success"
-                            icon={
-                                <Ionicons name="heart-outline" size={22} color="#fff" />
-                            }
-                        />
-                        <ControlButton
-                            onPress={handleNextUser}
-                            variant="danger"
-                            icon={<Ionicons name="close" size={24} color="#fff" />}
-                        />
-                        <ControlButton
-                            onPress={handleReaction}
-                            icon={
-                                <FontAwesome6
-                                    name="face-smile-beam"
-                                    size={20}
-                                    color="#111"
-                                />
-                            }
-                        />
-                        <ControlButton
-                            onPress={handleIcebreaker}
-                            icon={
-                                <MaterialCommunityIcons
-                                    name="magic-staff"
-                                    size={22}
-                                    color="#111"
-                                />
-                            }
-                        />
-                    </View>
-                </View>
-            </View>
-        </SafeAreaView>
+            </Pressable>
+        </View>
     );
 }
 
@@ -1240,7 +1389,6 @@ const styles = StyleSheet.create({
     localPreviewWrapper: {
         position: "absolute",
         right: 16,
-        bottom: 128,
         width: 94,
         height: 154,
         borderRadius: 16,
@@ -1256,7 +1404,7 @@ const styles = StyleSheet.create({
     },
     topBar: {
         position: "absolute",
-        top: 10,
+        top: 60,
         left: 12,
         right: 12,
         flexDirection: "row",
@@ -1347,6 +1495,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.18,
         shadowRadius: 6,
         elevation: 4,
+    },
+    icebreakerSkeleton: {
+        width: 160,
+        height: 36,
+        borderRadius: 6,
+        backgroundColor: "#ddd",
     },
     icebreakerText: {
         color: "#111",

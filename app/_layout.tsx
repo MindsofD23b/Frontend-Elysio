@@ -64,13 +64,16 @@ function AppContent() {
     }
 
     async function getOfferings() {
-        const offerings = await Purchases.getOfferings();
-
-        if (
-            offerings.current !== null &&
-            offerings.current.availablePackages.length !== 0
-        ) {
-            console.log("Offerings:", JSON.stringify(offerings, null, 2));
+        try {
+            const offerings = await Purchases.getOfferings();
+            if (
+                offerings.current !== null &&
+                offerings.current.availablePackages.length !== 0
+            ) {
+                console.log("Offerings:", JSON.stringify(offerings, null, 2));
+            }
+        } catch (error) {
+            console.error("Error fetching offerings:", error);
         }
     }
 
@@ -102,8 +105,9 @@ function AppContent() {
                 setAppIsReady(true);
             }
         }
+
         prepare();
-    }, [isLoading, token, serverStatus]);
+    }, [isLoading, serverStatus]);
 
     useEffect(() => {
         if (appIsReady) {

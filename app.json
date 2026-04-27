@@ -14,9 +14,8 @@
                 "NSMicrophoneUsageDescription": "Allow access to microphone for calls",
                 "ITSAppUsesNonExemptEncryption": false
             },
-            "entitlements": {
-                "com.apple.developer.in-app-payments": []
-            },
+            "storeKitConfigPath": "./Store.storekit",
+            "entitlements": {},
             "bundleIdentifier": "com.mindsofd23b.elysio",
             "usesAppleSignIn": true
         },
