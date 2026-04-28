@@ -20,6 +20,7 @@ import BackWrapper from "@/components/backwrapper";
 import { router, useFocusEffect } from "expo-router";
 import { type BillingCycle, type Plan, PLANS } from "@/lib/plans";
 import Purchases from "react-native-purchases";
+import { usePurchasesReady } from "@/lib/PurchasesContext";
 import { useActivePlan } from "@/hooks/useActivePlan";
 import { useSafeAreaControl } from "@/components/SafeArea";
 
@@ -303,6 +304,7 @@ function PaginationDots({ total, active }: { total: number; active: number }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function SubscriptionPlans() {
+    const purchasesReady = usePurchasesReady();
     const { theme } = useTheme();
     const { plan: activePlan } = useActivePlan();
     const [billing, setBilling] = useState<BillingCycle>("monthly");
@@ -313,6 +315,7 @@ export default function SubscriptionPlans() {
 
     useEffect(() => {
         async function loadOfferings() {
+            if (!purchasesReady) return;
             try {
                 const offerings = await Purchases.getOfferings();
                 const prices: RcPrices = {};
@@ -344,7 +347,7 @@ export default function SubscriptionPlans() {
             }
         }
         loadOfferings();
-    }, []);
+    }, [purchasesReady]);
 
     const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
         const index = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));

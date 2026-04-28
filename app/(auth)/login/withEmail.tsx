@@ -85,7 +85,7 @@ export default function WithEmail() {
 
             await saveLogin(response.token);
 
-            await Purchases.logIn(response.userId);
+            if (await Purchases.isConfigured()) await Purchases.logIn(response.userId);
             router.replace("/(protected)/(tabs)");
         } catch (err) {
             setErrors({

@@ -1,9 +1,11 @@
 // Made with the help of Claude.ai and ChatGPT
 
-import { router } from "expo-router";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Check, Clock, Flame, Heart, Snowflake } from "lucide-react-native";
+import { useSafeAreaControl } from "@/components/SafeArea";
+import { useCallback } from "react";
 
 const DAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const TODAY_INDEX = 4;
@@ -16,16 +18,29 @@ const HOUR_LABELS = ["6", "9", "12", "15", "18", "21", "24"];
 const BAR_VALUES = [12, 22, 38, 28, 52, 90, 35];
 const PEAK_INDEX = 5;
 
-const DAYS_LEN = 7;
-
 export default function Index() {
+    const { setDisabledEdges } = useSafeAreaControl();
     const { theme } = useTheme();
     const s = makeStyles(theme);
     const maxBar = Math.max(...BAR_VALUES);
 
+    useFocusEffect(
+        useCallback(() => {
+            setDisabledEdges(["top"]);
+
+            return () => {
+                setDisabledEdges([]);
+            };
+        }, [setDisabledEdges]),
+    );
+
     return (
-        <View style={s.root}>
-            {/* ── Premium Banner ── */}
+        <ScrollView
+            style={s.scroll}
+            contentContainerStyle={s.root}
+            showsVerticalScrollIndicator={false}
+            alwaysBounceVertical
+        >
             <TouchableOpacity
                 style={s.premiumBanner}
                 onPress={() => router.push("/(protected)/subscriptions")}
@@ -77,65 +92,96 @@ export default function Index() {
 
             {/* ── Streak ── */}
             <View style={s.streakCard}>
+                {/* header row */}
                 <View style={s.streakHeader}>
-                    <Flame color={theme.primary} size={28} />
-                    <View>
-                        <Text style={s.streakTitle}>14 days streak</Text>
-                        <Text style={s.streakSub}>Keep up!!! You are on fire today.</Text>
+                    <View
+                        style={[s.streakFlameCircle, { backgroundColor: theme.primary }]}
+                    >
+                        <Flame color="#fff" size={20} />
+                    </View>
+                    <View style={s.streakMeta}>
+                        <View style={s.streakNumRow}>
+                            <Text style={[s.streakBigNum, { color: theme.text }]}>
+                                14
+                            </Text>
+                            <Text style={[s.streakDayWord, { color: theme.text + "55" }]}>
+                                {" "}
+                                day streak
+                            </Text>
+                        </View>
+                        <Text style={[s.streakQuote, { color: theme.text + "44" }]}>
+                            Keep it up, you{"'"}re on a roll!
+                        </Text>
                     </View>
                 </View>
 
-                <View style={s.daysContainer}>
-                    <View style={s.pillTrack} pointerEvents="none" />
-                    <View style={s.daysRow}>
-                        {DAYS.map((label, i) => {
-                            const isFreeze = i === FREEZE_INDEX;
-                            const isSingleDone = SINGLE_DONE.includes(i);
-                            const isInLine = i >= LINE_START && i <= LINE_END;
-                            const isToday = i === TODAY_INDEX;
-                            const isInactive = !isFreeze && !isSingleDone && !isInLine;
+                {/* divider */}
+                <View style={[s.streakDivider, { backgroundColor: theme.text + "0E" }]} />
 
-                            let circleStyle: object[] = [s.dayCircle];
-                            let IconComp = <Check size={14} color="#3b3a3b" />;
+                {/* week row */}
+                <View style={s.daysRow}>
+                    {DAYS.map((label, i) => {
+                        const isFreeze = i === FREEZE_INDEX;
+                        const isDone =
+                            SINGLE_DONE.includes(i) ||
+                            (i >= LINE_START && i <= LINE_END) ||
+                            i === TODAY_INDEX;
+                        const isToday = i === TODAY_INDEX;
+                        const isFuture = !isDone && !isFreeze;
 
-                            if (isSingleDone) {
-                                circleStyle = [s.dayCircle, s.doneCircle];
-                                IconComp = (
-                                    <Check size={14} color={theme.primary + "CC"} />
-                                );
-                            } else if (isFreeze) {
-                                circleStyle = [s.dayCircle, s.freezeCircle];
-                                IconComp = (
-                                    <Snowflake size={14} color={theme.freezeColor} />
-                                );
-                            } else if (isToday) {
-                                circleStyle = [s.dayCircle, s.todayCircle];
-                                IconComp = <Check size={14} color={theme.white} />;
-                            } else if (isInLine) {
-                                circleStyle = [s.dayCircle, s.lineCircle];
-                                IconComp = (
-                                    <Check size={14} color={theme.primary + "99"} />
-                                );
-                            }
-
-                            return (
-                                <View key={i} style={s.dayWrapper}>
-                                    <View style={circleStyle}>
-                                        {!isInactive && IconComp}
-                                    </View>
-                                    <Text
-                                        style={[
-                                            s.dayLabel,
-                                            isToday && { color: theme.primary },
-                                            isFreeze && { color: theme.freezeColor },
-                                        ]}
-                                    >
-                                        {label}
-                                    </Text>
+                        return (
+                            <View key={i} style={s.dayWrapper}>
+                                <View
+                                    style={[
+                                        s.dayCircle,
+                                        isDone && { backgroundColor: theme.primary },
+                                        isToday && {
+                                            shadowColor: theme.primary,
+                                            shadowOpacity: 0.45,
+                                            shadowRadius: 10,
+                                            elevation: 6,
+                                        },
+                                        isFreeze && {
+                                            backgroundColor: "transparent",
+                                            borderWidth: 2,
+                                            borderColor: theme.freezeColor,
+                                        },
+                                        isFuture && {
+                                            backgroundColor: "transparent",
+                                            borderWidth: 2,
+                                            borderColor: theme.text + "18",
+                                        },
+                                    ]}
+                                >
+                                    {isFreeze ? (
+                                        <Snowflake
+                                            size={13}
+                                            color={theme.freezeColor}
+                                            strokeWidth={2.5}
+                                        />
+                                    ) : isDone ? (
+                                        <Check size={13} color="#fff" strokeWidth={3} />
+                                    ) : null}
                                 </View>
-                            );
-                        })}
-                    </View>
+                                <Text
+                                    style={[
+                                        s.dayLabel,
+                                        isDone && {
+                                            color: theme.primary,
+                                            fontWeight: "700",
+                                        },
+                                        isFreeze && {
+                                            color: theme.freezeColor,
+                                            fontWeight: "600",
+                                        },
+                                        isFuture && { color: theme.text + "28" },
+                                    ]}
+                                >
+                                    {label}
+                                </Text>
+                            </View>
+                        );
+                    })}
                 </View>
             </View>
 
@@ -199,18 +245,21 @@ export default function Index() {
                     ))}
                 </View>
             </View>
-        </View>
+        </ScrollView>
     );
 }
 
 const makeStyles = (theme: any) =>
     StyleSheet.create({
-        root: {
+        scroll: {
             flex: 1,
+            paddingTop: 48,
             backgroundColor: theme.rootBg,
+        },
+        root: {
             paddingHorizontal: 14,
             paddingTop: 18,
-            paddingBottom: 10,
+            paddingBottom: 24,
             gap: 10,
         },
 
@@ -273,59 +322,69 @@ const makeStyles = (theme: any) =>
 
         streakCard: {
             backgroundColor: theme.cardBg,
-            borderRadius: 14,
-            padding: 14,
+            borderRadius: 16,
+            paddingHorizontal: 14,
+            paddingVertical: 14,
             gap: 12,
         },
-        streakHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-        streakTitle: { color: theme.text, fontWeight: "800", fontSize: 17 },
-        streakSub: { color: theme.text + "AA", fontSize: 12 },
-
-        daysContainer: { position: "relative" },
-
-        pillTrack: {
-            position: "absolute",
-            top: 0,
-            left: `${(LINE_START / DAYS_LEN) * 100}%` as any,
-            width: `${((LINE_END - LINE_START + 1) / DAYS_LEN) * 100}%` as any,
-            height: 34,
-            backgroundColor: theme.primary + "22",
-            borderRadius: 17,
-            zIndex: 0,
+        streakHeader: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+        },
+        streakFlameCircle: {
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: theme.primary,
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 5,
+        },
+        streakMeta: {
+            flex: 1,
+            gap: 2,
+        },
+        streakNumRow: {
+            flexDirection: "row",
+            alignItems: "baseline",
+        },
+        streakBigNum: {
+            fontSize: 26,
+            fontWeight: "900",
+            letterSpacing: -0.5,
+        },
+        streakDayWord: {
+            fontSize: 13,
+            fontWeight: "600",
+        },
+        streakQuote: {
+            fontSize: 11,
+        },
+        streakDivider: {
+            height: 1,
         },
 
-        daysRow: { flexDirection: "row", justifyContent: "space-between", zIndex: 1 },
-        dayWrapper: { alignItems: "center", gap: 4, flex: 1 },
+        daysRow: { flexDirection: "row", justifyContent: "space-between" },
+        dayWrapper: { alignItems: "center", gap: 6, flex: 1 },
 
         dayCircle: {
-            width: 34,
-            height: 34,
-            borderRadius: 17,
-            backgroundColor: theme.circleBg,
+            width: 36,
+            height: 36,
+            borderRadius: 18,
             alignItems: "center",
             justifyContent: "center",
         },
-        doneCircle: {
-            backgroundColor: theme.primary + "22",
-            borderWidth: 1.5,
-            borderColor: theme.primary + "55",
-        },
-        todayCircle: { backgroundColor: theme.primary },
-        freezeCircle: {
-            backgroundColor: theme.freezeColor + "22",
-            borderWidth: 1.5,
-            borderColor: theme.freezeColor + "66",
-        },
-        lineCircle: { backgroundColor: "transparent" },
 
-        dayLabel: { color: theme.text + "99", fontSize: 10 },
+        dayLabel: { fontSize: 10, fontWeight: "500", color: theme.text + "88" },
 
         chartCard: {
             backgroundColor: theme.cardBg,
             borderRadius: 14,
             padding: 14,
             gap: 8,
-            flex: 1,
         },
         sectionTitle: {
             color: theme.text,

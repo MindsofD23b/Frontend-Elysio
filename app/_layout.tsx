@@ -4,7 +4,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, LogBox, Platform } from "react-native";
+import { PurchasesContext } from "@/lib/PurchasesContext";
+import { View, LogBox, Platform, Alert } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { useCacheFetch } from "@/hooks/useCacheFetch";
 import { minToMs } from "@/utils/formatTime";
@@ -14,8 +15,8 @@ import { initCrypto } from "@/services/chat-crypto.client";
 import OutageScreen from "@/app/(auth)/outage";
 import UpdateScreen from "@/app/(auth)/update";
 import { ServerStatusProvider, useServerStatus } from "@/lib/ServerStatusContext";
-// import NoInternetScreen from "@/app/(auth)/no-internet";
-// import * as Network from "expo-network";
+import NoInternetScreen from "@/app/(auth)/no-internet";
+import * as Network from "expo-network";
 
 LogBox.ignoreAllLogs();
 
@@ -48,7 +49,8 @@ function AppContent() {
     const { isLoading, token } = useAuth();
     const serverStatus = useServerStatus();
     const purchasesConfigured = useRef(false);
-    // const [isConnected, setIsConnected] = useState<boolean>(true);
+    const [purchasesReady, setPurchasesReady] = useState(false);
+    const [isConnected, setIsConnected] = useState<boolean>(true);
 
     const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
     const [, , cache] = useCacheFetch("/chat/rooms", chatRequest, {
@@ -57,12 +59,12 @@ function AppContent() {
         ttlMs: minToMs(10),
     });
 
-    // useEffect(() => {
-    //     const subscription = Network.addNetworkStateListener((state) => {
-    //         setIsConnected(state.isConnected ?? true);
-    //     });
-    //     return () => subscription.remove();
-    // }, []);
+    useEffect(() => {
+        const subscription = Network.addNetworkStateListener((state) => {
+            setIsConnected(state.isConnected ?? true);
+        });
+        return () => subscription.remove();
+    }, []);
 
     async function getCustomerInfo() {
         try {
@@ -76,30 +78,39 @@ function AppContent() {
     async function getOfferings() {
         try {
             const offerings = await Purchases.getOfferings();
-            if (
-                offerings.current !== null &&
-                offerings.current.availablePackages.length !== 0
-            ) {
-                console.log("Offerings:", JSON.stringify(offerings, null, 2));
-            }
+            console.log("Offerings:", JSON.stringify(offerings, null, 2));
         } catch (error) {
             console.error("Error fetching offerings:", error);
         }
     }
 
     useEffect(() => {
-        if (isLoading || serverStatus !== "ok") return;
+        if (isLoading || serverStatus !== "ok" || !isConnected) return;
 
-        if (!purchasesConfigured.current && !Purchases.isConfigured) {
+        if (!purchasesConfigured.current) {
             Purchases.setLogLevel(LOG_LEVEL.DEBUG);
             const key =
                 Platform.OS === "ios"
-                    ? process.env.PURCHASES_IOS_KEY || "test_aXuDLwLyBHRtkxHFImAdpWwufVT"
-                    : process.env.PURCHASES_ANDROID_KEY ||
-                      "test_aXuDLwLyBHRtkxHFImAdpWwufVT";
+                    ? process.env.EXPO_PUBLIC_PURCHASES_IOS_KEY ||
+                      "appl_HHPNNqzuCyRKMvuLLtZFloXfaIA"
+                    : process.env.EXPO_PUBLIC_PURCHASES_ANDROID_KEY ||
+                      "goog_vuioAmQKQpPnwGqxktfBuiqAKfz";
             Purchases.configure({ apiKey: key });
             purchasesConfigured.current = true;
         }
+
+        Purchases.isConfigured()
+            .catch((error) => {
+                console.error("Error checking Purchases configuration:", error);
+                return false;
+            })
+            .then((configured) => {
+                console.log("Purchases configured:", configured);
+                if (!configured) {
+                    return;
+                }
+                setPurchasesReady(true);
+            });
 
         getCustomerInfo();
         getOfferings();
@@ -125,28 +136,18 @@ function AppContent() {
         }
     }, [appIsReady]);
 
-    // if (!isConnected) return <NoInternetScreen />;
+    if (!isConnected) return <NoInternetScreen />;
     if (serverStatus === "pending") return null;
     if (serverStatus === "down") return <OutageScreen />;
     if (serverStatus === "update") return <UpdateScreen duration={updateDuration} />;
     if (!appIsReady || isLoading) return null;
 
     return (
-        <View style={{ flex: 1 }}>
-            <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen
-                    name="datePickerModal"
-                    options={{
-                        headerShown: false,
-                        presentation: "formSheet",
-                        gestureEnabled: true,
-                        sheetGrabberVisible: true,
-                        sheetAllowedDetents: [0.5, 1],
-                        sheetInitialDetentIndex: 0,
-                    }}
-                />
-            </Stack>
-        </View>
+        <PurchasesContext.Provider value={purchasesReady}>
+            <View style={{ flex: 1 }}>
+                <Slot />
+            </View>
+        </PurchasesContext.Provider>
     );
 }
 

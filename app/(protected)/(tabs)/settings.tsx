@@ -83,7 +83,7 @@ export default function SettingsScreen() {
             return () => {
                 setDisabledEdges([]);
             };
-        }, []),
+        }, [setDisabledEdges]),
     );
 
     const { theme } = useTheme();

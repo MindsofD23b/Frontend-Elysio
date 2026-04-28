@@ -15,6 +15,7 @@ import BackWrapper from "@/components/backwrapper";
 import { ShieldCheck, CreditCard, Lock } from "lucide-react-native";
 import { type BillingCycle, type Plan, PLANS_MAP as PLANS } from "@/lib/plans";
 import Purchases, { PurchasesPackage } from "react-native-purchases";
+import { usePurchasesReady } from "@/lib/PurchasesContext";
 
 const BASE_URL = "https://elysio.jamiepoeffel.ch";
 
@@ -130,6 +131,7 @@ function TrustBadges() {
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function Checkout() {
+    const purchasesReady = usePurchasesReady();
     const { theme } = useTheme();
     const { token } = useAuth();
     const { planId, billing } = useLocalSearchParams<{
@@ -149,6 +151,7 @@ export default function Checkout() {
 
     useEffect(() => {
         async function loadPackage() {
+            if (!purchasesReady) return;
             try {
                 const [offerings, customerInfo] = await Promise.all([
                     Purchases.getOfferings(),
@@ -179,7 +182,7 @@ export default function Checkout() {
             }
         }
         loadPackage();
-    }, [planId, billingCycle]);
+    }, [planId, billingCycle, purchasesReady]);
 
     const alreadySubscribedToThis = activePlanId === planId;
     const hasOtherActivePlan = activePlanId !== null && activePlanId !== planId;
@@ -202,6 +205,7 @@ export default function Checkout() {
             console.warn("No RevenueCat package available — offerings failed to load");
             return;
         }
+        if (!purchasesReady) return;
         setLoading(true);
         setError(null);
         try {

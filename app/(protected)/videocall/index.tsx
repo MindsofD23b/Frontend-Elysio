@@ -7,15 +7,17 @@ import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useNavigation } from "expo-router";
+import { get, store } from "@/utils/store";
 import { SetupScreen } from "@/app/(protected)/videocall/(pages)/SetupScreen";
 import { ConnectingScreen } from "@/app/(protected)/videocall/(pages)/ConnectingScreen";
 import { CallScreen, ICEBREAKERS } from "@/app/(protected)/videocall/(pages)/CallScreen";
+import StreakCelebrationScreen from "@/components/StreakCelebrationModal";
 
 registerGlobals();
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
-type AppScreen = "setup" | "connecting" | "call";
+type AppScreen = "setup" | "connecting" | "call" | "streak";
 
 export default function VideoCall() {
     const { setDisableSafeArea } = useSafeAreaControl();
@@ -36,12 +38,10 @@ export default function VideoCall() {
     const [icebreakerVisible, setIcebreakerVisible] = useState(false);
     const icebreakerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const icebreakerOpacity = useRef(new Animated.Value(0)).current;
-    const [icebreakerVisible, setIcebreakerVisible] = useState(false);
-    const icebreakerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const icebreakerOpacity = useRef(new Animated.Value(0)).current;
     const { token } = useAuth();
 
     const [screen, setScreen] = useState<AppScreen>("setup");
+    const [streakCount, setStreakCount] = useState(1);
     const [localUrl, setLocalUrl] = useState<string | null>(null);
     const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
     const roomIdRef = useRef<string | null>(null);
@@ -54,7 +54,6 @@ export default function VideoCall() {
     const sendTransportRef = useRef<any>(null);
     const recvTransportRef = useRef<any>(null);
     const socketRef = useRef<Socket | null>(null);
-    const previewBottomAnim = useRef(new Animated.Value(128)).current;
     const previewBottomAnim = useRef(new Animated.Value(128)).current;
 
     const localStreamRef = useRef<any>(null);
@@ -464,63 +463,80 @@ export default function VideoCall() {
         }
     }, []);
 
-    const stopCall = useCallback(async () => {
-        localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
-        localStreamRef.current = null;
-        startingRef.current = false;
-        connectingIntentRef.current = false;
-        icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
-        setIcebreakerVisible(false);
-        icebreakerOpacity.setValue(0);
-        icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
-        setIcebreakerVisible(false);
-        icebreakerOpacity.setValue(0);
-        socketRef.current?.disconnect();
-        socketRef.current = null;
+    const stopCall = useCallback(
+        async (callCompleted = false) => {
+            localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
+            localStreamRef.current = null;
+            startingRef.current = false;
+            connectingIntentRef.current = false;
+            icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
+            setIcebreakerVisible(false);
+            icebreakerOpacity.setValue(0);
+            icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
+            setIcebreakerVisible(false);
+            icebreakerOpacity.setValue(0);
+            socketRef.current?.disconnect();
+            socketRef.current = null;
 
-        const currentRoomId = roomIdRef.current;
-        if (currentRoomId) {
+            const currentRoomId = roomIdRef.current;
+            if (currentRoomId) {
+                try {
+                    await api(`/video/room/${currentRoomId}/leave`, {
+                        method: "DELETE",
+                        body: JSON.stringify({ peerId: peerIdRef.current }),
+                    });
+                } catch {}
+            }
+
             try {
-                await api(`/video/room/${currentRoomId}/leave`, {
-                    method: "DELETE",
-                    body: JSON.stringify({ peerId: peerIdRef.current }),
-                });
+                await deactivateMatchmakingRef.current();
             } catch {}
-        }
 
-        try {
-            await deactivateMatchmakingRef.current();
-        } catch {}
+            sendTransportRef.current?.close();
+            recvTransportRef.current?.close();
+            sendTransportRef.current = null;
+            recvTransportRef.current = null;
+            remoteStreamRef.current = new MediaStream();
 
-        sendTransportRef.current?.close();
-        recvTransportRef.current?.close();
-        sendTransportRef.current = null;
-        recvTransportRef.current = null;
-        remoteStreamRef.current = new MediaStream();
+            consumersRef.current.forEach((consumer) => {
+                try {
+                    consumer.close();
+                } catch {}
+            });
+            consumersRef.current.clear();
+            consumedProducerIdsRef.current.clear();
+            consumingProducerIdsRef.current.clear();
+            remoteVideoStreamRef.current = null;
 
-        consumersRef.current.forEach((consumer) => {
-            try {
-                consumer.close();
-            } catch {}
-        });
-        consumersRef.current.clear();
-        consumedProducerIdsRef.current.clear();
-        consumingProducerIdsRef.current.clear();
-        remoteVideoStreamRef.current = null;
+            setLocalUrl(null);
+            setRemoteUrl(null);
+            setGatewayRoomId(null);
+            setMatchedUserId(null);
+            setMatchState("idle");
+            setMatchmakingReady(false);
+            roomIdRef.current = null;
 
-        setLocalUrl(null);
-        setRemoteUrl(null);
-        setGatewayRoomId(null);
-        setMatchedUserId(null);
-        setMatchState("idle");
-        setMatchmakingReady(false);
-        roomIdRef.current = null;
+            matchmakingSocketRef.current?.disconnect();
+            matchmakingSocketRef.current = null;
 
-        matchmakingSocketRef.current?.disconnect();
-        matchmakingSocketRef.current = null;
-
-        setScreen("setup");
-    }, [api]);
+            // only show streak screen after a real call, once per day
+            const today = new Date().toISOString().slice(0, 10);
+            const lastShown = await get<string>("streak_modal_last_shown");
+            if (callCompleted && lastShown !== today) {
+                try {
+                    const data = await api("/users/streak");
+                    setStreakCount(data?.streak ?? 1);
+                } catch {
+                    setStreakCount(1);
+                }
+                await store("streak_modal_last_shown", today);
+                setScreen("streak");
+            } else {
+                setScreen("setup");
+            }
+        },
+        [api],
+    );
 
     const handleStartConnecting = useCallback(
         async (_camera: string, _mic: string, _interests: string[]) => {
@@ -681,8 +697,25 @@ export default function VideoCall() {
         };
     }, []);
 
+    if (screen === "streak") {
+        return (
+            <StreakCelebrationScreen
+                streak={streakCount}
+                onDismiss={() => setScreen("setup")}
+            />
+        );
+    }
+
     if (screen === "setup") {
-        return <SetupScreen onConnect={handleStartConnecting} />;
+        return (
+            <SetupScreen
+                onConnect={handleStartConnecting}
+                onTestStreak={() => {
+                    setStreakCount(1047);
+                    setScreen("streak");
+                }}
+            />
+        );
     }
 
     if (screen === "connecting") {
@@ -707,7 +740,7 @@ export default function VideoCall() {
             onToggleControls={toggleControls}
             onToggleMute={toggleMute}
             onFlipCamera={flipCamera}
-            onStop={stopCall}
+            onStop={() => stopCall(true)}
             onLike={handleLike}
             onNextUser={handleNextUser}
             onReaction={handleReaction}

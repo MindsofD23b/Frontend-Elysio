@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Purchases, { CustomerInfo } from "react-native-purchases";
 import { PlanType } from "@/lib/constants";
+import { usePurchasesReady } from "@/lib/PurchasesContext";
 
 function resolvePlan(info: CustomerInfo): PlanType {
     const active = info.entitlements.active;
@@ -11,10 +12,12 @@ function resolvePlan(info: CustomerInfo): PlanType {
 }
 
 export function useActivePlan() {
+    const purchasesReady = usePurchasesReady();
     const [plan, setPlan] = useState<PlanType>(PlanType.FREE);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!purchasesReady) return;
         Purchases.getCustomerInfo()
             .then((info) => setPlan(resolvePlan(info)))
             .catch(() => setPlan(PlanType.FREE))
@@ -29,7 +32,7 @@ export function useActivePlan() {
             else if (remove && typeof (remove as any).remove === "function")
                 (remove as any).remove();
         };
-    }, []);
+    }, [purchasesReady]);
 
     return { plan, loading };
 }

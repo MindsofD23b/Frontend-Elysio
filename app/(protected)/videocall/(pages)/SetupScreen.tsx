@@ -35,9 +35,10 @@ const INTERESTS = [
 
 interface Props {
     onConnect: (camera: string, mic: string, interests: string[]) => void;
+    onTestStreak?: () => void;
 }
 
-export function SetupScreen({ onConnect }: Props) {
+export function SetupScreen({ onConnect, onTestStreak }: Props) {
     const [selectedCamera, setSelectedCamera] = useState(CAMERAS[0].id);
     const [selectedMic, setSelectedMic] = useState(MICROPHONES[0].id);
     const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -169,6 +170,21 @@ export function SetupScreen({ onConnect }: Props) {
                     <BtnText>Find a match</BtnText>
                     <ArrowRightIcon size={18} color="#fff" />
                 </Button>
+
+                {onTestStreak && (
+                    <Pressable
+                        onPress={onTestStreak}
+                        style={{
+                            marginTop: 10,
+                            alignItems: "center",
+                            paddingVertical: 10,
+                        }}
+                    >
+                        <Text style={{ color: theme.text + "55", fontSize: 12 }}>
+                            [DEV] Test streak screen
+                        </Text>
+                    </Pressable>
+                )}
             </ScrollView>
         </BackWrapper>
     );
