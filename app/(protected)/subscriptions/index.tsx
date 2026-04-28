@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     View,
     Text,
@@ -17,10 +17,11 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import BackWrapper from "@/components/backwrapper";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { type BillingCycle, type Plan, PLANS } from "@/lib/plans";
 import Purchases from "react-native-purchases";
 import { useActivePlan } from "@/hooks/useActivePlan";
+import { useSafeAreaControl } from "@/components/SafeArea";
 
 type RcPrice = { price: number; currencyCode: string };
 type RcPrices = Record<string, { monthly?: RcPrice; yearly?: RcPrice }>;
@@ -133,6 +134,18 @@ function PlanCard({
     const animatedStyle = useAnimatedStyle(() => ({
         opacity: opacity.value,
     }));
+
+    const { setDisabledEdges } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisabledEdges(["top"]);
+
+            return () => {
+                setDisabledEdges([]);
+            };
+        }, []),
+    );
 
     return (
         <View
@@ -354,78 +367,74 @@ export default function SubscriptionPlans() {
     }
 
     return (
-        <View style={{ flex: 1 }}>
-            <BackWrapper p={false}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Text style={[styles.title, { color: theme.text }]}>
-                        Choose your plan
-                    </Text>
-                    <Text style={[styles.subtitle, { color: theme.accent }]}>
-                        Upgrade or downgrade at any time.
-                    </Text>
-                </View>
-
-                {/* Toggle */}
-                <View style={styles.toggleWrapper}>
-                    <BillingToggle value={billing} onChange={setBilling} />
-                </View>
-
-                {/* Cards — peek layout */}
-                <FlatList
-                    ref={flatListRef}
-                    data={PLANS}
-                    keyExtractor={(p) => p.id}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    snapToInterval={CARD_WIDTH + CARD_GAP}
-                    snapToAlignment="start"
-                    decelerationRate="fast"
-                    contentContainerStyle={{
-                        paddingHorizontal: SIDE_PADDING,
-                        paddingVertical: 20,
-                        gap: CARD_GAP,
-                    }}
-                    initialScrollIndex={1}
-                    getItemLayout={(_, index) => ({
-                        length: CARD_WIDTH + CARD_GAP,
-                        offset: (CARD_WIDTH + CARD_GAP) * index,
-                        index,
-                    })}
-                    onScroll={handleScroll}
-                    scrollEventThrottle={16}
-                    renderItem={({ item }) => (
-                        <PlanCard
-                            plan={item}
-                            billing={billing}
-                            rcPrices={rcPrices}
-                            isActive={activePlan === item.id}
-                            onSubscribe={() => {
-                                router.push({
-                                    pathname: "/subscriptions/checkout",
-                                    params: { planId: item.id, billing },
-                                });
-                            }}
-                        />
-                    )}
-                />
-
-                {/* Dots */}
-                <PaginationDots total={PLANS.length} active={activeIndex} />
-
-                <Text style={[styles.cancelNote, { color: theme.accent }]}>
-                    Cancel anytime · No hidden fees
+        <BackWrapper m p={false}>
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={[styles.title, { color: theme.text }]}>
+                    Choose your plan
                 </Text>
-            </BackWrapper>
-        </View>
+                <Text style={[styles.subtitle, { color: theme.accent }]}>
+                    Upgrade or downgrade at any time.
+                </Text>
+            </View>
+
+            {/* Toggle */}
+            <View style={styles.toggleWrapper}>
+                <BillingToggle value={billing} onChange={setBilling} />
+            </View>
+
+            {/* Cards — peek layout */}
+            <FlatList
+                ref={flatListRef}
+                data={PLANS}
+                keyExtractor={(p) => p.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={CARD_WIDTH + CARD_GAP}
+                snapToAlignment="start"
+                decelerationRate="fast"
+                contentContainerStyle={{
+                    paddingHorizontal: SIDE_PADDING,
+                    paddingVertical: 20,
+                    gap: CARD_GAP,
+                }}
+                initialScrollIndex={1}
+                getItemLayout={(_, index) => ({
+                    length: CARD_WIDTH + CARD_GAP,
+                    offset: (CARD_WIDTH + CARD_GAP) * index,
+                    index,
+                })}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                renderItem={({ item }) => (
+                    <PlanCard
+                        plan={item}
+                        billing={billing}
+                        rcPrices={rcPrices}
+                        isActive={activePlan === item.id}
+                        onSubscribe={() => {
+                            router.push({
+                                pathname: "/subscriptions/checkout",
+                                params: { planId: item.id, billing },
+                            });
+                        }}
+                    />
+                )}
+            />
+
+            {/* Dots */}
+            <PaginationDots total={PLANS.length} active={activeIndex} />
+
+            <Text style={[styles.cancelNote, { color: theme.accent }]}>
+                Cancel anytime · No hidden fees
+            </Text>
+        </BackWrapper>
     );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-    safe: { flex: 1 },
-
     header: {
         paddingHorizontal: 24,
         paddingTop: 16,

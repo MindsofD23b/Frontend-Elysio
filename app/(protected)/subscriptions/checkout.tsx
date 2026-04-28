@@ -209,26 +209,6 @@ export default function Checkout() {
                 return;
             }
 
-            const res = await fetch(`${BASE_URL}/subscriptions/upgrade`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    planId,
-                    billingCycle,
-                }),
-            });
-
-            if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                setError(
-                    body?.message ?? "Failed to activate plan. Please contact support.",
-                );
-                return;
-            }
-
             router.replace("/(protected)/(tabs)");
         } catch (err: any) {
             if (err?.userCancelled) return;

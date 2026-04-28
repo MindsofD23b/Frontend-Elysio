@@ -2,42 +2,70 @@
 
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
-import { BtnText, Button } from "@/components/button";
+import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
-import { router, Stack } from "expo-router";
+import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { datePickerCallback } from "@/utils/datePickerCallback";
+import { useSafeAreaControl } from "@/components/SafeArea";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
+
+type UserMe = {
+    id: string;
+    email: string | null;
+    phoneNumber: string | null;
+    emailVerified: boolean;
+    gender: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    country: string;
+    language: string;
+    jobTitle: string | null;
+    aboutMe: string | null;
+    createdAt: string;
+    photoUrl: string | null;
+};
+
+type Props =
+    | {
+          onChangeText: (text: string) => void;
+          onPress?: never;
+      }
+    | {
+          onChangeText?: never;
+          onPress: () => void;
+      };
 
 type FieldProps = {
     label: string;
     placeholder: string;
     value: string;
-    onChangeText: (text: string) => void;
     keyboardType?: "default" | "email-address" | "phone-pad";
     autoComplete?: "email" | "tel" | "off" | "username" | "current-password";
-};
+} & Props;
 
 function Field({
     label,
     placeholder,
     value,
     onChangeText,
+    onPress,
     keyboardType,
     autoComplete,
 }: FieldProps) {
     const { theme } = useTheme();
 
     const styles = StyleSheet.create({
-        inputWrap: { width: "100%" },
+        inputWrap: { width: "100%", marginTop: 14 },
         label: {
-            marginTop: 11,
             fontSize: 14,
             fontWeight: "600",
-            marginBottom: -7,
-            lineHeight: 12,
+            marginBottom: 6,
             color: theme.primary,
         },
     });
@@ -45,13 +73,30 @@ function Field({
     return (
         <View style={styles.inputWrap}>
             <Text style={styles.label}>{label}</Text>
-            <Input
-                placeholder={placeholder}
-                value={value}
-                onChangeText={onChangeText}
-                keyboardType={keyboardType}
-                autoComplete={autoComplete}
-            />
+            {onPress ? (
+                <Pressable onPress={onPress}>
+                    <Input
+                        placeholder={placeholder}
+                        value={value}
+                        onChangeText={onChangeText}
+                        keyboardType={keyboardType}
+                        autoComplete={autoComplete}
+                        readOnly={!!onPress}
+                        onPress={onPress}
+                        style={{ marginTop: 0 }}
+                    />
+                </Pressable>
+            ) : (
+                <Input
+                    placeholder={placeholder}
+                    value={value}
+                    onChangeText={onChangeText}
+                    keyboardType={keyboardType}
+                    autoComplete={autoComplete}
+                    readOnly={!!onPress}
+                    style={{ marginTop: 0 }}
+                />
+            )}
         </View>
     );
 }
@@ -60,32 +105,47 @@ export default function PersonalDetails() {
     const { gs, theme } = useTheme();
     const styles = makeStyles();
 
-    const [fullName, setFullName] = useState("Lara Gut");
-    const [email, setEmail] = useState("lara.gut@example.com");
-    const [password, setPassword] = useState("********");
-    const [phone, setPhone] = useState("+41 79 123 45 67");
-    const [country, setCountry] = useState("Switzerland");
-    const [birthday, setBirthday] = useState("14.02.2002");
-    const [profileImage, setProfileImage] = useState(
-        "https://images.unsplash.com/photo-1517849845537-4d257902454a",
+    const { setDisabledEdges } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisabledEdges(["top"]);
+
+            return () => {
+                setDisabledEdges([]);
+            };
+        }, []),
     );
 
-    function handleBirthdayChange(text: string) {
-        const numbersOnly = text.replace(/\D/g, "").slice(0, 8);
+    const [fullName, setFullName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [country, setCountry] = useState("");
+    const [birthday, setBirthday] = useState("");
+    const [profileImage, setProfileImage] = useState<string | null>(null);
 
-        if (numbersOnly.length <= 2) {
-            setBirthday(numbersOnly);
-            return;
-        }
-        if (numbersOnly.length <= 4) {
-            setBirthday(`${numbersOnly.slice(0, 2)}.${numbersOnly.slice(2)}`);
-            return;
+    const [userData, userLoading] = useAuthFetch<UserMe>("/users/me", { method: "GET" });
+
+    useEffect(() => {
+        if (!userData) return;
+
+        setFullName(`${userData.firstName} ${userData.lastName}`);
+        setEmail(userData.email ?? "");
+        setPhone(userData.phoneNumber ?? "");
+        setCountry(userData.country ?? "");
+
+        if (userData.dateOfBirth) {
+            const d = new Date(userData.dateOfBirth);
+            const day = String(d.getDate()).padStart(2, "0");
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const year = d.getFullYear();
+            setBirthday(`${day}.${month}.${year}`);
         }
 
-        setBirthday(
-            `${numbersOnly.slice(0, 2)}.${numbersOnly.slice(2, 4)}.${numbersOnly.slice(4, 8)}`,
-        );
-    }
+        if (userData.photoUrl) setProfileImage(userData.photoUrl);
+    }, [userData]);
+
+    datePickerCallback.set((newDate) => setBirthday(newDate));
 
     async function changePicture() {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -101,11 +161,15 @@ export default function PersonalDetails() {
         if (!result.canceled) setProfileImage(result.assets[0].uri);
     }
 
+    function handleSaveAndExit() {
+        // Hier könntest du die aktualisierten Daten speichern, z.B. durch einen API-Aufruf
+
+        router.back();
+    }
+
     return (
         <>
-            <Stack.Screen options={{ headerShown: false }} />
-
-            <BackWrapper>
+            <BackWrapper m>
                 <KeyboardAwareScrollView
                     contentContainerStyle={styles.page}
                     showsVerticalScrollIndicator={false}
@@ -118,7 +182,19 @@ export default function PersonalDetails() {
 
                     <View style={styles.profileWrap}>
                         <View>
-                            <Image source={{ uri: profileImage }} style={styles.avatar} />
+                            {profileImage ? (
+                                <Image
+                                    source={{ uri: profileImage }}
+                                    style={styles.avatar}
+                                />
+                            ) : (
+                                <View
+                                    style={[
+                                        styles.avatar,
+                                        { backgroundColor: theme.text + "22" },
+                                    ]}
+                                />
+                            )}
                             <Pressable
                                 style={[
                                     styles.editIcon,
@@ -130,10 +206,10 @@ export default function PersonalDetails() {
                             </Pressable>
                         </View>
                         <Text style={[styles.name, { color: theme.text }]}>
-                            {fullName}
+                            {userLoading ? "" : fullName}
                         </Text>
                         <Text style={[styles.emailTop, { color: theme.text + "80" }]}>
-                            {email}
+                            {userLoading ? "" : email}
                         </Text>
                     </View>
 
@@ -153,13 +229,6 @@ export default function PersonalDetails() {
                             autoComplete="email"
                         />
                         <Field
-                            label="Password"
-                            placeholder="Your Password"
-                            value={password}
-                            onChangeText={setPassword}
-                            autoComplete="current-password"
-                        />
-                        <Field
                             label="Phone Number"
                             placeholder="Your Phone Number"
                             value={phone}
@@ -171,7 +240,14 @@ export default function PersonalDetails() {
                             label="Date of Birth"
                             placeholder="dd.mm.yyyy"
                             value={birthday}
-                            onChangeText={handleBirthdayChange}
+                            onPress={() => {
+                                router.push({
+                                    pathname: "/datePickerModal",
+                                    params: {
+                                        birthday,
+                                    },
+                                });
+                            }}
                             keyboardType="phone-pad"
                         />
                         <Field
@@ -182,7 +258,7 @@ export default function PersonalDetails() {
                         />
                     </View>
 
-                    <Button style={{ marginTop: 20 }} onPress={() => router.back()}>
+                    <Button style={{ marginTop: 20 }} onPress={handleSaveAndExit}>
                         <BtnText>Save and Exit</BtnText>
                     </Button>
                 </KeyboardAwareScrollView>

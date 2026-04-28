@@ -3,8 +3,8 @@
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useTheme } from "@/lib/theme/context";
-import { router, Stack } from "expo-router";
-import { useState } from "react";
+import { router, Stack, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
     Pressable,
     ScrollView,
@@ -18,6 +18,7 @@ import { BlurTint, BlurView } from "expo-blur";
 import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { createT } from "@/i18n";
 import { ActivitiesByTitle } from "@/types/register";
+import { useSafeAreaControl } from "@/components/SafeArea";
 
 const MIN = 3;
 const MAX = 12;
@@ -28,6 +29,18 @@ export default function Interests() {
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
     const tintColor = useColorScheme()?.toString();
+
+    const { setDisabledEdges } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisabledEdges(["top"]);
+
+            return () => {
+                setDisabledEdges([]);
+            };
+        }, []),
+    );
 
     // useRegisterStore komplett entfernen
     const [selected, setSelected] = useState<string[]>([]); // später mit echten User-Daten befüllen
@@ -56,6 +69,7 @@ export default function Interests() {
             return [...prev, id];
         });
     };
+
     const onContinue = async () => {
         if (!canContinue) {
             setErrorOpen(true);
@@ -67,8 +81,7 @@ export default function Interests() {
 
     return (
         <>
-            <Stack.Screen options={{ headerShown: false }} />
-            <BackWrapper>
+            <BackWrapper m>
                 <View style={styles.page}>
                     <ScrollView
                         contentContainerStyle={styles.scrollContent}

@@ -1,4 +1,4 @@
-import { Slot } from "expo-router";
+import { Slot, Stack } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
@@ -14,6 +14,8 @@ import { initCrypto } from "@/services/chat-crypto.client";
 import OutageScreen from "@/app/(auth)/outage";
 import UpdateScreen from "@/app/(auth)/update";
 import { ServerStatusProvider, useServerStatus } from "@/lib/ServerStatusContext";
+// import NoInternetScreen from "@/app/(auth)/no-internet";
+// import * as Network from "expo-network";
 
 LogBox.ignoreAllLogs();
 
@@ -46,6 +48,7 @@ function AppContent() {
     const { isLoading, token } = useAuth();
     const serverStatus = useServerStatus();
     const purchasesConfigured = useRef(false);
+    // const [isConnected, setIsConnected] = useState<boolean>(true);
 
     const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
     const [, , cache] = useCacheFetch("/chat/rooms", chatRequest, {
@@ -53,6 +56,13 @@ function AppContent() {
         useCache: true,
         ttlMs: minToMs(10),
     });
+
+    // useEffect(() => {
+    //     const subscription = Network.addNetworkStateListener((state) => {
+    //         setIsConnected(state.isConnected ?? true);
+    //     });
+    //     return () => subscription.remove();
+    // }, []);
 
     async function getCustomerInfo() {
         try {
@@ -111,17 +121,27 @@ function AppContent() {
         }
     }, [appIsReady]);
 
+    // if (!isConnected) return <NoInternetScreen />;
     if (serverStatus === "pending") return null;
-
     if (serverStatus === "down") return <OutageScreen />;
-
     if (serverStatus === "update") return <UpdateScreen duration={updateDuration} />;
-
     if (!appIsReady || isLoading) return null;
 
     return (
         <View style={{ flex: 1 }}>
-            <Slot />
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen
+                    name="datePickerModal"
+                    options={{
+                        headerShown: false,
+                        presentation: "formSheet",
+                        gestureEnabled: true,
+                        sheetGrabberVisible: true,
+                        sheetAllowedDetents: [0.5, 1],
+                        sheetInitialDetentIndex: 0,
+                    }}
+                />
+            </Stack>
         </View>
     );
 }

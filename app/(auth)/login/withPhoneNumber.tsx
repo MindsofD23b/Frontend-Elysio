@@ -10,6 +10,7 @@ import { createT } from "@/i18n";
 import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { LoginResponse } from "./withEmail";
+import Purchases from "react-native-purchases";
 type FormErrors = {
     tel?: { message: string };
     password?: { message: string };
@@ -81,6 +82,7 @@ export default function WithPhoneNumber() {
             }
 
             await saveLogin(response.token);
+            await Purchases.logIn(response.userId);
             router.replace("/(protected)/(tabs)");
         } catch (err) {
             setErrors({
