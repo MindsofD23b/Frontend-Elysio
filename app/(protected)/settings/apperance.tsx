@@ -24,7 +24,7 @@ export default function Apperance() {
             return () => {
                 setDisableSafeArea(false);
             };
-        }, []),
+        }, [setDisableSafeArea]),
     );
 
     useEffect(() => {

@@ -81,8 +81,6 @@ function OrderSummary({
     );
 }
 
-// ─── Feature List ──────────────────────────────────────────────────────────────
-
 function IncludedFeatures({ plan }: { plan: Plan }) {
     const { theme } = useTheme();
     return (
@@ -164,11 +162,15 @@ export default function Checkout() {
                 const offeringKey = `${planId ?? "basic"}_${billingCycle === "yearly" ? "yearly" : "monthly"}`;
                 const offering = offerings.all[offeringKey];
                 if (offering) {
-                    const selected =
+                    const planIdLower = (planId ?? "premium").toLowerCase();
+                    const byProductId = offering.availablePackages.find((p) =>
+                        p.product.identifier.toLowerCase().includes(planIdLower),
+                    );
+                    const byBillingCycle =
                         billingCycle === "yearly"
                             ? (offering.annual ?? offering.availablePackages[0])
                             : (offering.monthly ?? offering.availablePackages[0]);
-                    setPkg(selected ?? null);
+                    setPkg(byProductId ?? byBillingCycle ?? null);
                 }
             } catch (error) {
                 console.error("Failed to load offerings:", error);
@@ -196,7 +198,10 @@ export default function Checkout() {
     };
 
     const handleSubscribe = async () => {
-        if (!pkg) return;
+        if (!pkg) {
+            console.warn("No RevenueCat package available — offerings failed to load");
+            return;
+        }
         setLoading(true);
         setError(null);
         try {

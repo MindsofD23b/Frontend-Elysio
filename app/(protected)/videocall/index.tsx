@@ -36,6 +36,9 @@ export default function VideoCall() {
     const [icebreakerVisible, setIcebreakerVisible] = useState(false);
     const icebreakerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const icebreakerOpacity = useRef(new Animated.Value(0)).current;
+    const [icebreakerVisible, setIcebreakerVisible] = useState(false);
+    const icebreakerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const icebreakerOpacity = useRef(new Animated.Value(0)).current;
     const { token } = useAuth();
 
     const [screen, setScreen] = useState<AppScreen>("setup");
@@ -51,6 +54,7 @@ export default function VideoCall() {
     const sendTransportRef = useRef<any>(null);
     const recvTransportRef = useRef<any>(null);
     const socketRef = useRef<Socket | null>(null);
+    const previewBottomAnim = useRef(new Animated.Value(128)).current;
     const previewBottomAnim = useRef(new Animated.Value(128)).current;
 
     const localStreamRef = useRef<any>(null);
@@ -352,6 +356,10 @@ export default function VideoCall() {
                 const producer = await sendTransport.produce({ track: videoTrack });
                 videoProducerRef.current = producer;
             }
+            if (videoTrack) {
+                const producer = await sendTransport.produce({ track: videoTrack });
+                videoProducerRef.current = producer;
+            }
         },
         [api],
     );
@@ -461,6 +469,9 @@ export default function VideoCall() {
         localStreamRef.current = null;
         startingRef.current = false;
         connectingIntentRef.current = false;
+        icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
+        setIcebreakerVisible(false);
+        icebreakerOpacity.setValue(0);
         icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
         setIcebreakerVisible(false);
         icebreakerOpacity.setValue(0);

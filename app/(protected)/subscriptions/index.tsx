@@ -129,7 +129,7 @@ function PlanCard({
         opacity.value = 0;
 
         opacity.value = withTiming(1, { duration: 350 });
-    }, [billing]);
+    }, []);
 
     const animatedStyle = useAnimatedStyle(() => ({
         opacity: opacity.value,
@@ -144,7 +144,7 @@ function PlanCard({
             return () => {
                 setDisabledEdges([]);
             };
-        }, []),
+        }, [setDisabledEdges]),
     );
 
     return (

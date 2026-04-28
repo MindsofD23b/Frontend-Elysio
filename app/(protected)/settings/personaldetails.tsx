@@ -2,9 +2,9 @@
 
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
-import { BtnText, Button, Loader } from "@/components/button";
+import { BtnText, Button } from "@/components/button";
 import Input from "@/components/input";
-import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
@@ -114,7 +114,7 @@ export default function PersonalDetails() {
             return () => {
                 setDisabledEdges([]);
             };
-        }, []),
+        }, [setDisabledEdges]),
     );
 
     const [fullName, setFullName] = useState("");
