@@ -71,12 +71,6 @@
                     "organization": "mindsofd23b"
                 }
             ],
-            [
-                "react-native-purchases",
-                {
-                    "androidPackageName": "com.mindsofd23b.elysio"
-                }
-            ],
             "@sentry/react-native",
             "expo-web-browser"
         ],
