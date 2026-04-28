@@ -15,7 +15,9 @@
                 "ITSAppUsesNonExemptEncryption": false
             },
             "storeKitConfigPath": "./Store.storekit",
-            "entitlements": {},
+            "entitlements": {
+                "com.apple.developer.in-app-payments": []
+            },
             "bundleIdentifier": "com.mindsofd23b.elysio",
             "usesAppleSignIn": true
         },
@@ -67,6 +69,12 @@
                     "url": "https://sentry.io/",
                     "project": "elysio",
                     "organization": "mindsofd23b"
+                }
+            ],
+            [
+                "react-native-purchases",
+                {
+                    "androidPackageName": "com.mindsofd23b.elysio"
                 }
             ],
             "@sentry/react-native",
