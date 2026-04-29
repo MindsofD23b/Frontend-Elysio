@@ -80,127 +80,124 @@ export default function ReportUser({ user, onBack, onSubmit }: Props) {
     }
 
     return (
-        <SafeAreaView style={styles.safe}>
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+        <KeyboardAvoidingView
+            style={styles.safe}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+            <View style={styles.header}>
+                <Pressable style={styles.backBtn} onPress={onBack} hitSlop={10}>
+                    <Ionicons name="arrow-back" size={22} color={theme.text} />
+                </Pressable>
+                <Text style={styles.headerTitle}>Report</Text>
+                <View style={{ width: 40 }} />
+            </View>
+
+            <ScrollView
+                contentContainerStyle={styles.scroll}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
             >
-                <View style={styles.header}>
-                    <Pressable style={styles.backBtn} onPress={onBack} hitSlop={10}>
-                        <Ionicons name="arrow-back" size={22} color={theme.text} />
-                    </Pressable>
-                    <Text style={styles.headerTitle}>Report</Text>
-                    <View style={{ width: 40 }} />
+                <View style={styles.userCard}>
+                    <View style={styles.avatarWrapper}>
+                        {user.avatarUrl ? (
+                            <Image
+                                source={{ uri: user.avatarUrl }}
+                                style={styles.avatar}
+                            />
+                        ) : (
+                            <View style={[styles.avatar, styles.avatarFallback]}>
+                                <Text style={styles.avatarInitial}>
+                                    {user.name.charAt(0).toUpperCase()}
+                                </Text>
+                            </View>
+                        )}
+                        <View style={styles.reportBadge}>
+                            <Ionicons name="flag" size={10} color={theme.white} />
+                        </View>
+                    </View>
+                    <View style={styles.userInfo}>
+                        <Text style={styles.reportingLabel}>You are reporting</Text>
+                        <Text style={styles.userName}>{user.name}</Text>
+                    </View>
                 </View>
 
-                <ScrollView
-                    contentContainerStyle={styles.scroll}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                >
-                    <View style={styles.userCard}>
-                        <View style={styles.avatarWrapper}>
-                            {user.avatarUrl ? (
-                                <Image
-                                    source={{ uri: user.avatarUrl }}
-                                    style={styles.avatar}
-                                />
-                            ) : (
-                                <View style={[styles.avatar, styles.avatarFallback]}>
-                                    <Text style={styles.avatarInitial}>
-                                        {user.name.charAt(0).toUpperCase()}
-                                    </Text>
-                                </View>
-                            )}
-                            <View style={styles.reportBadge}>
-                                <Ionicons name="flag" size={10} color={theme.white} />
-                            </View>
-                        </View>
-                        <View style={styles.userInfo}>
-                            <Text style={styles.reportingLabel}>You are reporting</Text>
-                            <Text style={styles.userName}>{user.name}</Text>
-                        </View>
-                    </View>
+                <View style={styles.divider} />
 
-                    <View style={styles.divider} />
-
-                    <Text style={styles.sectionLabel}>What is the issue?</Text>
-                    <View style={styles.chipsGrid}>
-                        {REPORT_REASONS.map((reason) => (
-                            <Pressable
-                                key={reason}
+                <Text style={styles.sectionLabel}>What is the issue?</Text>
+                <View style={styles.chipsGrid}>
+                    {REPORT_REASONS.map((reason) => (
+                        <Pressable
+                            key={reason}
+                            style={[
+                                styles.chip,
+                                selectedReason === reason && styles.chipSelected,
+                            ]}
+                            onPress={() => handleChip(reason)}
+                        >
+                            <Text
                                 style={[
-                                    styles.chip,
-                                    selectedReason === reason && styles.chipSelected,
+                                    styles.chipText,
+                                    selectedReason === reason && styles.chipTextSelected,
                                 ]}
-                                onPress={() => handleChip(reason)}
                             >
-                                <Text
-                                    style={[
-                                        styles.chipText,
-                                        selectedReason === reason &&
-                                            styles.chipTextSelected,
-                                    ]}
-                                >
-                                    {reason}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </View>
+                                {reason}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
 
-                    <Text style={styles.sectionLabel}>Add more detail (optional)</Text>
-                    <TextInput
-                        style={styles.textArea}
-                        placeholder="Describe what happened…"
-                        placeholderTextColor={theme.grayscale}
-                        multiline
-                        numberOfLines={5}
-                        textAlignVertical="top"
-                        value={customText}
-                        onChangeText={setCustomText}
-                        maxLength={500}
+                <Text style={styles.sectionLabel}>Add more detail (optional)</Text>
+                <TextInput
+                    style={styles.textArea}
+                    placeholder="Describe what happened…"
+                    placeholderTextColor={theme.grayscale}
+                    multiline
+                    numberOfLines={5}
+                    textAlignVertical="top"
+                    value={customText}
+                    onChangeText={setCustomText}
+                    maxLength={500}
+                />
+                <Text style={styles.charCount}>{customText.length}/500</Text>
+
+                <View style={styles.noteBox}>
+                    <Ionicons
+                        name="shield-checkmark-outline"
+                        size={14}
+                        color={theme.grayscale}
+                        style={{ marginTop: 1 }}
                     />
-                    <Text style={styles.charCount}>{customText.length}/500</Text>
+                    <Text style={styles.noteText}>
+                        Reports are anonymous. Our team reviews every report within 24
+                        hours.
+                    </Text>
+                </View>
 
-                    <View style={styles.noteBox}>
+                <View style={styles.actions}>
+                    <Pressable
+                        style={[styles.btnSubmit, submitting && styles.btnDisabled]}
+                        onPress={() => handleSubmit(false)}
+                        disabled={submitting}
+                    >
+                        <Text style={styles.btnSubmitText}>Submit report</Text>
+                    </Pressable>
+
+                    <Pressable
+                        style={[styles.btnBlock, submitting && styles.btnDisabled]}
+                        onPress={() => handleSubmit(true)}
+                        disabled={submitting}
+                    >
                         <Ionicons
-                            name="shield-checkmark-outline"
-                            size={14}
-                            color={theme.grayscale}
-                            style={{ marginTop: 1 }}
+                            name="ban-outline"
+                            size={16}
+                            color="#df1d1d"
+                            style={{ marginRight: 7 }}
                         />
-                        <Text style={styles.noteText}>
-                            Reports are anonymous. Our team reviews every report within 24
-                            hours.
-                        </Text>
-                    </View>
-
-                    <View style={styles.actions}>
-                        <Pressable
-                            style={[styles.btnSubmit, submitting && styles.btnDisabled]}
-                            onPress={() => handleSubmit(false)}
-                            disabled={submitting}
-                        >
-                            <Text style={styles.btnSubmitText}>Submit report</Text>
-                        </Pressable>
-
-                        <Pressable
-                            style={[styles.btnBlock, submitting && styles.btnDisabled]}
-                            onPress={() => handleSubmit(true)}
-                            disabled={submitting}
-                        >
-                            <Ionicons
-                                name="ban-outline"
-                                size={16}
-                                color="#df1d1d"
-                                style={{ marginRight: 7 }}
-                            />
-                            <Text style={styles.btnBlockText}>Submit & Block</Text>
-                        </Pressable>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                        <Text style={styles.btnBlockText}>Submit & Block</Text>
+                    </Pressable>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -208,6 +205,7 @@ const makeStyles = (theme: Theme) =>
     StyleSheet.create({
         safe: {
             flex: 1,
+            paddingTop: 48,
             backgroundColor: theme.background,
         },
         header: {
@@ -333,7 +331,7 @@ const makeStyles = (theme: Theme) =>
             color: theme.grayscale,
         },
         chipTextSelected: {
-            color: theme.white,
+            color: theme.dbase,
         },
         textArea: {
             backgroundColor: theme.base + "08",
@@ -379,7 +377,7 @@ const makeStyles = (theme: Theme) =>
             justifyContent: "center",
         },
         btnSubmitText: {
-            color: theme.white,
+            color: theme.dbase,
             fontSize: 15,
             fontWeight: "700",
             letterSpacing: 0.2,

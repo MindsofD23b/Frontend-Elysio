@@ -7,7 +7,7 @@ import {
     encryptMessage,
 } from "@/services/chat-crypto.client";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
     ArrowUp,
     ChevronDown,
@@ -40,6 +40,7 @@ import {
 } from "@/types/messages";
 import { MessageBubble } from "@/components/messageBubble";
 import { useRoomSocket } from "@/hooks/useRoomSocket";
+import { useSafeAreaControl } from "@/components/SafeArea";
 // Design made with Pinterest and ChatGPT
 
 // Wie viele Pixel vom unteren Ende entfernt gilt noch als "unten"
@@ -48,6 +49,18 @@ const BOTTOM_THRESHOLD = 80;
 export default function ChatsScreen() {
     const { id, user: userRaw } = useLocalSearchParams<{ id: string; user: string }>();
     const user = JSON.parse(userRaw) as Chat;
+
+    const { setDisableSafeArea } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisableSafeArea(true);
+
+            return () => {
+                setDisableSafeArea(false);
+            };
+        }, [setDisableSafeArea]),
+    );
 
     const [message, setMessage] = useState("");
     const [sending, setSending] = useState(false);
@@ -369,278 +382,290 @@ export default function ChatsScreen() {
     );
 
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1, backgroundColor: theme.rootBg }}
-            behavior="padding"
-            keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom : 25}
-        >
-            <View style={{ flex: 1 }}>
-                <View
-                    style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        width: "100%",
-                        paddingTop: 16,
-                        backgroundColor: theme.rootBg,
-                        borderBottomWidth: 1,
-                        borderBottomColor: theme.base + "1A",
-                    }}
-                >
-                    <Pressable
-                        onPress={() => router.back()}
-                        style={{ padding: 12, borderRadius: 8 }}
-                    >
-                        <ChevronLeft color={theme.base} />
-                    </Pressable>
-                    <View style={{ width: 8 }} />
-                    <Image
-                        source={{ uri: user.image || undefined }}
-                        placeholder="|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
-                        contentFit="cover"
-                        transition={500}
-                        style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 18,
-                            backgroundColor: theme.base + "33",
-                        }}
-                    />
-                    <Text
-                        pointerEvents="none"
-                        style={{
-                            marginLeft: 12,
-                            color: theme.text,
-                            fontSize: 18,
-                            fontWeight: "bold",
-                        }}
-                    >
-                        {user.name}
-                    </Text>
-                    <View style={{ flex: 1 }} />
-                    <Pressable onPress={() => setShowMenu(true)} style={{ padding: 12 }}>
-                        <MoreVertical color={theme.base} size={20} />
-                    </Pressable>
-                </View>
-
-                {/* Nachrichten-Liste + Scroll-Button als relativer Container */}
-                <View style={{ flex: 1 }}>
-                    {!hasLoadedOnce ? (
-                        <ActivityIndicator
-                            style={{ marginTop: 32 }}
-                            color={theme.primary}
-                        />
-                    ) : decryptedMessages.length === 0 ? (
-                        <EmptyMessagesState
-                            name={user.name}
-                            onPress={startConversation}
-                        />
-                    ) : (
-                        <>
-                            <FlashList
-                                ref={scrollRef}
-                                data={decryptedMessages}
-                                style={{ flex: 1 }}
-                                renderItem={renderMessage}
-                                keyExtractor={(item) => item.id}
-                                maintainVisibleContentPosition={{
-                                    startRenderingFromBottom: true,
-                                }}
-                                onScroll={handleScroll}
-                                drawDistance={5000}
-                                ListHeaderComponent={
-                                    loadingMore ? (
-                                        <ActivityIndicator
-                                            color={theme.primary}
-                                            style={{ padding: 12 }}
-                                        />
-                                    ) : null
-                                }
-                                contentContainerStyle={{ paddingBottom: 12 }}
-                            />
-                            {/* Scroll-to-bottom Button */}
-                            {showScrollButton && (
-                                <Animated.View
-                                    style={{
-                                        position: "absolute",
-                                        bottom: 16,
-                                        alignSelf: "center",
-                                        opacity: scrollButtonOpacity,
-                                        transform: [
-                                            {
-                                                translateY:
-                                                    scrollButtonOpacity.interpolate({
-                                                        inputRange: [0, 1],
-                                                        outputRange: [12, 0],
-                                                    }),
-                                            },
-                                        ],
-                                    }}
-                                >
-                                    <Pressable
-                                        onPress={scrollToBottom}
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 999,
-                                            backgroundColor: theme.primary,
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            shadowColor: "#000",
-                                            shadowOffset: { width: 0, height: 2 },
-                                            shadowOpacity: 0.2,
-                                            shadowRadius: 4,
-                                            elevation: 4,
-                                        }}
-                                    >
-                                        <ChevronDown
-                                            color={theme.white}
-                                            size={20}
-                                            strokeWidth={2.5}
-                                        />
-                                    </Pressable>
-                                </Animated.View>
-                            )}
-                        </>
-                    )}
-                </View>
-
-                <View
-                    style={{
-                        borderTopWidth: 1,
-                        borderTopColor: theme.base + "1A",
-                        flexDirection: "row",
-                        alignItems: "flex-end",
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        marginBottom: Platform.OS === "ios" ? 20 : 0,
-                    }}
-                >
-                    <TextInput
-                        ref={inputRef}
-                        placeholder="Type a message..."
-                        placeholderTextColor={theme.base + "66"}
-                        multiline
-                        value={message}
-                        onChangeText={setMessage}
-                        style={{
-                            flex: 1,
-                            maxHeight: 120,
-                            paddingHorizontal: 8,
-                            paddingVertical: 6,
-                            color: theme.text,
-                            fontSize: 16,
-                        }}
-                    />
-                    <Pressable
-                        style={{
-                            width: 32,
-                            height: 32,
-                            marginLeft: 8,
-                            borderRadius: 999,
-                            backgroundColor: sending ? theme.base + "66" : theme.primary,
-                            alignItems: "center",
-                            justifyContent: "center",
-                        }}
-                        onPress={sendMessage}
-                        disabled={sending}
-                    >
-                        {sending ? (
-                            <ActivityIndicator size={14} color={theme.white} />
-                        ) : (
-                            <ArrowUp color={theme.white} size={18} />
-                        )}
-                    </Pressable>
-                </View>
-            </View>
-            <Modal
-                visible={showMenu}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowMenu(false)}
+        <View style={{ flex: 1, backgroundColor: theme.rootBg }}>
+            <KeyboardAvoidingView
+                style={{
+                    flex: 1,
+                    backgroundColor: theme.rootBg,
+                    paddingTop: 40,
+                    marginBottom: 25,
+                }}
+                behavior="padding"
+                // keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom : 25}
             >
-                <Pressable
-                    style={{
-                        flex: 1,
-                        backgroundColor: "#00000040",
-                        justifyContent: "flex-end",
-                    }}
-                    onPress={() => setShowMenu(false)}
-                >
+                <View style={{ flex: 1 }}>
                     <View
                         style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            width: "100%",
+                            paddingTop: 16,
                             backgroundColor: theme.rootBg,
-                            borderTopLeftRadius: 20,
-                            borderTopRightRadius: 20,
-                            padding: 20,
-                            gap: 12,
+                            borderBottomWidth: 1,
+                            borderBottomColor: theme.base + "1A",
                         }}
                     >
                         <Pressable
-                            onPress={() => {
-                                setShowMenu(false);
-                                setShowReport(true);
-                            }}
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                gap: 12,
-                                padding: 14,
-                                borderRadius: 12,
-                                backgroundColor: "#df1d1d14",
-                            }}
+                            onPress={() => router.back()}
+                            style={{ padding: 12, borderRadius: 8 }}
                         >
-                            <Text
-                                style={{
-                                    color: "#df1d1d",
-                                    fontSize: 15,
-                                    fontWeight: "600",
-                                }}
-                            >
-                                🚩 Report {user.name}
-                            </Text>
+                            <ChevronLeft color={theme.base} />
                         </Pressable>
-                        <Pressable
-                            onPress={() => setShowMenu(false)}
+                        <View style={{ width: 8 }} />
+                        <Image
+                            source={{ uri: user.image || undefined }}
+                            placeholder="|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
+                            contentFit="cover"
+                            transition={500}
                             style={{
-                                padding: 14,
-                                borderRadius: 12,
-                                alignItems: "center",
-                                backgroundColor: theme.base + "10",
+                                width: 36,
+                                height: 36,
+                                borderRadius: 18,
+                                backgroundColor: theme.base + "33",
+                            }}
+                        />
+                        <Text
+                            pointerEvents="none"
+                            style={{
+                                marginLeft: 12,
+                                color: theme.text,
+                                fontSize: 18,
+                                fontWeight: "bold",
                             }}
                         >
-                            <Text
-                                style={{
-                                    color: theme.text,
-                                    fontSize: 15,
-                                    fontWeight: "500",
-                                }}
-                            >
-                                Cancel
-                            </Text>
+                            {user.name}
+                        </Text>
+                        <View style={{ flex: 1 }} />
+                        <Pressable
+                            onPress={() => setShowMenu(true)}
+                            style={{ padding: 12 }}
+                        >
+                            <MoreVertical color={theme.base} size={20} />
                         </Pressable>
                     </View>
-                </Pressable>
-            </Modal>
 
-            {/* REPORT SCREEN MODAL — ADD HERE */}
-            <Modal
-                visible={showReport}
-                animationType="slide"
-                onRequestClose={() => setShowReport(false)}
-            >
-                <ReportUser
-                    user={{
-                        id: user.otherUser.id,
-                        name: user.name,
-                        avatarUrl: user.image ?? undefined,
-                    }}
-                    onBack={() => setShowReport(false)}
-                    onSubmit={(reason, block) => {
-                        console.log("Report:", reason, "Block:", block);
-                    }}
-                />
-            </Modal>
-        </KeyboardAvoidingView>
+                    {/* Nachrichten-Liste + Scroll-Button als relativer Container */}
+                    <View style={{ flex: 1 }}>
+                        {!hasLoadedOnce ? (
+                            <ActivityIndicator
+                                style={{ marginTop: 32 }}
+                                color={theme.primary}
+                            />
+                        ) : decryptedMessages.length === 0 ? (
+                            <EmptyMessagesState
+                                name={user.name}
+                                onPress={startConversation}
+                            />
+                        ) : (
+                            <>
+                                <FlashList
+                                    ref={scrollRef}
+                                    data={decryptedMessages}
+                                    style={{ flex: 1 }}
+                                    renderItem={renderMessage}
+                                    keyExtractor={(item) => item.id}
+                                    maintainVisibleContentPosition={{
+                                        startRenderingFromBottom: true,
+                                    }}
+                                    onScroll={handleScroll}
+                                    drawDistance={5000}
+                                    ListHeaderComponent={
+                                        loadingMore ? (
+                                            <ActivityIndicator
+                                                color={theme.primary}
+                                                style={{ padding: 12 }}
+                                            />
+                                        ) : null
+                                    }
+                                    contentContainerStyle={{ paddingBottom: 12 }}
+                                />
+                                {/* Scroll-to-bottom Button */}
+                                {showScrollButton && (
+                                    <Animated.View
+                                        style={{
+                                            position: "absolute",
+                                            bottom: 16,
+                                            alignSelf: "center",
+                                            opacity: scrollButtonOpacity,
+                                            transform: [
+                                                {
+                                                    translateY:
+                                                        scrollButtonOpacity.interpolate({
+                                                            inputRange: [0, 1],
+                                                            outputRange: [12, 0],
+                                                        }),
+                                                },
+                                            ],
+                                        }}
+                                    >
+                                        <Pressable
+                                            onPress={scrollToBottom}
+                                            style={{
+                                                width: 40,
+                                                height: 40,
+                                                borderRadius: 999,
+                                                backgroundColor: theme.primary,
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                shadowColor: "#000",
+                                                shadowOffset: { width: 0, height: 2 },
+                                                shadowOpacity: 0.2,
+                                                shadowRadius: 4,
+                                                elevation: 4,
+                                            }}
+                                        >
+                                            <ChevronDown
+                                                color={theme.white}
+                                                size={20}
+                                                strokeWidth={2.5}
+                                            />
+                                        </Pressable>
+                                    </Animated.View>
+                                )}
+                            </>
+                        )}
+                    </View>
+
+                    <View
+                        style={{
+                            borderTopWidth: 1,
+                            borderTopColor: theme.base + "1A",
+                            flexDirection: "row",
+                            alignItems: "flex-end",
+                            paddingHorizontal: 12,
+                            paddingVertical: 8,
+                            marginBottom: Platform.OS === "ios" ? 20 : 0,
+                        }}
+                    >
+                        <TextInput
+                            ref={inputRef}
+                            placeholder="Type a message..."
+                            placeholderTextColor={theme.base + "66"}
+                            multiline
+                            value={message}
+                            onChangeText={setMessage}
+                            style={{
+                                flex: 1,
+                                maxHeight: 120,
+                                paddingHorizontal: 8,
+                                paddingVertical: 6,
+                                color: theme.text,
+                                fontSize: 16,
+                            }}
+                        />
+                        <Pressable
+                            style={{
+                                width: 32,
+                                height: 32,
+                                marginLeft: 8,
+                                borderRadius: 999,
+                                backgroundColor: sending
+                                    ? theme.base + "66"
+                                    : theme.primary,
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                            onPress={sendMessage}
+                            disabled={sending}
+                        >
+                            {sending ? (
+                                <ActivityIndicator size={14} color={theme.white} />
+                            ) : (
+                                <ArrowUp color={theme.white} size={18} />
+                            )}
+                        </Pressable>
+                    </View>
+                </View>
+                <Modal
+                    visible={showMenu}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowMenu(false)}
+                >
+                    <Pressable
+                        style={{
+                            flex: 1,
+                            backgroundColor: "#00000040",
+                            justifyContent: "flex-end",
+                        }}
+                        onPress={() => setShowMenu(false)}
+                    >
+                        <View
+                            style={{
+                                backgroundColor: theme.rootBg,
+                                borderTopLeftRadius: 20,
+                                borderTopRightRadius: 20,
+                                padding: 20,
+                                gap: 12,
+                            }}
+                        >
+                            <Pressable
+                                onPress={() => {
+                                    setShowMenu(false);
+                                    setShowReport(true);
+                                }}
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 12,
+                                    padding: 14,
+                                    borderRadius: 12,
+                                    backgroundColor: "#df1d1d14",
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        color: "#df1d1d",
+                                        fontSize: 15,
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    🚩 Report {user.name}
+                                </Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setShowMenu(false)}
+                                style={{
+                                    padding: 14,
+                                    borderRadius: 12,
+                                    alignItems: "center",
+                                    backgroundColor: theme.base + "10",
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        color: theme.text,
+                                        fontSize: 15,
+                                        fontWeight: "500",
+                                    }}
+                                >
+                                    Cancel
+                                </Text>
+                            </Pressable>
+                        </View>
+                    </Pressable>
+                </Modal>
+
+                {/* REPORT SCREEN MODAL — ADD HERE */}
+                <Modal
+                    visible={showReport}
+                    animationType="slide"
+                    onRequestClose={() => setShowReport(false)}
+                >
+                    <ReportUser
+                        user={{
+                            id: user.otherUser.id,
+                            name: user.name,
+                            avatarUrl: user.image ?? undefined,
+                        }}
+                        onBack={() => setShowReport(false)}
+                        onSubmit={(reason, block) => {
+                            console.log("Report:", reason, "Block:", block);
+                        }}
+                    />
+                </Modal>
+            </KeyboardAvoidingView>
+        </View>
     );
 }
 function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => void }) {
@@ -656,6 +681,7 @@ function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => vo
                 paddingHorizontal: 28,
                 paddingBottom: 48,
                 backgroundColor: theme.rootBg,
+                overflow: "hidden",
             }}
         >
             <View
