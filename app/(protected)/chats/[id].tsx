@@ -14,6 +14,7 @@ import {
     ChevronLeft,
     Heart,
     MessageCircleMore,
+    MoreVertical,
 } from "lucide-react-native";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
@@ -23,9 +24,11 @@ import {
     Platform,
     Pressable,
     Text,
+    Modal,
     TextInput,
     View,
 } from "react-native";
+import ReportUser from "../report";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
@@ -57,6 +60,9 @@ export default function ChatsScreen() {
     const [showScrollButton, setShowScrollButton] = useState(false);
     const scrollButtonOpacity = useRef(new Animated.Value(0)).current;
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [showMenu, setShowMenu] = useState(false);
+    const [showReport, setShowReport] = useState(false);
 
     const scrollRef = useRef<FlashListRef<MessageWithMeta>>(null);
     const { token } = useAuth();
@@ -410,6 +416,10 @@ export default function ChatsScreen() {
                     >
                         {user.name}
                     </Text>
+                    <View style={{ flex: 1 }} />
+                    <Pressable onPress={() => setShowMenu(true)} style={{ padding: 12 }}>
+                        <MoreVertical color={theme.base} size={20} />
+                    </Pressable>
                 </View>
 
                 {/* Nachrichten-Liste + Scroll-Button als relativer Container */}
@@ -542,6 +552,94 @@ export default function ChatsScreen() {
                     </Pressable>
                 </View>
             </View>
+            <Modal
+                visible={showMenu}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowMenu(false)}
+            >
+                <Pressable
+                    style={{
+                        flex: 1,
+                        backgroundColor: "#00000040",
+                        justifyContent: "flex-end",
+                    }}
+                    onPress={() => setShowMenu(false)}
+                >
+                    <View
+                        style={{
+                            backgroundColor: theme.rootBg,
+                            borderTopLeftRadius: 20,
+                            borderTopRightRadius: 20,
+                            padding: 20,
+                            gap: 12,
+                        }}
+                    >
+                        <Pressable
+                            onPress={() => {
+                                setShowMenu(false);
+                                setShowReport(true);
+                            }}
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 12,
+                                padding: 14,
+                                borderRadius: 12,
+                                backgroundColor: "#df1d1d14",
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    color: "#df1d1d",
+                                    fontSize: 15,
+                                    fontWeight: "600",
+                                }}
+                            >
+                                🚩 Report {user.name}
+                            </Text>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setShowMenu(false)}
+                            style={{
+                                padding: 14,
+                                borderRadius: 12,
+                                alignItems: "center",
+                                backgroundColor: theme.base + "10",
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    color: theme.text,
+                                    fontSize: 15,
+                                    fontWeight: "500",
+                                }}
+                            >
+                                Cancel
+                            </Text>
+                        </Pressable>
+                    </View>
+                </Pressable>
+            </Modal>
+
+            {/* REPORT SCREEN MODAL — ADD HERE */}
+            <Modal
+                visible={showReport}
+                animationType="slide"
+                onRequestClose={() => setShowReport(false)}
+            >
+                <ReportUser
+                    user={{
+                        id: user.otherUser.id,
+                        name: user.name,
+                        avatarUrl: user.image ?? undefined,
+                    }}
+                    onBack={() => setShowReport(false)}
+                    onSubmit={(reason, block) => {
+                        console.log("Report:", reason, "Block:", block);
+                    }}
+                />
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
