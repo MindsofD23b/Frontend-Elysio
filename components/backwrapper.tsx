@@ -10,7 +10,12 @@ interface BackWrapperProps {
     bg?: string;
 }
 
-export default function BackWrapper({ children, p = true, m = false, bg }: BackWrapperProps) {
+export default function BackWrapper({
+    children,
+    p = true,
+    m = false,
+    bg,
+}: BackWrapperProps) {
     const { theme } = useTheme();
 
     return (

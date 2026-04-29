@@ -8,6 +8,7 @@ import { router } from "expo-router";
 import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
+import Purchases from "react-native-purchases";
 
 type FormData = {
     email: string;
@@ -16,6 +17,7 @@ type FormData = {
 
 export type LoginResponse = {
     token: string;
+    userId: string;
 };
 
 type FormErrors = {
@@ -82,6 +84,8 @@ export default function WithEmail() {
             }
 
             await saveLogin(response.token);
+
+            if (await Purchases.isConfigured()) await Purchases.logIn(response.userId);
             router.replace("/(protected)/(tabs)");
         } catch (err) {
             setErrors({

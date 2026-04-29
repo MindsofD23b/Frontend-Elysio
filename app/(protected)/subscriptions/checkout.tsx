@@ -8,12 +8,18 @@ import {
     ScrollView,
     ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useTheme } from "@/lib/theme/context";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import BackWrapper from "@/components/backwrapper";
 import { ShieldCheck, CreditCard, Lock } from "lucide-react-native";
-import { type BillingCycle, type Plan, PLANS_MAP as PLANS } from "./plans";
+import { type BillingCycle, type Plan, PLANS_MAP as PLANS } from "@/lib/plans";
 import Purchases, { PurchasesPackage } from "react-native-purchases";
+import { usePurchasesReady } from "@/lib/PurchasesContext";
+
+const BASE_URL = "https://elysio.jamiepoeffel.ch";
+
+// ─── Order Summary ─────────────────────────────────────────────────────────────
 
 function OrderSummary({
     plan,
@@ -125,7 +131,9 @@ function TrustBadges() {
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function Checkout() {
+    const purchasesReady = usePurchasesReady();
     const { theme } = useTheme();
+    const { token } = useAuth();
     const { planId, billing } = useLocalSearchParams<{
         planId: string;
         billing: BillingCycle;
@@ -133,18 +141,29 @@ export default function Checkout() {
     const [loading, setLoading] = useState(false);
     const [pkg, setPkg] = useState<PurchasesPackage | null>(null);
     const [offeringLoading, setOfferingLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [activePlanId, setActivePlanId] = useState<string | null>(null);
 
     const plan = PLANS[planId ?? "premium"];
     const billingCycle: BillingCycle = billing === "yearly" ? "yearly" : "monthly";
 
+    const PLAN_IDS = ["gold", "premium", "basic"];
+
     useEffect(() => {
         async function loadPackage() {
+            if (!purchasesReady) return;
             try {
-                const offerings = await Purchases.getOfferings();
-                const offering =
-                    offerings.all[planId ?? "premium"] ??
-                    offerings.all["default"] ??
-                    offerings.current;
+                const [offerings, customerInfo] = await Promise.all([
+                    Purchases.getOfferings(),
+                    Purchases.getCustomerInfo(),
+                ]);
+
+                const active = customerInfo.entitlements.active;
+                const found = PLAN_IDS.find((id) => active[id]) ?? null;
+                setActivePlanId(found);
+
+                const offeringKey = `${planId ?? "basic"}_${billingCycle === "yearly" ? "yearly" : "monthly"}`;
+                const offering = offerings.all[offeringKey];
                 if (offering) {
                     const planIdLower = (planId ?? "premium").toLowerCase();
                     const byProductId = offering.availablePackages.find((p) =>
@@ -163,21 +182,47 @@ export default function Checkout() {
             }
         }
         loadPackage();
-    }, [planId, billingCycle]);
+    }, [planId, billingCycle, purchasesReady]);
+
+    const alreadySubscribedToThis = activePlanId === planId;
+    const hasOtherActivePlan = activePlanId !== null && activePlanId !== planId;
+
+    const handleCancel = async () => {
+        setLoading(true);
+        try {
+            await Purchases.showManageSubscriptions();
+        } catch {
+            setError(
+                "Could not open cancellation. Go to Settings → Apple ID → Subscriptions.",
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubscribe = async () => {
         if (!pkg) {
             console.warn("No RevenueCat package available — offerings failed to load");
             return;
         }
+        if (!purchasesReady) return;
         setLoading(true);
+        setError(null);
         try {
             const { customerInfo } = await Purchases.purchasePackage(pkg);
-            if (typeof customerInfo.entitlements.active[planId] !== "undefined") {
-                console.log("successfully subscribed to", planId);
+
+            if (typeof customerInfo.entitlements.active[planId] === "undefined") {
+                setError(
+                    "Purchase completed but entitlement was not activated. Please contact support.",
+                );
+                return;
             }
-        } catch (error) {
-            console.error("Subscription error:", error);
+
+            router.replace("/(protected)/(tabs)");
+        } catch (err: any) {
+            if (err?.userCancelled) return;
+            setError("Something went wrong during the purchase. Please try again.");
+            console.error("Subscription error:", err);
         } finally {
             setLoading(false);
         }
@@ -222,22 +267,74 @@ export default function Checkout() {
                     },
                 ]}
             >
-                <TouchableOpacity
-                    style={[
-                        styles.ctaBtn,
-                        { backgroundColor: theme.primary },
-                        (loading || offeringLoading) && styles.ctaBtnDisabled,
-                    ]}
-                    onPress={handleSubscribe}
-                    activeOpacity={0.85}
-                    disabled={loading || offeringLoading}
-                >
-                    {loading || offeringLoading ? (
+                {error && (
+                    <View
+                        style={[
+                            styles.errorBox,
+                            { backgroundColor: "#FF3B3015", borderColor: "#FF3B30" },
+                        ]}
+                    >
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                )}
+
+                {offeringLoading ? (
+                    <View
+                        style={[
+                            styles.ctaBtn,
+                            styles.ctaBtnDisabled,
+                            { backgroundColor: theme.primary },
+                        ]}
+                    >
                         <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.ctaBtnText}>Confirm & Subscribe</Text>
-                    )}
-                </TouchableOpacity>
+                    </View>
+                ) : alreadySubscribedToThis ? (
+                    <TouchableOpacity
+                        style={[
+                            styles.ctaBtn,
+                            { backgroundColor: theme.primary },
+                            loading && styles.ctaBtnDisabled,
+                        ]}
+                        onPress={handleCancel}
+                        activeOpacity={0.85}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.ctaBtnText}>Cancel Plan</Text>
+                        )}
+                    </TouchableOpacity>
+                ) : hasOtherActivePlan ? (
+                    <View
+                        style={[
+                            styles.infoBox,
+                            { backgroundColor: theme.card, borderColor: theme.primary },
+                        ]}
+                    >
+                        <Text style={[styles.infoText, { color: theme.text }]}>
+                            You currently have an active {activePlanId} plan. Cancel it
+                            first to switch.
+                        </Text>
+                    </View>
+                ) : (
+                    <TouchableOpacity
+                        style={[
+                            styles.ctaBtn,
+                            { backgroundColor: theme.primary },
+                            (loading || !pkg) && styles.ctaBtnDisabled,
+                        ]}
+                        onPress={handleSubscribe}
+                        activeOpacity={0.85}
+                        disabled={loading || !pkg}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.ctaBtnText}>Confirm & Subscribe</Text>
+                        )}
+                    </TouchableOpacity>
+                )}
                 <Text style={[styles.legalNote, { color: theme.grayscale }]}>
                     By subscribing you agree to our{" "}
                     <Text
@@ -417,5 +514,30 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginTop: 10,
         lineHeight: 16,
+    },
+    errorBox: {
+        borderRadius: 10,
+        borderWidth: 1,
+        padding: 12,
+        marginBottom: 10,
+    },
+    errorText: {
+        color: "#FF3B30",
+        fontSize: 13,
+        textAlign: "center",
+        lineHeight: 18,
+    },
+    infoBox: {
+        borderRadius: 12,
+        borderWidth: 1,
+        padding: 14,
+        marginBottom: 2,
+        gap: 8,
+        alignItems: "center",
+    },
+    infoText: {
+        fontSize: 13,
+        textAlign: "center",
+        lineHeight: 18,
     },
 });

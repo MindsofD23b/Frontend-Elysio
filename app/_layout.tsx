@@ -1,10 +1,11 @@
-import { Slot } from "expo-router";
+import { Slot, Stack } from "expo-router";
 import BaseTheme from "@/providers/baseTheme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeAreaWrapper from "@/components/SafeArea";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, LogBox, Platform } from "react-native";
+import { PurchasesContext } from "@/lib/PurchasesContext";
+import { View, LogBox, Platform, Alert } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { useCacheFetch } from "@/hooks/useCacheFetch";
 import { minToMs } from "@/utils/formatTime";
@@ -14,6 +15,8 @@ import { initCrypto } from "@/services/chat-crypto.client";
 import OutageScreen from "@/app/(auth)/outage";
 import UpdateScreen from "@/app/(auth)/update";
 import { ServerStatusProvider, useServerStatus } from "@/lib/ServerStatusContext";
+import NoInternetScreen from "@/app/(auth)/no-internet";
+import * as Network from "expo-network";
 
 LogBox.ignoreAllLogs();
 
@@ -36,6 +39,8 @@ Sentry.init({
     // spotlight: __DEV__,
 });
 
+const SERVER_URL = "https://elysio.jamiepoeffel.ch";
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppContent() {
@@ -43,6 +48,9 @@ function AppContent() {
     const [updateDuration, setUpdateDuration] = useState<string | undefined>(undefined);
     const { isLoading, token } = useAuth();
     const serverStatus = useServerStatus();
+    const purchasesConfigured = useRef(false);
+    const [purchasesReady, setPurchasesReady] = useState(false);
+    const [isConnected, setIsConnected] = useState<boolean>(true);
 
     const chatRequest = useMemo<RequestInit>(() => ({ method: "GET" }), []);
     const [, , cache] = useCacheFetch("/chat/rooms", chatRequest, {
@@ -50,6 +58,13 @@ function AppContent() {
         useCache: true,
         ttlMs: minToMs(10),
     });
+
+    useEffect(() => {
+        const subscription = Network.addNetworkStateListener((state) => {
+            setIsConnected(state.isConnected ?? true);
+        });
+        return () => subscription.remove();
+    }, []);
 
     async function getCustomerInfo() {
         try {
@@ -63,35 +78,44 @@ function AppContent() {
     async function getOfferings() {
         try {
             const offerings = await Purchases.getOfferings();
-            if (
-                offerings.current !== null &&
-                offerings.current.availablePackages.length !== 0
-            ) {
-                console.log("Offerings:", JSON.stringify(offerings, null, 2));
-            }
+            console.log("Offerings:", JSON.stringify(offerings, null, 2));
         } catch (error) {
             console.error("Error fetching offerings:", error);
         }
     }
 
     useEffect(() => {
-        if (isLoading || serverStatus !== "ok") return;
+        if (isLoading || serverStatus !== "ok" || !isConnected) return;
 
-        async function setup() {
+        if (!purchasesConfigured.current) {
             Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-
-            const apiKey =
+            const key =
                 Platform.OS === "ios"
-                    ? "appl_HHPNNqzuCyRKMvuLLtZFloXfaIA"
-                    : "goog_vuioAmQKQpPnwGqxktfBuiqAKfz";
+                    ? process.env.EXPO_PUBLIC_PURCHASES_IOS_KEY ||
+                      "appl_HHPNNqzuCyRKMvuLLtZFloXfaIA"
+                    : process.env.EXPO_PUBLIC_PURCHASES_ANDROID_KEY ||
+                      "goog_vuioAmQKQpPnwGqxktfBuiqAKfz";
+            Purchases.configure({ apiKey: key });
+            purchasesConfigured.current = true;
+        }
 
-            Purchases.configure({ apiKey });
+        Purchases.isConfigured()
+            .catch((error) => {
+                console.error("Error checking Purchases configuration:", error);
+                return false;
+            })
+            .then((configured) => {
+                console.log("Purchases configured:", configured);
+                if (!configured) {
+                    return;
+                }
+                setPurchasesReady(true);
+            });
 
-            await new Promise((res) => setTimeout(res, 500));
+        getCustomerInfo();
+        getOfferings();
 
-            await getCustomerInfo();
-            await getOfferings();
-
+        async function prepare() {
             try {
                 if (token) {
                     await initCrypto(SERVER_URL, token);
@@ -103,7 +127,7 @@ function AppContent() {
             }
         }
 
-        setup();
+        prepare();
     }, [isLoading, serverStatus]);
 
     useEffect(() => {
@@ -112,18 +136,18 @@ function AppContent() {
         }
     }, [appIsReady]);
 
+    if (!isConnected) return <NoInternetScreen />;
     if (serverStatus === "pending") return null;
-
     if (serverStatus === "down") return <OutageScreen />;
-
     if (serverStatus === "update") return <UpdateScreen duration={updateDuration} />;
-
     if (!appIsReady || isLoading) return null;
 
     return (
-        <View style={{ flex: 1 }}>
-            <Slot />
-        </View>
+        <PurchasesContext.Provider value={purchasesReady}>
+            <View style={{ flex: 1 }}>
+                <Slot />
+            </View>
+        </PurchasesContext.Provider>
     );
 }
 

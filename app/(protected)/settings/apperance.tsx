@@ -4,14 +4,28 @@ import BackWrapper from "@/components/backwrapper";
 import Select from "@/components/SelectInput";
 import { get, store } from "@/utils/store";
 import { Image } from "expo-image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, useColorScheme, View } from "react-native";
+import { useSafeAreaControl } from "@/components/SafeArea";
+import { useFocusEffect } from "expo-router";
 
 export default function Apperance() {
     const COLOR_SCHEME = useColorScheme();
     const [mode, setModeRaw] = useState<ThemeOptions>();
     const [loaded, setLoaded] = useState(false);
     const { theme, setTheme } = useTheme();
+
+    const { setDisableSafeArea } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisableSafeArea(true);
+
+            return () => {
+                setDisableSafeArea(false);
+            };
+        }, [setDisableSafeArea]),
+    );
 
     useEffect(() => {
         if (!loaded) return;
@@ -43,7 +57,7 @@ export default function Apperance() {
     const s = makeStyles(theme);
 
     return (
-        <BackWrapper bg={theme.cardBg}>
+        <BackWrapper m bg={theme.cardBg}>
             <Text style={s.sectionLabel}>Theme</Text>
             <View style={[s.card, { backgroundColor: theme.background }]}>
                 <View style={s.pickerRow}>

@@ -173,7 +173,9 @@
             "lightmode": "Lightmode",
             "darkmode": "Darkmode",
             "appearance": "Appearance",
-            "logOut": "Log Out"
+            "logOut": "Log Out",
+            "confirmLogOut": "Are you sure you want to log out?",
+            "cancel": "Cancel"
         },
         "forgotPassword": {
             "title": "Forgot Password",

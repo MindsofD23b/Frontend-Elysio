@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import {
     ChevronRight,
@@ -8,14 +8,17 @@ import {
     Heart,
     MessageCircle,
     Moon,
+    Shield,
     User,
 } from "lucide-react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
 import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
 import { BtnText, Button } from "@/components/button";
+import { useSafeAreaControl } from "@/components/SafeArea";
+import { useCallback } from "react";
 
 const t = createT("auth.settings");
 const version = Constants.expoConfig?.version;
@@ -71,12 +74,33 @@ function SettingsRow({ icon: Icon, label, last, onPress }: RowProps) {
 }
 
 export default function SettingsScreen() {
+    const { setDisabledEdges } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisabledEdges(["top"]);
+
+            return () => {
+                setDisabledEdges([]);
+            };
+        }, [setDisabledEdges]),
+    );
+
     const { theme } = useTheme();
     const { logout } = useAuth();
 
     const handleLogout = async () => {
-        await logout();
-        router.replace("/login");
+        Alert.alert(t("logOut"), t("confirmLogOut"), [
+            { text: t("cancel"), style: "cancel" },
+            {
+                text: t("logOut"),
+                style: "destructive",
+                onPress: async () => {
+                    await logout();
+                    router.replace("/login");
+                },
+            },
+        ]);
     };
 
     return (
@@ -99,6 +123,11 @@ export default function SettingsScreen() {
                         icon={Heart}
                         label={t("interests")}
                         onPress={() => router.push("/settings/interests")}
+                    />
+                    <SettingsRow
+                        icon={Shield}
+                        label="Security"
+                        onPress={() => router.push("/settings/security")}
                     />
                     <SettingsRow
                         icon={Gem}
@@ -178,7 +207,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-    scroll: { flex: 1 },
+    scroll: { flex: 1, paddingTop: 48 },
     content: {
         padding: 16,
         paddingBottom: 24,

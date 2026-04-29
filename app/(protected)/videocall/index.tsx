@@ -1,466 +1,33 @@
-//MADE WITH HELP CLAUDE.AI
-
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    Pressable,
-    Alert,
-    ScrollView,
-    Animated,
-    Easing,
-    PanResponder,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { registerGlobals, mediaDevices, RTCView, MediaStream } from "react-native-webrtc";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { Alert, Animated, Easing, PanResponder } from "react-native";
+import { registerGlobals, mediaDevices, MediaStream } from "react-native-webrtc";
 import * as mediasoupClient from "mediasoup-client";
 import { io, Socket } from "socket.io-client";
-import {
-    Ionicons,
-    MaterialCommunityIcons,
-    Feather,
-    FontAwesome6,
-} from "@expo/vector-icons";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { useTheme } from "@/lib/theme/context";
 import { useSafeAreaControl } from "@/components/SafeArea";
-import { useNavigation } from "expo-router";
-import BackWrapper from "@/components/backwrapper";
-import { Theme } from "@/lib/theme/theme";
+import { get, store } from "@/utils/store";
+import { SetupScreen } from "@/app/(protected)/videocall/(pages)/SetupScreen";
+import { ConnectingScreen } from "@/app/(protected)/videocall/(pages)/ConnectingScreen";
+import { CallScreen, ICEBREAKERS } from "@/app/(protected)/videocall/(pages)/CallScreen";
+import StreakCelebrationScreen from "@/components/StreakCelebrationModal";
 
 registerGlobals();
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
-// ─── Hardcoded data (replace later) ────────────────────────────────────────
-
-const CAMERAS = [
-    { id: "front", label: "Front camera" },
-    { id: "back", label: "Back camera" },
-];
-const MICROPHONES = [
-    { id: "default", label: "Built-in microphone" },
-    { id: "headset", label: "Headset microphone" },
-];
-
-const INTERESTS = [
-    "Music",
-    "Travel",
-    "Gaming",
-    "Fitness",
-    "Art",
-    "Photography",
-    "Movies",
-    "Cooking",
-    "Tech",
-    "Books",
-    "Hiking",
-    "Fashion",
-    "Sports",
-    "Design",
-    "Languages",
-];
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-type AppScreen = "setup" | "connecting" | "call";
-
-// ─── Loader dot component ────────────────────────────────────────────────────
-
-function PulsingDots() {
-    const dot0 = useRef(new Animated.Value(0)).current;
-    const dot1 = useRef(new Animated.Value(0)).current;
-    const dot2 = useRef(new Animated.Value(0)).current;
-    const dots = [dot0, dot1, dot2];
-
-    useEffect(() => {
-        const animations = dots.map((dot, i) =>
-            Animated.loop(
-                Animated.sequence([
-                    Animated.delay(i * 160),
-                    Animated.timing(dot, {
-                        toValue: 1,
-                        duration: 420,
-                        easing: Easing.inOut(Easing.ease),
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(dot, {
-                        toValue: 0,
-                        duration: 420,
-                        easing: Easing.inOut(Easing.ease),
-                        useNativeDriver: true,
-                    }),
-                    Animated.delay((dots.length - i - 1) * 160),
-                ]),
-            ),
-        );
-        Animated.parallel(animations).start();
-        return () => animations.forEach((a) => a.stop());
-    }, [dot0, dot1, dot2]);
-
-    return (
-        <View style={loaderStyles.dotsRow}>
-            {dots.map((dot, i) => (
-                <Animated.View
-                    key={i}
-                    style={[
-                        loaderStyles.dot,
-                        {
-                            transform: [
-                                {
-                                    scale: dot.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: [0.6, 1.2],
-                                    }),
-                                },
-                            ],
-                            opacity: dot.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [0.3, 1],
-                            }),
-                        },
-                    ]}
-                />
-            ))}
-        </View>
-    );
-}
-
-// ─── Setup screen ────────────────────────────────────────────────────────────
-
-const makeSetupStyles = (theme: Theme) =>
-    StyleSheet.create({
-        scroll: {
-            paddingBottom: 48,
-        },
-        header: {
-            marginBottom: 36,
-        },
-        title: {
-            color: theme.text,
-            fontSize: 28,
-            fontWeight: "700",
-            letterSpacing: -0.5,
-            marginBottom: 6,
-        },
-        subtitle: {
-            color: "#777",
-            fontSize: 15,
-        },
-        section: {
-            marginBottom: 28,
-        },
-        sectionHeader: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            marginBottom: 12,
-        },
-        sectionLabel: {
-            color: "#bbb",
-            fontSize: 13,
-            fontWeight: "600",
-            letterSpacing: 0.3,
-            textTransform: "uppercase",
-        },
-        sectionLabelMuted: {
-            color: "#555",
-            fontWeight: "400",
-            textTransform: "none",
-            fontSize: 12,
-        },
-        pillRow: {
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: 8,
-        },
-        pill: {
-            paddingHorizontal: 14,
-            paddingVertical: 9,
-            borderRadius: 10,
-            backgroundColor: "#1a1a1a",
-            borderWidth: 1,
-            borderColor: "#2a2a2a",
-        },
-        pillActive: {
-            backgroundColor: theme.primary,
-            borderColor: theme.primary,
-        },
-        pillText: {
-            color: "#888",
-            fontSize: 14,
-            fontWeight: "500",
-        },
-        pillTextActive: {
-            color: "#fff",
-        },
-        interestGrid: {
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: 8,
-        },
-        interestTag: {
-            flexDirection: "row",
-            alignItems: "center",
-            paddingHorizontal: 13,
-            paddingVertical: 8,
-            borderRadius: 20,
-            backgroundColor: "#1a1a1a",
-            borderWidth: 1,
-            borderColor: "#2a2a2a",
-        },
-        interestTagActive: {
-            backgroundColor: "#1c1c1c",
-            borderColor: theme.primary,
-        },
-        interestText: {
-            color: "#666",
-            fontSize: 14,
-            fontWeight: "500",
-        },
-        interestTextActive: {
-            color: "#fff",
-        },
-        cta: {
-            marginTop: 16,
-            backgroundColor: theme.primary,
-            borderRadius: 16,
-            paddingVertical: 16,
-            paddingHorizontal: 24,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-        },
-        ctaText: {
-            color: "#fff",
-            fontSize: 16,
-            fontWeight: "700",
-        },
-    });
-
-function SetupScreen({
-    onConnect,
-}: {
-    onConnect: (camera: string, mic: string, interests: string[]) => void;
-}) {
-    const [selectedCamera, setSelectedCamera] = useState(CAMERAS[0].id);
-    const [selectedMic, setSelectedMic] = useState(MICROPHONES[0].id);
-    const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-    const { theme } = useTheme();
-    const setupStyles = useMemo(() => makeSetupStyles(theme), [theme]);
-
-    function toggleInterest(interest: string) {
-        setSelectedInterests((prev) =>
-            prev.includes(interest)
-                ? prev.filter((i) => i !== interest)
-                : [...prev, interest],
-        );
-    }
-
-    return (
-        <BackWrapper m>
-            <ScrollView
-                contentContainerStyle={setupStyles.scroll}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Header */}
-                <View style={setupStyles.header}>
-                    <Text style={setupStyles.title}>Ready to connect?</Text>
-                    <Text style={setupStyles.subtitle}>
-                        Set up your devices and pick your interests
-                    </Text>
-                </View>
-
-                {/* Camera */}
-                <View style={setupStyles.section}>
-                    <View style={setupStyles.sectionHeader}>
-                        <Ionicons name="videocam-outline" size={16} color="#888" />
-                        <Text style={setupStyles.sectionLabel}>Camera</Text>
-                    </View>
-                    <View style={setupStyles.pillRow}>
-                        {CAMERAS.map((cam) => (
-                            <Pressable
-                                key={cam.id}
-                                style={[
-                                    setupStyles.pill,
-                                    selectedCamera === cam.id && setupStyles.pillActive,
-                                ]}
-                                onPress={() => setSelectedCamera(cam.id)}
-                            >
-                                <Text
-                                    style={[
-                                        setupStyles.pillText,
-                                        selectedCamera === cam.id &&
-                                            setupStyles.pillTextActive,
-                                    ]}
-                                >
-                                    {cam.label}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Microphone */}
-                <View style={setupStyles.section}>
-                    <View style={setupStyles.sectionHeader}>
-                        <Feather name="mic" size={15} color="#888" />
-                        <Text style={setupStyles.sectionLabel}>Microphone</Text>
-                    </View>
-                    <View style={setupStyles.pillRow}>
-                        {MICROPHONES.map((mic) => (
-                            <Pressable
-                                key={mic.id}
-                                style={[
-                                    setupStyles.pill,
-                                    selectedMic === mic.id && setupStyles.pillActive,
-                                ]}
-                                onPress={() => setSelectedMic(mic.id)}
-                            >
-                                <Text
-                                    style={[
-                                        setupStyles.pillText,
-                                        selectedMic === mic.id &&
-                                            setupStyles.pillTextActive,
-                                    ]}
-                                >
-                                    {mic.label}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Interests */}
-                <View style={setupStyles.section}>
-                    <View style={setupStyles.sectionHeader}>
-                        <Ionicons name="sparkles-outline" size={16} color="#888" />
-                        <Text style={setupStyles.sectionLabel}>
-                            Interests{" "}
-                            <Text style={setupStyles.sectionLabelMuted}>
-                                · match with people like you
-                            </Text>
-                        </Text>
-                    </View>
-                    <View style={setupStyles.interestGrid}>
-                        {INTERESTS.map((interest) => {
-                            const active = selectedInterests.includes(interest);
-                            return (
-                                <Pressable
-                                    key={interest}
-                                    style={[
-                                        setupStyles.interestTag,
-                                        active && setupStyles.interestTagActive,
-                                    ]}
-                                    onPress={() => toggleInterest(interest)}
-                                >
-                                    {active && (
-                                        <Ionicons
-                                            name="checkmark"
-                                            size={12}
-                                            color="#fff"
-                                            style={{ marginRight: 4 }}
-                                        />
-                                    )}
-                                    <Text
-                                        style={[
-                                            setupStyles.interestText,
-                                            active && setupStyles.interestTextActive,
-                                        ]}
-                                    >
-                                        {interest}
-                                    </Text>
-                                </Pressable>
-                            );
-                        })}
-                    </View>
-                </View>
-
-                {/* CTA */}
-                <Pressable
-                    style={setupStyles.cta}
-                    onPress={() =>
-                        onConnect(selectedCamera, selectedMic, selectedInterests)
-                    }
-                >
-                    <Text style={setupStyles.ctaText}>Find a match</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#fff" />
-                </Pressable>
-            </ScrollView>
-        </BackWrapper>
-    );
-}
-
-// ─── Connecting screen ───────────────────────────────────────────────────────
-
-function ConnectingScreen({
-    matchState,
-    onCancel,
-}: {
-    matchState: "idle" | "waiting" | "matched";
-    onCancel: () => void;
-}) {
-    const statusLabel =
-        matchState === "matched"
-            ? "Match found! Connecting…"
-            : matchState === "waiting"
-              ? "Looking for someone…"
-              : "Connecting to matchmaking…";
-
-    return (
-        <SafeAreaView style={connectingStyles.root}>
-            <View style={connectingStyles.card}>
-                <PulsingDots />
-                <Text style={connectingStyles.label}>{statusLabel}</Text>
-                {matchState === "waiting" && (
-                    <Text style={connectingStyles.hint}>
-                        This usually takes a few seconds
-                    </Text>
-                )}
-            </View>
-            <Pressable style={connectingStyles.cancelBtn} onPress={onCancel}>
-                <Text style={connectingStyles.cancelText}>Cancel</Text>
-            </Pressable>
-        </SafeAreaView>
-    );
-}
-
-// ─── Main component ──────────────────────────────────────────────────────────
+type AppScreen = "setup" | "connecting" | "call" | "streak";
 
 export default function VideoCall() {
     const { setDisableSafeArea } = useSafeAreaControl();
 
-    const parentNavigation = useNavigation("/(protected)");
-    const navigation = useNavigation();
-
     useEffect(() => {
         setDisableSafeArea(true);
-        navigation.setOptions({ gestureEnabled: false });
-        parentNavigation.setOptions({ gestureEnabled: false });
-
         return () => {
             setDisableSafeArea(false);
-            parentNavigation.setOptions({ gestureEnabled: true });
         };
-    }, []);
+    });
 
-    const ICEBREAKERS = [
-        "What's the weirdest thing you've ever eaten?",
-        "If you could live in any movie universe, which would you pick?",
-        "What's a skill you're secretly proud of?",
-        "What's the most spontaneous thing you've ever done?",
-        "If you had to eat one meal forever, what would it be?",
-        "What's your most controversial food opinion?",
-        "Would you rather explore space or the deep ocean?",
-        "What's the best trip you've ever been on?",
-        "What did you want to be as a kid?",
-        "What's your go-to karaoke song?",
-        "What's a hobby you've always wanted to try?",
-        "What's the last thing that made you laugh out loud?",
-    ];
     const [icebreakerLoading, setIcebreakerLoading] = useState(false);
     const [controlsVisible, setControlsVisible] = useState(true);
     const controlsOpacity = useRef(new Animated.Value(1)).current;
@@ -473,12 +40,12 @@ export default function VideoCall() {
     const { token } = useAuth();
 
     const [screen, setScreen] = useState<AppScreen>("setup");
+    const [streakCount, setStreakCount] = useState(1);
     const [localUrl, setLocalUrl] = useState<string | null>(null);
     const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
     const roomIdRef = useRef<string | null>(null);
 
     const [isMuted, setIsMuted] = useState(false);
-    //const [isSpeakerOn, setIsSpeakerOn] = useState(true);
     const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
     const peerIdRef = useRef(`peer-${Math.random().toString(36).slice(2, 10)}`);
@@ -523,6 +90,7 @@ export default function VideoCall() {
             },
         }),
     ).current;
+
     const [matchmakingReady, setMatchmakingReady] = useState(false);
     const [matchState, setMatchState] = useState<"idle" | "waiting" | "matched">("idle");
     const [_matchedUserId, setMatchedUserId] = useState<string | null>(null);
@@ -530,8 +98,6 @@ export default function VideoCall() {
 
     const matchmakingSocketRef = useRef<Socket | null>(null);
     const stopTracksRef = useRef<() => void>(() => {});
-
-    // Track whether user has intentionally started connecting
     const connectingIntentRef = useRef(false);
 
     const [, , , _activateMatchmakingRequest] = useAuthFetch<{
@@ -560,29 +126,17 @@ export default function VideoCall() {
         async (path: string, options?: RequestInit) => {
             if (!token) throw new Error("Unauthorized");
             const url = `${BASE_URL}${path}`;
-            try {
-                const res = await fetch(url, {
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    ...options,
-                    ...(options?.headers
-                        ? {
-                              headers: {
-                                  "Content-Type": "application/json",
-                                  Authorization: `Bearer ${token}`,
-                                  ...options.headers,
-                              },
-                          }
-                        : {}),
-                });
-                const text = await res.text();
-                if (!res.ok) throw new Error(`${res.status} ${text}`);
-                return text ? JSON.parse(text) : {};
-            } catch (error) {
-                throw error;
-            }
+            const res = await fetch(url, {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                    ...options?.headers,
+                },
+                ...options,
+            });
+            const text = await res.text();
+            if (!res.ok) throw new Error(`${res.status} ${text}`);
+            return text ? JSON.parse(text) : {};
         },
         [token],
     );
@@ -800,6 +354,10 @@ export default function VideoCall() {
                 const producer = await sendTransport.produce({ track: videoTrack });
                 videoProducerRef.current = producer;
             }
+            if (videoTrack) {
+                const producer = await sendTransport.produce({ track: videoTrack });
+                videoProducerRef.current = producer;
+            }
         },
         [api],
     );
@@ -818,10 +376,8 @@ export default function VideoCall() {
 
     const startCall = useCallback(async () => {
         if (startingRef.current || screen === "call") return;
-
         const currentRoomId = roomIdRef.current;
         if (!currentRoomId) return;
-
         startingRef.current = true;
 
         try {
@@ -873,10 +429,7 @@ export default function VideoCall() {
 
             await createSendTransportAndProduce(device, localStream);
             await consumeExistingProducers();
-
-            setTimeout(() => {
-                consumeExistingProducers().catch(console.error);
-            }, 2000);
+            setTimeout(() => consumeExistingProducers().catch(console.error), 2000);
 
             setScreen("call");
         } catch (error) {
@@ -909,64 +462,81 @@ export default function VideoCall() {
         }
     }, []);
 
-    const stopCall = useCallback(async () => {
-        localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
-        localStreamRef.current = null;
-        startingRef.current = false;
-        connectingIntentRef.current = false;
-        icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
-        setIcebreakerVisible(false);
-        icebreakerOpacity.setValue(0);
-        socketRef.current?.disconnect();
-        socketRef.current = null;
+    const stopCall = useCallback(
+        async (callCompleted = false) => {
+            localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
+            localStreamRef.current = null;
+            startingRef.current = false;
+            connectingIntentRef.current = false;
+            icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
+            setIcebreakerVisible(false);
+            icebreakerOpacity.setValue(0);
+            icebreakerTimeoutRef.current && clearTimeout(icebreakerTimeoutRef.current);
+            setIcebreakerVisible(false);
+            icebreakerOpacity.setValue(0);
+            socketRef.current?.disconnect();
+            socketRef.current = null;
 
-        const currentRoomId = roomIdRef.current;
-        if (currentRoomId) {
+            const currentRoomId = roomIdRef.current;
+            if (currentRoomId) {
+                try {
+                    await api(`/video/room/${currentRoomId}/leave`, {
+                        method: "DELETE",
+                        body: JSON.stringify({ peerId: peerIdRef.current }),
+                    });
+                } catch {}
+            }
+
             try {
-                await api(`/video/room/${currentRoomId}/leave`, {
-                    method: "DELETE",
-                    body: JSON.stringify({ peerId: peerIdRef.current }),
-                });
+                await deactivateMatchmakingRef.current();
             } catch {}
-        }
 
-        try {
-            await deactivateMatchmakingRef.current();
-        } catch {}
+            sendTransportRef.current?.close();
+            recvTransportRef.current?.close();
+            sendTransportRef.current = null;
+            recvTransportRef.current = null;
+            remoteStreamRef.current = new MediaStream();
 
-        sendTransportRef.current?.close();
-        recvTransportRef.current?.close();
-        sendTransportRef.current = null;
-        recvTransportRef.current = null;
-        remoteStreamRef.current = new MediaStream();
+            consumersRef.current.forEach((consumer) => {
+                try {
+                    consumer.close();
+                } catch {}
+            });
+            consumersRef.current.clear();
+            consumedProducerIdsRef.current.clear();
+            consumingProducerIdsRef.current.clear();
+            remoteVideoStreamRef.current = null;
 
-        consumersRef.current.forEach((consumer) => {
-            try {
-                consumer.close();
-            } catch {}
-        });
+            setLocalUrl(null);
+            setRemoteUrl(null);
+            setGatewayRoomId(null);
+            setMatchedUserId(null);
+            setMatchState("idle");
+            setMatchmakingReady(false);
+            roomIdRef.current = null;
 
-        consumersRef.current.clear();
-        consumedProducerIdsRef.current.clear();
-        consumingProducerIdsRef.current.clear();
-        remoteVideoStreamRef.current = null;
+            matchmakingSocketRef.current?.disconnect();
+            matchmakingSocketRef.current = null;
 
-        setLocalUrl(null);
-        setRemoteUrl(null);
-        setGatewayRoomId(null);
-        setMatchedUserId(null);
-        setMatchState("idle");
-        setMatchmakingReady(false);
-        roomIdRef.current = null;
+            // only show streak screen after a real call, once per day
+            const today = new Date().toISOString().slice(0, 10);
+            const lastShown = await get<string>("streak_modal_last_shown");
+            if (callCompleted && lastShown !== today) {
+                try {
+                    const data = await api("/users/streak");
+                    setStreakCount(data?.streak ?? 1);
+                } catch {
+                    setStreakCount(1);
+                }
+                await store("streak_modal_last_shown", today);
+                setScreen("streak");
+            } else {
+                setScreen("setup");
+            }
+        },
+        [api],
+    );
 
-        // Disconnect and clear matchmaking socket so a fresh one is created next time
-        matchmakingSocketRef.current?.disconnect();
-        matchmakingSocketRef.current = null;
-
-        setScreen("setup");
-    }, [api]);
-
-    // Called when user taps "Find a match"
     const handleStartConnecting = useCallback(
         async (_camera: string, _mic: string, _interests: string[]) => {
             connectingIntentRef.current = true;
@@ -985,6 +555,7 @@ export default function VideoCall() {
             .forEach((track: MediaStreamTrack) => (track.enabled = !nextMuted));
         setIsMuted(nextMuted);
     }
+
     const isAnimatingRef = useRef(false);
     function toggleControls() {
         if (isAnimatingRef.current) return;
@@ -1002,7 +573,7 @@ export default function VideoCall() {
                 toValue: toBottom,
                 duration: 1000,
                 easing: Easing.inOut(Easing.ease),
-                useNativeDriver: false, // bottom can't use native driver
+                useNativeDriver: false,
             }),
         ]).start(() => {
             setControlsVisible((v) => !v);
@@ -1012,7 +583,6 @@ export default function VideoCall() {
 
     async function flipCamera() {
         const nextFacing = facingMode === "user" ? "environment" : "user";
-
         const stream = localStreamRef.current;
         if (!stream) return;
 
@@ -1028,14 +598,11 @@ export default function VideoCall() {
             const newVideoTrack = newStream.getVideoTracks()[0];
             if (!newVideoTrack) return;
 
-            // Replace track for remote peer
             if (videoProducerRef.current) {
                 await videoProducerRef.current.replaceTrack({ track: newVideoTrack });
             }
 
-            // Update local stream ref with new stream entirely
             localStreamRef.current = newStream;
-
             setFacingMode(nextFacing);
             setLocalUrl(newStream.toURL());
         } catch (err) {
@@ -1063,10 +630,9 @@ export default function VideoCall() {
     function handleReaction() {
         Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
     }
+
     function handleIcebreaker() {
-        if (icebreakerTimeoutRef.current) {
-            clearTimeout(icebreakerTimeoutRef.current);
-        }
+        if (icebreakerTimeoutRef.current) clearTimeout(icebreakerTimeoutRef.current);
 
         if (icebreakerVisible && !icebreakerLoading) {
             setIcebreakerVisible(false);
@@ -1087,19 +653,18 @@ export default function VideoCall() {
             return next;
         });
 
-        icebreakerTimeoutRef.current = setTimeout(() => {
-            setIcebreakerLoading(false);
-        }, 1500);
+        icebreakerTimeoutRef.current = setTimeout(
+            () => setIcebreakerLoading(false),
+            1500,
+        );
     }
 
-    // Activate matchmaking once socket is ready (only when connecting screen is shown)
     useEffect(() => {
         if (!matchmakingReady) return;
         if (!connectingIntentRef.current) return;
         activateMatchmaking().catch(console.error);
     }, [matchmakingReady, activateMatchmaking]);
 
-    // Start call once we have a room
     useEffect(() => {
         if (!gatewayRoomId) return;
         if (screen === "call" || startingRef.current) return;
@@ -1112,7 +677,6 @@ export default function VideoCall() {
         };
     });
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             stopTracksRef.current();
@@ -1121,391 +685,65 @@ export default function VideoCall() {
             sendTransportRef.current?.close();
             recvTransportRef.current?.close();
             const consumers = consumersRef.current;
-            const consumed = consumedProducerIdsRef.current;
-            const consuming = consumingProducerIdsRef.current;
             consumers.forEach((c) => {
                 try {
                     c.close();
                 } catch {}
             });
             consumers.clear();
-            consumed.clear();
-            consuming.clear();
+            consumedProducerIdsRef.current.clear();
+            consumingProducerIdsRef.current.clear();
         };
     }, []);
 
-    // ── Screens ────────────────────────────────────────────────────────────
+    if (screen === "streak") {
+        return (
+            <StreakCelebrationScreen
+                streak={streakCount}
+                onDismiss={() => setScreen("setup")}
+            />
+        );
+    }
 
     if (screen === "setup") {
-        return <SetupScreen onConnect={handleStartConnecting} />;
+        return (
+            <SetupScreen
+                onConnect={handleStartConnecting}
+                onTestStreak={() => {
+                    setStreakCount(1047);
+                    setScreen("streak");
+                }}
+            />
+        );
     }
 
     if (screen === "connecting") {
         return <ConnectingScreen matchState={matchState} onCancel={stopCall} />;
     }
 
-    // ── Call screen (unchanged) ────────────────────────────────────────────
-
     return (
-        <View style={styles.container}>
-            <Pressable style={styles.videoLayer} onPress={toggleControls}>
-                {remoteUrl ? (
-                    <RTCView
-                        key={remoteUrl}
-                        streamURL={remoteUrl}
-                        style={styles.remoteVideo}
-                        objectFit="cover"
-                        mirror={false}
-                    />
-                ) : (
-                    <View style={[styles.remoteVideo, styles.waitingContainer]}>
-                        <Text style={styles.waitingText}>Warte auf Gegenüber...</Text>
-                    </View>
-                )}
-
-                <Animated.View
-                    style={{ opacity: controlsOpacity, ...StyleSheet.absoluteFillObject }}
-                    pointerEvents={controlsVisible ? "box-none" : "none"}
-                >
-                    {icebreakerVisible && (
-                        <Animated.View
-                            style={[
-                                styles.icebreakerBubble,
-                                { opacity: icebreakerOpacity },
-                            ]}
-                        >
-                            {icebreakerLoading ? (
-                                <View style={styles.icebreakerSkeleton} />
-                            ) : (
-                                <Text style={styles.icebreakerText}>
-                                    {ICEBREAKERS[icebreakerIndex]}
-                                </Text>
-                            )}
-                        </Animated.View>
-                    )}
-                    <View style={styles.topBar}>
-                        <Pressable style={styles.topButton} onPress={stopCall}>
-                            <Ionicons name="chevron-back" size={22} color="#fff" />
-                        </Pressable>
-                    </View>
-                    <View style={styles.bottomControlsWrapper}>
-                        <View style={styles.bottomControls}>
-                            <ControlButton
-                                onPress={toggleMute}
-                                icon={
-                                    <Feather
-                                        name={isMuted ? "mic-off" : "mic"}
-                                        size={22}
-                                        color="#111"
-                                    />
-                                }
-                            />
-                            <ControlButton
-                                onPress={flipCamera}
-                                icon={
-                                    <Ionicons
-                                        name="camera-reverse-outline"
-                                        size={22}
-                                        color="#111"
-                                    />
-                                }
-                            />
-                            <ControlButton
-                                onPress={handleLike}
-                                variant="success"
-                                icon={
-                                    <Ionicons
-                                        name="heart-outline"
-                                        size={22}
-                                        color="#fff"
-                                    />
-                                }
-                            />
-                            <ControlButton
-                                onPress={handleNextUser}
-                                variant="danger"
-                                icon={<Ionicons name="close" size={24} color="#fff" />}
-                            />
-                            <ControlButton
-                                onPress={handleReaction}
-                                icon={
-                                    <FontAwesome6
-                                        name="face-smile-beam"
-                                        size={20}
-                                        color="#111"
-                                    />
-                                }
-                            />
-                            <ControlButton
-                                onPress={handleIcebreaker}
-                                icon={
-                                    <MaterialCommunityIcons
-                                        name="magic-staff"
-                                        size={22}
-                                        color="#111"
-                                    />
-                                }
-                            />
-                        </View>
-                    </View>
-                </Animated.View>
-                {localUrl && (
-                    <Animated.View
-                        style={[
-                            styles.localPreviewWrapper,
-                            {
-                                transform: localPreviewAnim.getTranslateTransform(),
-                                bottom: previewBottomAnim,
-                            },
-                        ]}
-                        {...panResponder.panHandlers}
-                        onStartShouldSetResponder={() => true}
-                    >
-                        <View pointerEvents="none" style={{ flex: 1 }}>
-                            <RTCView
-                                streamURL={localUrl}
-                                style={styles.localPreview}
-                                objectFit="cover"
-                                mirror={facingMode === "user"}
-                            />
-                        </View>
-                    </Animated.View>
-                )}
-            </Pressable>
-        </View>
+        <CallScreen
+            remoteUrl={remoteUrl}
+            localUrl={localUrl}
+            isMuted={isMuted}
+            facingMode={facingMode}
+            controlsVisible={controlsVisible}
+            controlsOpacity={controlsOpacity}
+            previewBottomAnim={previewBottomAnim}
+            localPreviewAnim={localPreviewAnim}
+            panHandlers={panResponder.panHandlers}
+            icebreakerVisible={icebreakerVisible}
+            icebreakerLoading={icebreakerLoading}
+            icebreakerIndex={icebreakerIndex}
+            icebreakerOpacity={icebreakerOpacity}
+            onToggleControls={toggleControls}
+            onToggleMute={toggleMute}
+            onFlipCamera={flipCamera}
+            onStop={() => stopCall(true)}
+            onLike={handleLike}
+            onNextUser={handleNextUser}
+            onReaction={handleReaction}
+            onIcebreaker={handleIcebreaker}
+        />
     );
 }
-
-// ─── ControlButton ───────────────────────────────────────────────────────────
-
-function ControlButton({
-    onPress,
-    icon,
-    variant = "default",
-}: {
-    onPress: () => void;
-    icon: React.ReactNode;
-    variant?: "default" | "success" | "danger";
-}) {
-    return (
-        <Pressable
-            onPress={onPress}
-            style={[
-                styles.controlButton,
-                variant === "success" && styles.controlButtonSuccess,
-                variant === "danger" && styles.controlButtonDanger,
-            ]}
-        >
-            {icon}
-        </Pressable>
-    );
-}
-// ─── Connecting styles ───────────────────────────────────────────────────────
-
-const connectingStyles = StyleSheet.create({
-    root: {
-        flex: 1,
-        backgroundColor: "#0b0b0b",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 32,
-    },
-    card: {
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 20,
-    },
-    label: {
-        color: "#fff",
-        fontSize: 18,
-        fontWeight: "600",
-        textAlign: "center",
-        letterSpacing: -0.2,
-    },
-    hint: {
-        color: "#555",
-        fontSize: 14,
-        textAlign: "center",
-        marginTop: -8,
-    },
-    cancelBtn: {
-        position: "absolute",
-        bottom: 48,
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: "#2a2a2a",
-    },
-    cancelText: {
-        color: "#666",
-        fontSize: 15,
-        fontWeight: "500",
-    },
-});
-
-// ─── Loader styles ────────────────────────────────────────────────────────────
-
-const loaderStyles = StyleSheet.create({
-    dotsRow: {
-        flexDirection: "row",
-        gap: 10,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    dot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: "#fff",
-    },
-});
-
-// ─── Call screen styles (unchanged) ──────────────────────────────────────────
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#000",
-    },
-    videoLayer: {
-        flex: 1,
-        position: "relative",
-        backgroundColor: "#000",
-    },
-    remoteVideo: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: "#111",
-    },
-    waitingContainer: {
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    waitingText: {
-        color: "#fff",
-        fontSize: 18,
-        fontWeight: "600",
-    },
-    localPreviewWrapper: {
-        position: "absolute",
-        right: 16,
-        width: 94,
-        height: 154,
-        borderRadius: 16,
-        overflow: "hidden",
-        backgroundColor: "#222",
-        borderWidth: 1.5,
-        borderColor: "rgba(255,255,255,0.18)",
-    },
-    localPreview: {
-        width: "100%",
-        height: "100%",
-        backgroundColor: "#222",
-    },
-    topBar: {
-        position: "absolute",
-        top: 60,
-        left: 12,
-        right: 12,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    topButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: "rgba(0,0,0,0.35)",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    bottomControlsWrapper: {
-        position: "absolute",
-        left: 10,
-        right: 10,
-        bottom: 16,
-    },
-    bottomControls: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        backgroundColor: "rgba(255,255,255,0.92)",
-        borderRadius: 24,
-        paddingHorizontal: 10,
-        paddingVertical: 10,
-    },
-    controlButton: {
-        width: 54,
-        height: 54,
-        borderRadius: 18,
-        backgroundColor: "#fff",
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 1,
-        borderColor: "#d7d7d7",
-    },
-    controlButtonSuccess: {
-        backgroundColor: "#45c466",
-        borderColor: "#45c466",
-    },
-    controlButtonDanger: {
-        backgroundColor: "#df1d1d",
-        borderColor: "#df1d1d",
-    },
-    startContainer: {
-        flex: 1,
-        backgroundColor: "#0b0b0b",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-    },
-    startTitle: {
-        color: "#fff",
-        fontSize: 22,
-        fontWeight: "700",
-        marginBottom: 16,
-    },
-    startButton: {
-        backgroundColor: "#fff",
-        paddingHorizontal: 18,
-        paddingVertical: 12,
-        borderRadius: 14,
-    },
-    startButtonText: {
-        color: "#111",
-        fontSize: 16,
-        fontWeight: "700",
-    },
-    gatewayStatus: {
-        color: "#cfcfcf",
-        fontSize: 14,
-        marginBottom: 6,
-    },
-    icebreakerBubble: {
-        position: "absolute",
-        left: 14,
-        bottom: 110,
-        maxWidth: 200,
-        backgroundColor: "rgba(255,255,255,0.93)",
-        borderRadius: 14,
-        paddingHorizontal: 13,
-        paddingVertical: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.18,
-        shadowRadius: 6,
-        elevation: 4,
-    },
-    icebreakerSkeleton: {
-        width: 160,
-        height: 36,
-        borderRadius: 6,
-        backgroundColor: "#ddd",
-    },
-    icebreakerText: {
-        color: "#111",
-        fontSize: 13,
-        fontWeight: "500",
-        lineHeight: 18,
-    },
-});

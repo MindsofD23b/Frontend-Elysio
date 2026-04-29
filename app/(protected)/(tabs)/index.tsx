@@ -1,203 +1,17 @@
-import { Image } from "expo-image";
-import { useEffect, useRef } from "react";
-import {
-    Animated,
-    Dimensions,
-    Easing,
-    StyleSheet,
-    View,
-    Text,
-    Pressable,
-} from "react-native";
+import { useCallback, useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, View, Text, Pressable } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { CONSTANTS, PlanType } from "@/lib/constants";
 import { Heart } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useActivePlan } from "@/hooks/useActivePlan";
 import * as StoreReview from "expo-store-review";
-
-// TODO: Implement plan based constants
-const user = {
-    plan: PlanType.FREE,
-};
-
-const { width, height } = Dimensions.get("window");
-const H_SCALE = height / 800;
-const GAP = 28;
-const PAD = 16;
-const COL_W = (width - PAD * 2 - GAP) / 2;
-const images = [
-    // left column
-    {
-        id: "l1",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1591969851586-adbbd4accf81?q=80&w=687&auto=format&fit=crop",
-        h: 150,
-    },
-    {
-        id: "l2",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1525206809752-65312b959c88?q=80&w=687&auto=format&fit=crop",
-        h: 220,
-    },
-    {
-        id: "l3",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1566759996874-04d713cc224a?q=80&w=687&auto=format&fit=crop",
-        h: 160,
-    },
-    {
-        id: "l4",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1541679368093-5c967ac6de11?q=80&w=687&auto=format&fit=crop",
-        h: 210,
-    },
-    {
-        id: "l5",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1510276113764-7ac28415a9ec?q=80&w=1170&auto=format&fit=crop",
-        h: 180,
-    },
-    {
-        id: "l6",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1469989011449-f7b46079781c?q=80&w=687&auto=format&fit=crop",
-        h: 200,
-    },
-    {
-        id: "l7",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1501901609772-df0848060b33?q=80&w=687&auto=format&fit=crop",
-        h: 170,
-    },
-    {
-        id: "l8",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1649289787860-ecad6fad173f?q=80&w=687&auto=format&fit=crop",
-        h: 230,
-    },
-    {
-        id: "l9",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1591711696773-c4b7fe4d3d74?q=80&w=2342&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        h: 155,
-    },
-    {
-        id: "l10",
-        col: "left",
-        uri: "https://images.unsplash.com/photo-1512790941078-1158a9cc3255?q=80&w=685&auto=format&fit=crop",
-        h: 195,
-    },
-
-    // right column
-    {
-        id: "r1",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1622503958522-9f847e7e18de?q=80&w=687&auto=format&fit=crop",
-        h: 180,
-    },
-    {
-        id: "r2",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1513521523607-ba30a1159755?q=80&w=1170&auto=format&fit=crop",
-        h: 140,
-    },
-    {
-        id: "r3",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1624228652393-eab1721b1899?q=80&w=687&auto=format&fit=crop",
-        h: 240,
-    },
-    {
-        id: "r4",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1481689481678-374244adae6d?q=80&w=687&auto=format&fit=crop",
-        h: 120,
-    },
-    {
-        id: "r5",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?q=80&w=687&auto=format&fit=crop",
-        h: 200,
-    },
-    {
-        id: "r6",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1580250864656-cd501faa9c76?q=80&w=687&auto=format&fit=crop",
-        h: 160,
-    },
-    {
-        id: "r7",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1513521465117-afd07b1ce6dc?q=80&w=687&auto=format&fit=crop",
-        h: 210,
-    },
-    {
-        id: "r8",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1561240055-102e7eaa2961?q=80&w=687&auto=format&fit=crop",
-        h: 175,
-    },
-    {
-        id: "r9",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1567888818950-737cde12f04c?q=80&w=687&auto=format&fit=crop",
-        h: 145,
-    },
-    {
-        id: "r10",
-        col: "right",
-        uri: "https://images.unsplash.com/photo-1611067460204-e43ec4a2efa3?q=80&w=1170&auto=format&fit=crop",
-        h: 220,
-    },
-];
-function calcColHeight(imgs: typeof images) {
-    return imgs.reduce((sum, img) => sum + Math.round(img.h * H_SCALE) + GAP, 0);
-}
-function Tile({ uri, h }: { uri: string; h: number }) {
-    const { theme } = useTheme();
-    const styles = makeStyles(theme);
-
-    return (
-        <View style={[styles.tile, { height: Math.round(h * H_SCALE), width: COL_W }]}>
-            <Image
-                source={{ uri }}
-                style={styles.tileImg}
-                placeholder={
-                    "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj["
-                }
-                contentFit="cover"
-                transition={1000}
-            />
-            <View />
-        </View>
-    );
-}
-function InfiniteColumn({
-    imgs,
-    drift,
-    colHeight,
-}: {
-    imgs: typeof images;
-    drift: Animated.Value;
-    colHeight: number;
-}) {
-    const { theme } = useTheme();
-    const styles = makeStyles(theme);
-
-    const translateY = drift.interpolate({
-        inputRange: [0, colHeight],
-        outputRange: [0, -colHeight],
-    });
-    return (
-        <Animated.View style={[styles.col, { transform: [{ translateY }] }]}>
-            {[...imgs, ...imgs].map((img, idx) => (
-                <Tile key={`${img.id}-${idx}`} uri={img.uri} h={img.h} />
-            ))}
-        </Animated.View>
-    );
-}
+import { PAD, GAP } from "@/components/videocall/homeConstants";
+import { images } from "@/components/videocall/homeImages";
+import { InfiniteColumn } from "@/components/videocall/InfiniteColumn";
+import { useSafeAreaControl } from "@/components/SafeArea";
 
 const handleReview = async () => {
     if (await StoreReview.isAvailableAsync()) {
@@ -205,16 +19,32 @@ const handleReview = async () => {
     }
 };
 
-interface FullFillUserResponse {
-    message: string;
+function canCall(plan: PlanType, count: number | undefined) {
+    return (
+        CONSTANTS.PLANS[plan].maxCalls >
+        (count !== undefined ? count : CONSTANTS.PLANS[plan].maxCalls)
+    );
 }
 
 export default function Index() {
     const { theme, gs } = useTheme();
+    const { plan } = useActivePlan();
     const [callsData, , , refetch] = useAuthFetch<{ callsToday: number }>(
         "/users/calls-left",
         undefined,
         { manual: true },
+    );
+
+    const { setDisabledEdges } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisabledEdges(["top"]);
+
+            return () => {
+                setDisabledEdges([]);
+            };
+        }, [setDisabledEdges]),
     );
 
     const hasFetched = useRef(false);
@@ -231,78 +61,12 @@ export default function Index() {
     const leftBase = images.filter((i) => i.col === "left");
     const rightBase = images.filter((i) => i.col === "right");
 
-    const leftColHeight = calcColHeight(leftBase);
-    const rightColHeight = calcColHeight(rightBase);
-
-    const driftL = useRef(new Animated.Value(0)).current;
-    const driftR = useRef(new Animated.Value(0)).current;
-
-    const SPEED_L = 7000;
-    const SPEED_R = 9000;
-
-    useEffect(() => {
-        let active = true;
-
-        const runL = () => {
-            driftL.setValue(0);
-            Animated.timing(driftL, {
-                toValue: leftColHeight,
-                duration: SPEED_L,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            }).start(({ finished }) => {
-                if (finished && active) requestAnimationFrame(runL);
-            });
-        };
-
-        const runR = () => {
-            driftR.setValue(0);
-            Animated.timing(driftR, {
-                toValue: rightColHeight,
-                duration: SPEED_R,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            }).start(({ finished }) => {
-                if (finished && active) requestAnimationFrame(runR);
-            });
-        };
-
-        runL();
-        runR();
-
-        return () => {
-            active = false;
-            driftL.stopAnimation();
-            driftR.stopAnimation();
-        };
-    }, [driftL, driftR, leftColHeight, rightColHeight]);
-
-    function canCall(plan: PlanType, count: number | undefined) {
-        return (
-            CONSTANTS.PLANS[plan].maxCalls >
-            (count !== undefined ? count : CONSTANTS.PLANS[plan].maxCalls)
-        );
-    }
-
-    const onStart = () => {
-        // TODO: implement i18n here
-        if (!canCall(user.plan, callsData?.callsToday)) {
-            return user.plan === PlanType.FREE
-                ? alert("Upgrade to Paid plan!")
-                : alert("You have no more Calls today");
-        }
-
-        if (callsData?.callsToday === 3) {
-            handleReview();
-        }
-
-        router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
-    };
+    const LEFT_DURATION = 7000;
+    const RIGHT_DURATION = 9000;
 
     const spin = useRef(new Animated.Value(0)).current;
     const spin2 = useRef(new Animated.Value(0)).current;
     const spin3 = useRef(new Animated.Value(0)).current;
-
     const zoom = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -351,46 +115,37 @@ export default function Index() {
             zoomAnim.stop();
         };
     }, [spin, spin2, spin3, zoom]);
-    //SPIN
-    const r1 = spin.interpolate({
-        inputRange: [0, 1],
-        outputRange: ["0deg", "360deg"],
-    });
-    const r2 = spin2.interpolate({
-        inputRange: [0, 1],
-        outputRange: ["360deg", "0deg"],
-    });
-    const r3 = spin3.interpolate({
-        inputRange: [0, 1],
-        outputRange: ["0deg", "360deg"],
-    });
+
+    const r1 = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+    const r2 = spin2.interpolate({ inputRange: [0, 1], outputRange: ["360deg", "0deg"] });
+    const r3 = spin3.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+
+    const onStart = () => {
+        if (!canCall(plan, callsData?.callsToday)) {
+            return alert("You have no more calls today. Upgrade your plan for more!");
+        }
+        if (callsData?.callsToday === 3) {
+            handleReview();
+        }
+        router.push({ pathname: "/(protected)/videocall", params: { id: 1 } });
+    };
 
     return (
-        <View style={gs.container}>
-            {/* Grid */}
+        <View style={[gs.container, { paddingTop: 48 }]}>
             <View style={styles.grid}>
-                <InfiniteColumn
-                    imgs={leftBase}
-                    drift={driftL}
-                    colHeight={leftColHeight}
-                />
-                <InfiniteColumn
-                    imgs={rightBase}
-                    drift={driftR}
-                    colHeight={rightColHeight}
-                />
+                <InfiniteColumn imgs={leftBase} duration={LEFT_DURATION} />
+                <InfiniteColumn imgs={rightBase} duration={RIGHT_DURATION} />
             </View>
 
             <View style={styles.bottomIndicator} pointerEvents="none">
                 <View style={styles.indicatorPill}>
                     <Text style={styles.indicatorText}>
-                        {callsData?.callsToday}/{CONSTANTS.PLANS[user.plan].maxCalls}
+                        {callsData?.callsToday}/{CONSTANTS.PLANS[plan].maxCalls}
                     </Text>
                 </View>
             </View>
 
             <View style={styles.centerWrap} pointerEvents="box-none">
-                {/* Rings */}
                 <Animated.View
                     style={[styles.ring, styles.ring1, { transform: [{ rotate: r1 }] }]}
                 />
@@ -401,7 +156,6 @@ export default function Index() {
                     style={[styles.ring, styles.ring3, { transform: [{ rotate: r3 }] }]}
                 />
 
-                {/* Button */}
                 <Pressable onPress={onStart} style={styles.startBtn}>
                     <Animated.View style={{ transform: [{ scale: zoom }] }}>
                         <Heart size={50} color={theme.white} />
@@ -426,21 +180,6 @@ const makeStyles = (theme: Theme) =>
             right: 0,
             bottom: 0,
         },
-
-        col: {
-            flex: 1,
-            gap: GAP,
-        },
-
-        tile: {
-            borderRadius: 16,
-            overflow: "hidden",
-            backgroundColor: theme.base + "50",
-        },
-        tileImg: {
-            width: "100%",
-            height: "100%",
-        },
         centerWrap: {
             position: "absolute",
             left: 0,
@@ -449,7 +188,6 @@ const makeStyles = (theme: Theme) =>
             alignItems: "center",
             justifyContent: "center",
         },
-
         startBtn: {
             width: 150,
             height: 150,
@@ -475,15 +213,6 @@ const makeStyles = (theme: Theme) =>
         ring1: { width: 210, height: 210, borderWidth: 10, opacity: 1 },
         ring2: { width: 260, height: 260, borderWidth: 6, opacity: 0.9 },
         ring3: { width: 320, height: 320, borderWidth: 4, opacity: 0.75 },
-
-        topInidicator: {
-            position: "absolute",
-            top: 8,
-            left: 0,
-            right: 0,
-            alignItems: "center",
-        },
-
         bottomIndicator: {
             position: "absolute",
             bottom: 8,
@@ -498,19 +227,8 @@ const makeStyles = (theme: Theme) =>
             backgroundColor: theme.base + "80",
             elevation: 0.9,
         },
-        indicatorPillOrange: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 4,
-            backgroundColor: theme.orange,
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 99,
-            elevation: 0.9,
-        },
         indicatorText: {
             color: theme.white,
             fontWeight: "600",
         },
     });
-//inifinte loop cycle made with claude.ai

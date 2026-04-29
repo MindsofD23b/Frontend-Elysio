@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import * as Network from "expo-network";
 
 type ServerStatus = "pending" | "ok" | "down" | "update";
 
@@ -9,7 +10,21 @@ const CHECK_INTERVAL = 20_000;
 
 export function ServerStatusProvider({ children }: { children: React.ReactNode }) {
     const [status, setStatus] = useState<ServerStatus>("pending");
+    const [isConnected, setIsConnected] = useState(false);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    useEffect(() => {
+        Network.getNetworkStateAsync().then((state) => {
+            setIsConnected(!!state.isConnected);
+        });
+
+        const poll = setInterval(async () => {
+            const state = await Network.getNetworkStateAsync();
+            setIsConnected(!!state.isConnected);
+        }, CHECK_INTERVAL);
+
+        return () => clearInterval(poll);
+    }, []);
 
     async function check() {
         try {
@@ -28,12 +43,14 @@ export function ServerStatusProvider({ children }: { children: React.ReactNode }
     }
 
     useEffect(() => {
+        if (!isConnected) return;
+
         check();
         intervalRef.current = setInterval(check, CHECK_INTERVAL);
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, []);
+    }, [isConnected]);
 
     return (
         <ServerStatusContext.Provider value={status}>
