@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, View, Text, Pressable } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { CONSTANTS, PlanType } from "@/lib/constants";
 import { Heart } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
@@ -11,6 +11,7 @@ import * as StoreReview from "expo-store-review";
 import { PAD, GAP } from "@/components/videocall/homeConstants";
 import { images } from "@/components/videocall/homeImages";
 import { InfiniteColumn } from "@/components/videocall/InfiniteColumn";
+import { useSafeAreaControl } from "@/components/SafeArea";
 
 const handleReview = async () => {
     if (await StoreReview.isAvailableAsync()) {
@@ -32,6 +33,18 @@ export default function Index() {
         "/users/calls-left",
         undefined,
         { manual: true },
+    );
+
+    const { setDisabledEdges } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisabledEdges(["top"]);
+
+            return () => {
+                setDisabledEdges([]);
+            };
+        }, [setDisabledEdges]),
     );
 
     const hasFetched = useRef(false);
@@ -118,7 +131,7 @@ export default function Index() {
     };
 
     return (
-        <View style={gs.container}>
+        <View style={[gs.container, { paddingTop: 48 }]}>
             <View style={styles.grid}>
                 <InfiniteColumn imgs={leftBase} duration={LEFT_DURATION} />
                 <InfiniteColumn imgs={rightBase} duration={RIGHT_DURATION} />

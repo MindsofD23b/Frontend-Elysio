@@ -8,23 +8,14 @@ import {
     Animated,
     StatusBar,
 } from "react-native";
-import Svg, { Circle, Defs, Filter, FeGaussianBlur, FeComposite } from "react-native-svg";
+import Svg, { Circle, Defs, Filter, FeGaussianBlur } from "react-native-svg";
 import { Flame } from "lucide-react-native";
 import { useTheme } from "@/lib/theme/context";
 
 const { width: W, height: H } = Dimensions.get("window");
 
 const PARTICLE_COUNT = 24;
-const COLORS = [
-    "#EC136A",
-    "#FF6B9D",
-    "#FFD700",
-    "#FF8C00",
-    "#A855F7",
-    "#3B82F6",
-    "#10B981",
-    "#F472B6",
-];
+const COLORS = ["#FEFEFE", "#EC136A", "#FF6B9D", "#F472B6"];
 
 function Particle({ delay, color }: { delay: number; color: string }) {
     const x = useRef(new Animated.Value(0)).current;

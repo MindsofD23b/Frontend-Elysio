@@ -10,7 +10,7 @@ import {
 import { FlashList } from "@shopify/flash-list";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Chat } from "@/types/chats";
 import ChatComponent from "@/components/ChatComponent";
 import { Theme } from "@/lib/theme/theme";
@@ -18,6 +18,7 @@ import { decryptMessage } from "@/services/chat-crypto.client";
 import { Heart, MessageCircleMore, Search } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useSafeAreaControl } from "@/components/SafeArea";
 
 // Design made with Pinterest and ChatGPT
 interface ChatResponse {
@@ -119,6 +120,18 @@ function getUserIdFromToken(token: string): string {
 export default function Index() {
     const { theme } = useTheme();
     const styles = makeStyles(theme);
+
+    const { setDisabledEdges } = useSafeAreaControl();
+
+    useFocusEffect(
+        useCallback(() => {
+            setDisabledEdges(["top"]);
+
+            return () => {
+                setDisabledEdges([]);
+            };
+        }, [setDisabledEdges]),
+    );
 
     const [refreshing, setRefreshing] = useState(false);
     const [chats, setChats] = useState<Chat[]>([]);
@@ -334,6 +347,7 @@ const makeStyles = (theme: Theme) =>
         screen: {
             flex: 1,
             backgroundColor: theme.rootBg,
+            paddingTop: 48,
         },
         searchWrapper: {
             borderBottomColor: theme.base + "14",

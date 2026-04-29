@@ -17,7 +17,7 @@ export const useSafeAreaControl = () => useContext(SafeAreaContext);
 
 export default function SafeAreaWrapper({ children }: { children: React.ReactNode }) {
     const { theme } = useTheme();
-    const barStyle = useColorScheme() === "dark" ? "light-content" : "dark-content";
+    const barStyle = useColorScheme() === "dark" ? "dark-content" : "light-content";
     const [disabledEdges, setDisabledEdges] = useState<Edge[]>([]);
 
     const setDisableSafeArea = (v: boolean) => setDisabledEdges(v ? ALL_EDGES : []);
