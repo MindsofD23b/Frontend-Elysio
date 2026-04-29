@@ -14,7 +14,6 @@
                 "NSMicrophoneUsageDescription": "Allow access to microphone for calls",
                 "ITSAppUsesNonExemptEncryption": false
             },
-            "storeKitConfigPath": "./Store.storekit",
             "entitlements": {
                 "com.apple.developer.in-app-payments": []
             },

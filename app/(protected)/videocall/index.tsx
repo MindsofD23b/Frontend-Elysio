@@ -6,7 +6,6 @@ import { io, Socket } from "socket.io-client";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useSafeAreaControl } from "@/components/SafeArea";
-import { useNavigation } from "expo-router";
 import { get, store } from "@/utils/store";
 import { SetupScreen } from "@/app/(protected)/videocall/(pages)/SetupScreen";
 import { ConnectingScreen } from "@/app/(protected)/videocall/(pages)/ConnectingScreen";
