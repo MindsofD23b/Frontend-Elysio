@@ -8,7 +8,7 @@ import {
     FontAwesome6,
 } from "@expo/vector-icons";
 import { useSafeAreaControl } from "@/components/SafeArea";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const tCall = createT("videocall.call");
 
@@ -30,11 +30,15 @@ interface Props {
     icebreakerLoading: boolean;
     icebreakerIndex: number;
     icebreakerOpacity: Animated.Value;
+    isLiked: boolean;
+    receivedLike: boolean;
+    mutualLike: boolean;
     onToggleControls: () => void;
     onToggleMute: () => void;
     onFlipCamera: () => void;
     onStop: () => void;
     onLike: () => void;
+    onLikeBack: () => void;
     onNextUser: () => void;
     onReaction: () => void;
     onIcebreaker: () => void;
@@ -54,15 +58,30 @@ export function CallScreen({
     icebreakerLoading,
     icebreakerIndex,
     icebreakerOpacity,
+    isLiked,
+    receivedLike,
+    mutualLike,
     onToggleControls,
     onToggleMute,
     onFlipCamera,
     onStop,
     onLike,
+    onLikeBack,
     onNextUser,
     onReaction,
     onIcebreaker,
 }: Props) {
+    const likeNotifOpacity = useRef(new Animated.Value(0)).current;
+    const showBanner = receivedLike || mutualLike;
+
+    useEffect(() => {
+        Animated.timing(likeNotifOpacity, {
+            toValue: showBanner ? 1 : 0,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+    }, [showBanner, likeNotifOpacity]);
+
     const { setDisableSafeArea } = useSafeAreaControl();
 
     useEffect(() => {
@@ -72,6 +91,10 @@ export function CallScreen({
             setDisableSafeArea(false);
         };
     });
+
+    const likeButtonVariant = mutualLike || receivedLike ? "liked" : "success";
+    const likeButtonIcon = isLiked || mutualLike ? "heart" : "heart-outline";
+    const likeButtonPress = mutualLike ? undefined : receivedLike ? onLikeBack : onLike;
 
     return (
         <View style={s.container}>
@@ -135,11 +158,11 @@ export function CallScreen({
                                 }
                             />
                             <ControlButton
-                                onPress={onLike}
-                                variant="success"
+                                onPress={likeButtonPress ?? (() => {})}
+                                variant={likeButtonVariant}
                                 icon={
                                     <Ionicons
-                                        name="heart-outline"
+                                        name={likeButtonIcon}
                                         size={22}
                                         color="#fff"
                                     />
@@ -172,6 +195,23 @@ export function CallScreen({
                             />
                         </View>
                     </View>
+                </Animated.View>
+
+                <Animated.View
+                    style={[s.likeNotification, { opacity: likeNotifOpacity }]}
+                    pointerEvents={showBanner && !mutualLike ? "box-none" : "none"}
+                >
+                    <Ionicons name="heart" size={16} color="#fff" />
+                    {mutualLike ? (
+                        <Text style={s.likeNotificationText}>{"It's a match! 💬"}</Text>
+                    ) : (
+                        <>
+                            <Text style={s.likeNotificationText}>You got liked!</Text>
+                            <Pressable style={s.likeBackButton} onPress={onLikeBack}>
+                                <Text style={s.likeBackText}>Like back</Text>
+                            </Pressable>
+                        </>
+                    )}
                 </Animated.View>
 
                 {localUrl && (
@@ -208,7 +248,7 @@ function ControlButton({
 }: {
     onPress: () => void;
     icon: React.ReactNode;
-    variant?: "default" | "success" | "danger";
+    variant?: "default" | "success" | "danger" | "liked";
 }) {
     return (
         <Pressable
@@ -217,6 +257,7 @@ function ControlButton({
                 s.controlButton,
                 variant === "success" && s.controlButtonSuccess,
                 variant === "danger" && s.controlButtonDanger,
+                variant === "liked" && s.controlButtonLiked,
             ]}
         >
             {icon}
@@ -281,6 +322,32 @@ const s = StyleSheet.create({
     },
     controlButtonSuccess: { backgroundColor: "#45c466", borderColor: "#45c466" },
     controlButtonDanger: { backgroundColor: "#df1d1d", borderColor: "#df1d1d" },
+    controlButtonLiked: { backgroundColor: "#e91e8c", borderColor: "#e91e8c" },
+    likeNotification: {
+        position: "absolute",
+        top: 120,
+        alignSelf: "center",
+        backgroundColor: "#e91e8c",
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    likeNotificationText: { color: "#fff", fontSize: 14, fontWeight: "600" as const },
+    likeBackButton: {
+        backgroundColor: "rgba(255,255,255,0.25)",
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    likeBackText: { color: "#fff", fontSize: 13, fontWeight: "700" as const },
     icebreakerBubble: {
         position: "absolute",
         left: 14,
