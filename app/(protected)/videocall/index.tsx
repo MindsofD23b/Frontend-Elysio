@@ -105,6 +105,18 @@ export default function VideoCall() {
     const [mutualLike, setMutualLike] = useState(false);
     const chatRoomIdRef = useRef<string | null>(null);
 
+    useEffect(() => {
+        if (!receivedLike) return;
+        const t = setTimeout(() => setReceivedLike(false), 5000);
+        return () => clearTimeout(t);
+    }, [receivedLike]);
+
+    useEffect(() => {
+        if (!mutualLike) return;
+        const t = setTimeout(() => setMutualLike(false), 4000);
+        return () => clearTimeout(t);
+    }, [mutualLike]);
+
     const matchmakingSocketRef = useRef<Socket | null>(null);
     const stopTracksRef = useRef<() => void>(() => {});
     const connectingIntentRef = useRef(false);
@@ -438,6 +450,10 @@ export default function VideoCall() {
                 chatRoomIdRef.current = id;
             });
 
+            socket.on("peer_left", () => {
+                stopCallRef.current(false);
+            });
+
             await new Promise<void>((resolve) => {
                 if (socket.connected) resolve();
                 else socket.once("connect", () => resolve());
@@ -503,6 +519,12 @@ export default function VideoCall() {
                         body: JSON.stringify({ peerId: peerIdRef.current }),
                     });
                 } catch {}
+                try {
+                    await api("/matchmaking/decline", {
+                        method: "POST",
+                        body: JSON.stringify({ roomId: currentRoomId }),
+                    });
+                } catch {}
             }
 
             try {
@@ -560,6 +582,11 @@ export default function VideoCall() {
         },
         [api],
     );
+
+    const stopCallRef = useRef(stopCall);
+    useEffect(() => {
+        stopCallRef.current = stopCall;
+    }, [stopCall]);
 
     const handleStartConnecting = useCallback(
         async (_camera: string, _mic: string, _interests: string[]) => {
@@ -656,8 +683,77 @@ export default function VideoCall() {
         socketRef.current?.emit("send_like_back");
     }
 
-    function handleNextUser() {
-        Alert.alert("Next user", "Hier kannst du den nächsten Match laden.");
+    async function handleNextUser() {
+        const roomId = roomIdRef.current;
+
+        // Decline current match so these two users won't match again
+        if (roomId) {
+            try {
+                await api("/matchmaking/decline", {
+                    method: "POST",
+                    body: JSON.stringify({ roomId }),
+                });
+            } catch {}
+        }
+
+        // Clean up video session without touching the matchmaking socket
+        localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
+        localStreamRef.current = null;
+        startingRef.current = false;
+
+        if (icebreakerTimeoutRef.current) clearTimeout(icebreakerTimeoutRef.current);
+        setIcebreakerVisible(false);
+        icebreakerOpacity.setValue(0);
+
+        socketRef.current?.disconnect();
+        socketRef.current = null;
+
+        if (roomId) {
+            try {
+                await api(`/video/room/${roomId}/leave`, {
+                    method: "DELETE",
+                    body: JSON.stringify({ peerId: peerIdRef.current }),
+                });
+            } catch {}
+        }
+
+        sendTransportRef.current?.close();
+        recvTransportRef.current?.close();
+        sendTransportRef.current = null;
+        recvTransportRef.current = null;
+        remoteStreamRef.current = new MediaStream();
+
+        consumersRef.current.forEach((c) => {
+            try {
+                c.close();
+            } catch {}
+        });
+        consumersRef.current.clear();
+        consumedProducerIdsRef.current.clear();
+        consumingProducerIdsRef.current.clear();
+        remoteVideoStreamRef.current = null;
+
+        iceRefreshTimerRef.current && clearTimeout(iceRefreshTimerRef.current);
+        iceRefreshTimerRef.current = null;
+
+        // Generate a fresh peerId for the new call
+        peerIdRef.current = `peer-${Math.random().toString(36).slice(2, 10)}`;
+
+        setLocalUrl(null);
+        setRemoteUrl(null);
+        setGatewayRoomId(null);
+        setMatchedUserId(null);
+        setMatchState("idle");
+        setIsLiked(false);
+        setReceivedLike(false);
+        setMutualLike(false);
+        chatRoomIdRef.current = null;
+        roomIdRef.current = null;
+
+        // Re-enter matchmaking
+        setScreen("connecting");
+        await connectMatchmakingGateway();
+        await activateMatchmaking();
     }
     function handleReaction() {
         Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
