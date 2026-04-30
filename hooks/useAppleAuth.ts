@@ -25,23 +25,21 @@ export function useAppleAuth() {
                 );
             }
 
-            // Save fullName now — Apple won't send it again after first login
-            const fullName = credential.fullName
-                ? `${credential.fullName.givenName ?? ""} ${credential.fullName.familyName ?? ""}`.trim()
-                : null;
+            // Apple only sends fullName on the very first sign-in — capture it immediately
+            const firstName = credential.fullName?.givenName ?? null;
+            const lastName = credential.fullName?.familyName ?? null;
+
             const response = await fetch(`${BASE_URL}/auth/apple`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     identityToken: credential.identityToken,
-                    fullName,
+                    ...(firstName && { firstName }),
+                    ...(lastName && { lastName }),
                 }),
             });
 
             const text = await response.text();
-            console.log("Status:", response.status);
-            console.log("Response:", text);
-
             const json = text ? JSON.parse(text) : null;
 
             if (!response.ok) {

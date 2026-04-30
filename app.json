@@ -81,6 +81,11 @@
             "router": {},
             "eas": {
                 "projectId": "4e9048d5-2e15-4fbc-ab31-22fbb78608d3"
+            },
+            "google": {
+                "iosClientId": "438846694187-uecbo60ppm05q7kplqnn633di65vcn43.apps.googleusercontent.com",
+                "androidClientId": "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
+                "webClientId": "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com"
             }
         },
         "owner": "mindsofd23b"
