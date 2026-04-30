@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme/context";
+import { createT } from "@/i18n";
 
 const RETRY_INTERVAL = 20;
 const CRACK_LENGTH = 50;
 
-// viewBox "0 0 64 60" — symmetric heart, bottom point (32,57), top-center dip (32,14)
-// Left bump peak (19,4), right bump peak (45,4), left/right extremes x=3/x=61
+// Made with claude.ai
 const LEFT_PATH = "M 32 57 C 9 44 3 30 3 20 C 3 10 11 4 19 4 C 25 4 29 8 32 14";
 const RIGHT_PATH = "M 32 14 C 35 8 39 4 45 4 C 53 4 61 10 61 20 C 61 30 55 44 32 57";
 const CRACK_PATH = "M 32 15 L 29 26 L 35 31 L 28 43 L 33 49 L 32 57";
@@ -54,7 +54,6 @@ function BrokenHeart({ color }: { color: string }) {
             );
 
             Animated.sequence([
-                // Two heartbeats
                 Animated.sequence([
                     Animated.timing(pulse, {
                         toValue: 1.2,
@@ -264,6 +263,8 @@ function BrokenHeart({ color }: { color: string }) {
     );
 }
 
+const t = createT("outage");
+
 export default function OutageScreen() {
     const { theme } = useTheme();
     const [countdown, setCountdown] = useState(RETRY_INTERVAL);
@@ -281,13 +282,10 @@ export default function OutageScreen() {
     return (
         <View style={s.container}>
             <BrokenHeart color={theme.primary} />
-            <Text style={s.title}>We{"'"}re experiencing issues</Text>
-            <Text style={s.body}>
-                Our team is on it and working as fast as possible to get everything back
-                up. We apologize for the inconvenience.
-            </Text>
+            <Text style={s.title}>{t("title")}</Text>
+            <Text style={s.body}>{t("body")}</Text>
             <View style={s.retryBox}>
-                <Text style={s.retryLabel}>Retrying in</Text>
+                <Text style={s.retryLabel}>{t("retryLabel")}</Text>
                 <Text style={s.retryCount}>{countdown}s</Text>
             </View>
         </View>

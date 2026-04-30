@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+import { Settings } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import { useTheme } from "@/lib/theme/context";
 
@@ -41,7 +42,9 @@ export default function UpdateScreen({ duration }: UpdateScreenProps) {
     return (
         <View style={s.container}>
             <Animated.View style={[s.icon, { opacity }]}>
-                <Text style={s.iconText}>⚙️</Text>
+                <Text style={s.iconText}>
+                    <Settings color={theme.primary} />
+                </Text>
             </Animated.View>
             <Text style={s.title}>Update in progress</Text>
             <Text style={s.body}>

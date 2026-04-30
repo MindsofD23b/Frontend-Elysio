@@ -15,6 +15,8 @@ import StreakCelebrationScreen from "@/components/StreakCelebrationModal";
 registerGlobals();
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
+const TTL_MS = 3600 * 1000;
+const REFRESH_AT = TTL_MS * 0.8;
 
 type AppScreen = "setup" | "connecting" | "call" | "streak";
 
@@ -48,6 +50,8 @@ export default function VideoCall() {
     const [isMuted, setIsMuted] = useState(false);
     const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
+    const iceRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const iceServersRef = useRef<any[]>([]);
     const peerIdRef = useRef(`peer-${Math.random().toString(36).slice(2, 10)}`);
     const deviceRef = useRef<any>(null);
     const sendTransportRef = useRef<any>(null);
@@ -140,6 +144,21 @@ export default function VideoCall() {
         },
         [token],
     );
+
+    const refreshIceCredentials = useCallback(async () => {
+        try {
+            const { iceServers } = await api("/video/turn-credentials");
+
+            iceServersRef.current = iceServers;
+
+            if (sendTransportRef.current) await sendTransportRef.current.restartIce();
+            if (recvTransportRef.current) await recvTransportRef.current.restartIce();
+
+            iceRefreshTimerRef.current = setTimeout(refreshIceCredentials, REFRESH_AT);
+        } catch (err) {
+            console.error("refreshIceCredentials error", err);
+        }
+    }, [api]);
 
     const connectMatchmakingGateway = useCallback(async () => {
         if (!token) return;
@@ -238,17 +257,7 @@ export default function VideoCall() {
 
             const recvTransport = device.createRecvTransport({
                 ...transportInfo,
-                iceServers: [
-                    {
-                        urls: [
-                            "turn:elysioturn.jamiepoeffel.ch:3478?transport=udp",
-                            "turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp",
-                            "turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp",
-                        ],
-                        username: "elysioturn",
-                        credential: "q9E811BDjLsK",
-                    },
-                ],
+                iceServers: iceServersRef.current,
             });
 
             recvTransportRef.current = recvTransport;
@@ -288,17 +297,7 @@ export default function VideoCall() {
 
             const sendTransport = device.createSendTransport({
                 ...transportInfo,
-                iceServers: [
-                    {
-                        urls: [
-                            "turn:elysioturn.jamiepoeffel.ch:3478?transport=udp",
-                            "turn:elysioturn.jamiepoeffel.ch:3478?transport=tcp",
-                            "turns:elysioturn.jamiepoeffel.ch:5349?transport=tcp",
-                        ],
-                        username: "elysioturn",
-                        credential: "q9E811BDjLsK",
-                    },
-                ],
+                iceServers: iceServersRef.current,
             });
 
             sendTransportRef.current = sendTransport;
@@ -394,6 +393,7 @@ export default function VideoCall() {
                 body: JSON.stringify({ peerId: peerIdRef.current }),
             });
 
+            iceServersRef.current = joinData.iceServers;
             const device = new mediasoupClient.Device();
             await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
             deviceRef.current = device;
@@ -431,6 +431,7 @@ export default function VideoCall() {
             await consumeExistingProducers();
             setTimeout(() => consumeExistingProducers().catch(console.error), 2000);
 
+            iceRefreshTimerRef.current = setTimeout(refreshIceCredentials, REFRESH_AT);
             setScreen("call");
         } catch (error) {
             console.error("startCall error", error);
@@ -517,6 +518,8 @@ export default function VideoCall() {
 
             matchmakingSocketRef.current?.disconnect();
             matchmakingSocketRef.current = null;
+            iceRefreshTimerRef.current && clearTimeout(iceRefreshTimerRef.current);
+            iceRefreshTimerRef.current = null;
 
             // only show streak screen after a real call, once per day
             const today = new Date().toISOString().slice(0, 10);
@@ -679,6 +682,7 @@ export default function VideoCall() {
 
     useEffect(() => {
         return () => {
+            iceRefreshTimerRef.current && clearTimeout(iceRefreshTimerRef.current);
             stopTracksRef.current();
             matchmakingSocketRef.current?.disconnect();
             socketRef.current?.disconnect();
