@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import { useTheme } from "@/lib/theme/context";
 import { router, Stack } from "expo-router";
 import {
@@ -38,6 +39,8 @@ import {
     DateIdea,
     DateIdeaList,
 } from "@/components/favorites/CategoryCard";
+
+const t = createT("favorites");
 
 const { width } = Dimensions.get("window");
 const H_PAD = 16;
@@ -751,7 +754,9 @@ export default function AllCategories() {
                     <Pressable onPress={() => router.back()} style={s.backBtn}>
                         <ChevronLeft size={28} color={theme.text} strokeWidth={2.5} />
                     </Pressable>
-                    <Text style={[s.headerTitle, { color: theme.text }]}>Categories</Text>
+                    <Text style={[s.headerTitle, { color: theme.text }]}>
+                        {t("categories")}
+                    </Text>
                     <View style={{ width: 44 }} />
                 </View>
 

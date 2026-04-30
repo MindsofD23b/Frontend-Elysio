@@ -2,11 +2,12 @@ import { Link, router } from "expo-router";
 import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { HomeIcon } from "lucide-react-native";
-// import { useEffect } from "react";
-import { StyleSheet, Text, useColorScheme, View } from "react-native";
+import { Platform, StyleSheet, Text, useColorScheme, View } from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
 import { createT } from "@/i18n";
+import { useAppleAuth } from "@/hooks/useAppleAuth";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 const t = createT("auth.register");
 
@@ -14,6 +15,13 @@ export default function Register() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
     const colorScheme = useColorScheme();
+    const { signInWithApple, loading: appleLoading, error: appleError } = useAppleAuth();
+    const {
+        signInWithGoogle,
+        loading: googleLoading,
+        error: googleError,
+        ready: googleReady,
+    } = useGoogleAuth();
 
     return (
         <View style={gs.container}>
@@ -86,7 +94,8 @@ export default function Register() {
                 <Button
                     variante="outline"
                     style={{ flex: 1, width: "100%", borderColor: theme.base + "4D" }}
-                    onPress={() => alert("Login button pressed")}
+                    onPress={signInWithGoogle}
+                    disabled={googleLoading || !googleReady}
                 >
                     <Image
                         source={require("@/assets/google.png")}
@@ -96,12 +105,15 @@ export default function Register() {
                         }
                         transition={1000}
                     />
-                    <BtnText style={{ color: theme.text }}>{t("google")}</BtnText>
+                    <BtnText style={{ color: theme.text }}>
+                        {googleLoading ? t("loading") : t("google")}
+                    </BtnText>
                 </Button>
                 <Button
                     variante="outline"
                     style={{ flex: 1, width: "100%", borderColor: theme.base + "4D" }}
-                    onPress={() => alert("Login button pressed")}
+                    onPress={signInWithApple}
+                    disabled={appleLoading || Platform.OS !== "ios"}
                 >
                     {colorScheme === "light" ? (
                         <Image
@@ -122,9 +134,24 @@ export default function Register() {
                             transition={1000}
                         />
                     )}
-                    <BtnText style={{ color: theme.text }}>{t("apple")}</BtnText>
+                    <BtnText style={{ color: theme.text }}>
+                        {appleLoading ? t("loading") : t("apple")}
+                    </BtnText>
                 </Button>
             </View>
+
+            {(appleError || googleError) && (
+                <Text
+                    style={{
+                        fontSize: 12,
+                        textAlign: "center",
+                        color: "red",
+                        marginTop: 8,
+                    }}
+                >
+                    {appleError?.message ?? googleError?.message}
+                </Text>
+            )}
 
             <View>
                 {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>

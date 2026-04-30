@@ -17,6 +17,8 @@ import {
     ChevronDown,
 } from "lucide-react-native";
 import { mediaDevices } from "react-native-webrtc";
+import { createT } from "@/i18n";
+import { Ionicons, Feather } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import BackWrapper from "@/components/backwrapper";
@@ -67,6 +69,8 @@ function useMediaDevices() {
 
     return { cameras, microphones };
 }
+
+const t = createT("videocall.setup");
 
 const INTERESTS = [
     "Music",
@@ -122,10 +126,8 @@ export function SetupScreen({ onConnect, onTestStreak }: Props) {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={s.header}>
-                    <Text style={s.title}>Ready to connect?</Text>
-                    <Text style={s.subtitle}>
-                        Set up your devices and pick your interests
-                    </Text>
+                    <Text style={s.title}>{t("title")}</Text>
+                    <Text style={s.subtitle}>{t("subtitle")}</Text>
                 </View>
 
                 {/* Camera */}
@@ -205,7 +207,7 @@ export function SetupScreen({ onConnect, onTestStreak }: Props) {
                         onConnect(selectedCamera, selectedMic, selectedInterests)
                     }
                 >
-                    <BtnText>Find a match</BtnText>
+                    <BtnText>{t("findMatch")}</BtnText>
                     <ArrowRight size={18} color="#fff" strokeWidth={2.2} />
                 </Button>
 
@@ -219,7 +221,7 @@ export function SetupScreen({ onConnect, onTestStreak }: Props) {
                         }}
                     >
                         <Text style={{ color: theme.text + "55", fontSize: 12 }}>
-                            [DEV] Test streak screen
+                            {t("devTestStreak")}
                         </Text>
                     </Pressable>
                 )}

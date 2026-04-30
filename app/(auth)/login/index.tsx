@@ -2,11 +2,21 @@ import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { Link, router } from "expo-router";
 import { HomeIcon } from "lucide-react-native";
-import { StyleSheet, Text, View, useColorScheme, Platform } from "react-native";
+import {
+    StyleSheet,
+    Text,
+    View,
+    useColorScheme,
+    Platform,
+    Pressable,
+} from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
 import { createT } from "@/i18n";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import * as WebBrowser from "expo-web-browser";
+import { BROWSER_OPTS } from "@/lib/web/browserConfig";
 
 export default function Login() {
     const { gs, theme } = useTheme();
@@ -15,12 +25,12 @@ export default function Login() {
     const t = createT("auth.login");
 
     const { signInWithApple, loading: appleLoading, error: appleError } = useAppleAuth();
-
-    // useEffect(() => {
-    //     router.prefetch("/login/withEmail");
-    //     router.prefetch("/login/withPhoneNumber");
-    //     router.prefetch("/register");
-    // }, []);
+    const {
+        signInWithGoogle,
+        loading: googleLoading,
+        error: googleError,
+        ready: googleReady,
+    } = useGoogleAuth();
 
     return (
         <View style={gs.container}>
@@ -96,7 +106,8 @@ export default function Login() {
                 <Button
                     variante="outline"
                     style={{ flex: 1, width: "100%", borderColor: theme.base + "4D" }}
-                    onPress={() => alert("Login button pressed")}
+                    onPress={signInWithGoogle}
+                    disabled={googleLoading || !googleReady}
                 >
                     <Image
                         source={require("@/assets/google.png")}
@@ -106,7 +117,9 @@ export default function Login() {
                         }
                         transition={1000}
                     />
-                    <BtnText style={{ color: theme.text }}>{t("google")}</BtnText>
+                    <BtnText style={{ color: theme.text }}>
+                        {googleLoading ? t("loading") : t("google")}
+                    </BtnText>
                 </Button>
                 <Button
                     variante="outline"
@@ -139,7 +152,7 @@ export default function Login() {
                 </Button>
             </View>
 
-            {appleError && (
+            {(appleError || googleError) && (
                 <Text
                     style={{
                         fontSize: 12,
@@ -148,30 +161,38 @@ export default function Login() {
                         marginTop: 8,
                     }}
                 >
-                    {appleError.message}
+                    {appleError?.message ?? googleError?.message}
                 </Text>
             )}
 
             <View>
-                {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
-                    By continuing, you agree to our{" "}
-                    <Link
-                        href={"/legal/termsOfService"}
-                        style={{ color: theme.primary }}
-                        onPress={() => alert("Terms of Service")}
+                <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
+                    {t("continuingWith")}{" "}
+                    <Pressable
+                        onPress={() => {
+                            WebBrowser.openBrowserAsync(
+                                "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
+                                BROWSER_OPTS(theme),
+                            );
+                        }}
                     >
-                        {t("termsOfService")}
-                    </Link>{" "}
+                        <Text style={{ color: theme.primary }}>
+                            {t("termsOfService")}
+                        </Text>
+                    </Pressable>{" "}
                     {t("and")}{" "}
-                    <Link
-                        href={"/legal/privacyPolicy"}
-                        style={{ color: theme.primary }}
-                        onPress={() => alert("Privacy Policy")}
+                    <Pressable
+                        onPress={() => {
+                            WebBrowser.openBrowserAsync(
+                                "https://mindsofd23b.github.io/Landing-Elysio/privacypolicy/",
+                                BROWSER_OPTS(theme),
+                            );
+                        }}
                     >
-                        {t("privacyPolicy")}
-                    </Link>
+                        <Text style={{ color: theme.primary }}>{t("privacyPolicy")}</Text>
+                    </Pressable>
                     .
-                </Text> */}
+                </Text>
             </View>
         </View>
     );

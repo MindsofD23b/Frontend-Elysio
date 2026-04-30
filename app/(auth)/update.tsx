@@ -1,7 +1,10 @@
+import { createT } from "@/i18n";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Settings } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import { useTheme } from "@/lib/theme/context";
+
+const t = createT("update");
 
 interface UpdateScreenProps {
     duration?: string;
@@ -46,14 +49,11 @@ export default function UpdateScreen({ duration }: UpdateScreenProps) {
                     <Settings color={theme.primary} />
                 </Text>
             </Animated.View>
-            <Text style={s.title}>Update in progress</Text>
-            <Text style={s.body}>
-                We{"'"}re updating Elysio to bring you new features and improvements. The
-                app will be back shortly.
-            </Text>
+            <Text style={s.title}>{t("title")}</Text>
+            <Text style={s.body}>{t("body")}</Text>
             <View style={s.durationBox}>
-                <Text style={s.durationLabel}>Estimated time</Text>
-                <Text style={s.durationValue}>{duration ?? "Unknown"}</Text>
+                <Text style={s.durationLabel}>{t("estimatedTime")}</Text>
+                <Text style={s.durationValue}>{duration ?? t("unknown")}</Text>
             </View>
         </View>
     );

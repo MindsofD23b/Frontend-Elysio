@@ -110,8 +110,7 @@ function DebugProviderInner({ children }: { children: React.ReactNode }) {
 }
 
 export function DebugProvider({ children }: { children: React.ReactNode }) {
-    // Always render the provider so hooks below never lose their context.
-    // The individual hooks bail out early when debug is disabled.
+    if (!__DEV__) return <>{children}</>;
     return <DebugProviderInner>{children}</DebugProviderInner>;
 }
 

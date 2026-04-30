@@ -45,10 +45,6 @@ export function usePublicFetch<S>(
             setError(null);
 
             try {
-                if (!isCached) {
-                    free();
-                }
-
                 const finalHeaders = {
                     "Content-Type": "application/json",
                     ...(requestInit.headers || {}),
@@ -91,20 +87,12 @@ export function usePublicFetch<S>(
                 setLoading(false);
             }
         },
-        [
-            free,
-            isCached,
-            options?.ttlMs,
-            options?.useCache,
-            requestInit,
-            route,
-            setFetchData,
-        ],
+        [options?.ttlMs, options?.useCache, requestInit, route, setFetchData],
     );
 
     useEffect(() => {
         if (options?.manual || isCached) {
-            // setLoading(false);
+            setLoading(false);
             return;
         }
 

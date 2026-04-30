@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createT } from "@/i18n";
 import {
     View,
     Text,
@@ -23,6 +24,8 @@ import Purchases from "react-native-purchases";
 import { usePurchasesReady } from "@/lib/PurchasesContext";
 import { useActivePlan } from "@/hooks/useActivePlan";
 import { useSafeAreaControl } from "@/components/SafeArea";
+
+const t = createT("subscriptions");
 
 type RcPrice = { price: number; currencyCode: string };
 type RcPrices = Record<string, { monthly?: RcPrice; yearly?: RcPrice }>;
@@ -60,7 +63,7 @@ function BillingToggle({
                         { color: value === "monthly" ? theme.text : theme.accent },
                     ]}
                 >
-                    Monthly
+                    {t("monthly")}
                 </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -77,7 +80,7 @@ function BillingToggle({
                         { color: value === "yearly" ? theme.text : theme.accent },
                     ]}
                 >
-                    Yearly
+                    {t("yearly")}
                 </Text>
                 {value === "yearly" && (
                     <View style={[styles.savePill, { backgroundColor: theme.primary }]}>
@@ -119,7 +122,7 @@ function PlanCard({
     const dividerColor = isHighlight ? "rgba(255,255,255,0.15)" : theme.accent + "22";
     const btnBg = isHighlight ? "#fff" : theme.primary;
     const btnTextColor = isHighlight ? theme.primary : "#fff";
-    const priceText = isMonthly ? "/mo" : "/annually";
+    const priceText = isMonthly ? t("perMonth") : t("perAnnually");
 
     const whole = Math.floor(displayPrice);
     const cents = (displayPrice % 1).toFixed(2).slice(1);
@@ -188,7 +191,7 @@ function PlanCard({
                                 { color: isHighlight ? "#fff" : theme.primary },
                             ]}
                         >
-                            ✓ ACTIVE
+                            {t("active")}
                         </Text>
                     </View>
                 </View>
@@ -225,7 +228,7 @@ function PlanCard({
                     activeOpacity={0.85}
                 >
                     <Text style={[styles.ctaBtnText, { color: btnTextColor }]}>
-                        {isActive ? "Active" : "Subscribe"}
+                        {isActive ? t("activeStatus") : t("subscribe")}
                     </Text>
                 </TouchableOpacity>
 
@@ -373,11 +376,9 @@ export default function SubscriptionPlans() {
         <BackWrapper m p={false}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={[styles.title, { color: theme.text }]}>
-                    Choose your plan
-                </Text>
+                <Text style={[styles.title, { color: theme.text }]}>{t("title")}</Text>
                 <Text style={[styles.subtitle, { color: theme.accent }]}>
-                    Upgrade or downgrade at any time.
+                    {t("subtitle")}
                 </Text>
             </View>
 
@@ -429,7 +430,7 @@ export default function SubscriptionPlans() {
             <PaginationDots total={PLANS.length} active={activeIndex} />
 
             <Text style={[styles.cancelNote, { color: theme.accent }]}>
-                Cancel anytime · No hidden fees
+                {t("cancelAnytime")}
             </Text>
         </BackWrapper>
     );

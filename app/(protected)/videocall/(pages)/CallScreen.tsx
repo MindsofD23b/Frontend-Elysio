@@ -7,6 +7,7 @@ import {
     PanResponder,
     useWindowDimensions,
 } from "react-native";
+import i18n, { createT } from "@/i18n";
 import { RTCView } from "react-native-webrtc";
 import {
     Ionicons,
@@ -18,20 +19,11 @@ import { useSafeAreaControl } from "@/components/SafeArea";
 import { useEffect, useRef, useState } from "react";
 import { useNavigation } from "expo-router";
 
-export const ICEBREAKERS = [
-    "What's the weirdest thing you've ever eaten?",
-    "If you could live in any movie universe, which would you pick?",
-    "What's a skill you're secretly proud of?",
-    "What's the most spontaneous thing you've ever done?",
-    "If you had to eat one meal forever, what would it be?",
-    "What's your most controversial food opinion?",
-    "Would you rather explore space or the deep ocean?",
-    "What's the best trip you've ever been on?",
-    "What did you want to be as a kid?",
-    "What's your go-to karaoke song?",
-    "What's a hobby you've always wanted to try?",
-    "What's the last thing that made you laugh out loud?",
-];
+const tCall = createT("videocall.call");
+
+export const ICEBREAKERS = Array.from({ length: 12 }, (_, i) =>
+    i18n.t(`videocall.icebreakers.${i}`),
+);
 
 const PREVIEW_W = 94;
 const PREVIEW_H = 154;
@@ -50,11 +42,15 @@ interface Props {
     icebreakerLoading: boolean;
     icebreakerIndex: number;
     icebreakerOpacity: Animated.Value;
+    isLiked: boolean;
+    receivedLike: boolean;
+    mutualLike: boolean;
     onToggleControls: () => void;
     onToggleMute: () => void;
     onFlipCamera: () => void;
     onStop: () => void;
     onLike: () => void;
+    onLikeBack: () => void;
     onNextUser: () => void;
     onReaction: () => void;
     onIcebreaker: () => void;
@@ -71,15 +67,30 @@ export function CallScreen({
     icebreakerLoading,
     icebreakerIndex,
     icebreakerOpacity,
+    isLiked,
+    receivedLike,
+    mutualLike,
     onToggleControls,
     onToggleMute,
     onFlipCamera,
     onStop,
     onLike,
+    onLikeBack,
     onNextUser,
     onReaction,
     onIcebreaker,
 }: Props) {
+    const likeNotifOpacity = useRef(new Animated.Value(0)).current;
+    const showBanner = receivedLike || mutualLike;
+
+    useEffect(() => {
+        Animated.timing(likeNotifOpacity, {
+            toValue: showBanner ? 1 : 0,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+    }, [showBanner, likeNotifOpacity]);
+
     const { setDisableSafeArea } = useSafeAreaControl();
     const { width: W, height: H } = useWindowDimensions();
 
@@ -178,6 +189,10 @@ export function CallScreen({
         }),
     ).current;
 
+    const likeButtonVariant = mutualLike || receivedLike ? "liked" : "success";
+    const likeButtonIcon = isLiked || mutualLike ? "heart" : "heart-outline";
+    const likeButtonPress = mutualLike ? undefined : receivedLike ? onLikeBack : onLike;
+
     return (
         <View style={s.container}>
             <Pressable style={s.videoLayer} onPress={onToggleControls}>
@@ -191,7 +206,7 @@ export function CallScreen({
                     />
                 ) : (
                     <View style={[s.remoteVideo, s.waitingContainer]}>
-                        <Text style={s.waitingText}>Warte auf Gegenüber...</Text>
+                        <Text style={s.waitingText}>{tCall("waitingForPartner")}</Text>
                     </View>
                 )}
 
@@ -241,11 +256,11 @@ export function CallScreen({
                                 }
                             />
                             <ControlButton
-                                onPress={onLike}
-                                variant="success"
+                                onPress={likeButtonPress ?? (() => {})}
+                                variant={likeButtonVariant}
                                 icon={
                                     <Ionicons
-                                        name="heart-outline"
+                                        name={likeButtonIcon}
                                         size={22}
                                         color="#fff"
                                     />
@@ -310,7 +325,7 @@ function ControlButton({
 }: {
     onPress: () => void;
     icon: React.ReactNode;
-    variant?: "default" | "success" | "danger";
+    variant?: "default" | "success" | "danger" | "liked";
 }) {
     return (
         <Pressable
@@ -319,6 +334,7 @@ function ControlButton({
                 s.controlButton,
                 variant === "success" && s.controlButtonSuccess,
                 variant === "danger" && s.controlButtonDanger,
+                variant === "liked" && s.controlButtonLiked,
             ]}
         >
             {icon}
@@ -385,6 +401,32 @@ const s = StyleSheet.create({
     },
     controlButtonSuccess: { backgroundColor: "#45c466", borderColor: "#45c466" },
     controlButtonDanger: { backgroundColor: "#df1d1d", borderColor: "#df1d1d" },
+    controlButtonLiked: { backgroundColor: "#e91e8c", borderColor: "#e91e8c" },
+    likeNotification: {
+        position: "absolute",
+        top: 120,
+        alignSelf: "center",
+        backgroundColor: "#e91e8c",
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    likeNotificationText: { color: "#fff", fontSize: 14, fontWeight: "600" as const },
+    likeBackButton: {
+        backgroundColor: "rgba(255,255,255,0.25)",
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    likeBackText: { color: "#fff", fontSize: 13, fontWeight: "700" as const },
     icebreakerBubble: {
         position: "absolute",
         left: 14,

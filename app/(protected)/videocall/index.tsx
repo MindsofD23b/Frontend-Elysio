@@ -120,6 +120,23 @@ export default function VideoCall() {
     const [_matchedUserId, setMatchedUserId] = useState<string | null>(null);
     const [gatewayRoomId, setGatewayRoomId] = useState<string | null>(null);
 
+    const [isLiked, setIsLiked] = useState(false);
+    const [receivedLike, setReceivedLike] = useState(false);
+    const [mutualLike, setMutualLike] = useState(false);
+    const chatRoomIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!receivedLike) return;
+        const t = setTimeout(() => setReceivedLike(false), 5000);
+        return () => clearTimeout(t);
+    }, [receivedLike]);
+
+    useEffect(() => {
+        if (!mutualLike) return;
+        const t = setTimeout(() => setMutualLike(false), 4000);
+        return () => clearTimeout(t);
+    }, [mutualLike]);
+
     const matchmakingSocketRef = useRef<Socket | null>(null);
     const stopTracksRef = useRef<() => void>(() => {});
     const connectingIntentRef = useRef(false);
@@ -472,6 +489,7 @@ export default function VideoCall() {
             await createRecvTransport(device);
 
             const socket: Socket = io(BASE_URL, {
+                auth: { token },
                 query: { peerId: peerIdRef.current, roomId: currentRoomId },
                 transports: ["websocket"],
                 forceNew: true,
@@ -494,6 +512,20 @@ export default function VideoCall() {
                 },
             );
 
+            socket.on("receive_like", () => {
+                setReceivedLike(true);
+            });
+
+            socket.on("mutual_like", ({ chatRoomId: id }: { chatRoomId: string }) => {
+                setMutualLike(true);
+                setReceivedLike(false);
+                chatRoomIdRef.current = id;
+            });
+
+            socket.on("peer_left", () => {
+                handleNextUserRef.current();
+            });
+
             await new Promise<void>((resolve) => {
                 if (socket.connected) resolve();
                 else socket.once("connect", () => resolve());
@@ -514,6 +546,7 @@ export default function VideoCall() {
         }
     }, [
         screen,
+        token,
         api,
         consumeProducer,
         createRecvTransport,
@@ -566,6 +599,12 @@ export default function VideoCall() {
                         body: JSON.stringify({ peerId: peerIdRef.current }),
                     });
                 } catch {}
+                try {
+                    await api("/matchmaking/decline", {
+                        method: "POST",
+                        body: JSON.stringify({ roomId: currentRoomId }),
+                    });
+                } catch {}
             }
 
             try {
@@ -594,6 +633,10 @@ export default function VideoCall() {
             setMatchedUserId(null);
             setMatchState("idle");
             setMatchmakingReady(false);
+            setIsLiked(false);
+            setReceivedLike(false);
+            setMutualLike(false);
+            chatRoomIdRef.current = null;
             roomIdRef.current = null;
 
             matchmakingSocketRef.current?.disconnect();
@@ -620,6 +663,16 @@ export default function VideoCall() {
         },
         [api, log],
     );
+
+    const stopCallRef = useRef(stopCall);
+    useEffect(() => {
+        stopCallRef.current = stopCall;
+    }, [stopCall]);
+
+    const handleNextUserRef = useRef<() => Promise<void>>(async () => {});
+    useEffect(() => {
+        handleNextUserRef.current = handleNextUser;
+    });
 
     const handleStartConnecting = useCallback(
         async (camera: string, mic: string, _interests: string[]) => {
@@ -714,10 +767,90 @@ export default function VideoCall() {
     }
 
     function handleLike() {
-        Alert.alert("Liked", "User wurde geliked.");
+        if (isLiked) return;
+        socketRef.current?.emit("send_like");
+        setIsLiked(true);
     }
-    function handleNextUser() {
-        Alert.alert("Next user", "Hier kannst du den nächsten Match laden.");
+
+    function handleLikeBack() {
+        console.log("[LikeBack] User liked back in room:", roomIdRef.current);
+        socketRef.current?.emit("send_like_back");
+    }
+
+    async function handleNextUser() {
+        const roomId = roomIdRef.current;
+
+        // Decline current match so these two users won't match again
+        if (roomId) {
+            try {
+                await api("/matchmaking/decline", {
+                    method: "POST",
+                    body: JSON.stringify({ roomId }),
+                });
+            } catch {}
+        }
+
+        // Clean up video session without touching the matchmaking socket
+        localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
+        localStreamRef.current = null;
+        startingRef.current = false;
+
+        if (icebreakerTimeoutRef.current) clearTimeout(icebreakerTimeoutRef.current);
+        setIcebreakerVisible(false);
+        icebreakerOpacity.setValue(0);
+
+        socketRef.current?.disconnect();
+        socketRef.current = null;
+
+        if (roomId) {
+            try {
+                await api(`/video/room/${roomId}/leave`, {
+                    method: "DELETE",
+                    body: JSON.stringify({ peerId: peerIdRef.current }),
+                });
+            } catch {}
+        }
+
+        sendTransportRef.current?.close();
+        recvTransportRef.current?.close();
+        sendTransportRef.current = null;
+        recvTransportRef.current = null;
+        remoteStreamRef.current = new MediaStream();
+
+        consumersRef.current.forEach((c) => {
+            try {
+                c.close();
+            } catch {}
+        });
+        consumersRef.current.clear();
+        consumedProducerIdsRef.current.clear();
+        consumingProducerIdsRef.current.clear();
+        remoteVideoStreamRef.current = null;
+
+        iceRefreshTimerRef.current && clearTimeout(iceRefreshTimerRef.current);
+        iceRefreshTimerRef.current = null;
+
+        // Generate a fresh peerId for the new call
+        peerIdRef.current = `peer-${Math.random().toString(36).slice(2, 10)}`;
+
+        setLocalUrl(null);
+        setRemoteUrl(null);
+        setGatewayRoomId(null);
+        setMatchedUserId(null);
+        setMatchState("idle");
+        setIsLiked(false);
+        setReceivedLike(false);
+        setMutualLike(false);
+        chatRoomIdRef.current = null;
+        roomIdRef.current = null;
+
+        // Re-enter matchmaking — deactivate first to guarantee IDLE state
+        setScreen("connecting");
+        await connectMatchmakingGateway();
+        try {
+            await deactivateMatchmakingRef.current();
+        } catch {}
+        await activateMatchmaking();
     }
     function handleReaction() {
         Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
@@ -934,6 +1067,9 @@ export default function VideoCall() {
                 facingMode={facingMode}
                 controlsVisible={controlsVisible}
                 controlsOpacity={controlsOpacity}
+                previewBottomAnim={previewBottomAnim}
+                localPreviewAnim={localPreviewAnim}
+                panHandlers={panResponder.panHandlers}
                 icebreakerVisible={icebreakerVisible}
                 icebreakerLoading={icebreakerLoading}
                 icebreakerIndex={icebreakerIndex}

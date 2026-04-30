@@ -1,9 +1,12 @@
+import { createT } from "@/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { View, Text, StyleSheet, useColorScheme } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { BtnText, Button } from "@/components/button";
 import { datePickerCallback } from "@/utils/datePickerCallback";
+
+const t = createT("datePicker");
 
 export default function DatePickerModal() {
     const { birthday } = useLocalSearchParams<{
@@ -24,7 +27,7 @@ export default function DatePickerModal() {
     return (
         <View style={styles.container}>
             <Text style={[styles.title, { color: darkmode ? "#fff" : "#000" }]}>
-                Date of Birth
+                {t("title")}
             </Text>
 
             <DateTimePicker
@@ -35,7 +38,7 @@ export default function DatePickerModal() {
             />
 
             <Button onPress={handleSave} style={styles.button}>
-                <BtnText>Save</BtnText>
+                <BtnText>{t("save")}</BtnText>
             </Button>
         </View>
     );

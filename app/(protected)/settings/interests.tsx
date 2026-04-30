@@ -3,7 +3,7 @@
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useTheme } from "@/lib/theme/context";
-import { router, Stack, useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
     Pressable,
@@ -16,9 +16,13 @@ import {
 import { Theme } from "@/lib/theme/theme";
 import { BlurTint, BlurView } from "expo-blur";
 import { usePublicFetch } from "@/hooks/usePublicFetch";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import { createT } from "@/i18n";
 import { ActivitiesByTitle } from "@/types/register";
 import { useSafeAreaControl } from "@/components/SafeArea";
+
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
+const INTERESTS_INIT: RequestInit = { method: "GET" };
 
 const MIN = 3;
 const MAX = 12;
@@ -29,27 +33,58 @@ export default function Interests() {
     const { theme, gs } = useTheme();
     const styles = makeStyles(theme);
     const tintColor = useColorScheme()?.toString();
+    const { token } = useAuth();
 
     const { setDisabledEdges } = useSafeAreaControl();
+
+    const [selected, setSelected] = useState<string[]>([]);
+    const [errorOpen, setErrorOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const [data, loading, fetchError] = usePublicFetch<ActivitiesByTitle>(
+        "/interests",
+        INTERESTS_INIT,
+    );
 
     useFocusEffect(
         useCallback(() => {
             setDisabledEdges(["top"]);
 
+            console.log("[interests] focused, token:", token ? "present" : "missing");
+
+            if (!token) {
+                console.log("[interests] no token, skipping fetch");
+                return;
+            }
+
+            fetch(`${BASE_URL}/users/me/interests`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+                .then((r) => {
+                    console.log("[interests] GET status:", r.status);
+                    return r.json();
+                })
+                .then((interests) => {
+                    console.log("[interests] response:", JSON.stringify(interests));
+                    if (Array.isArray(interests) && interests.length > 0) {
+                        const ids = interests.map((i: any) => i.id);
+                        console.log("[interests] setting selected ids:", ids);
+                        setSelected(ids);
+                    } else {
+                        console.log(
+                            "[interests] empty or invalid response, not updating selected",
+                        );
+                    }
+                })
+                .catch((err) => {
+                    console.log("[interests] fetch error:", err);
+                });
+
             return () => {
                 setDisabledEdges([]);
             };
-        }, []),
+        }, [token, setDisabledEdges]),
     );
-
-    // useRegisterStore komplett entfernen
-    const [selected, setSelected] = useState<string[]>([]); // später mit echten User-Daten befüllen
-
-    const [errorOpen, setErrorOpen] = useState(false);
-
-    const [data, loading, fetchError] = usePublicFetch<ActivitiesByTitle>("/interests", {
-        method: "GET",
-    });
 
     const canContinue = selected.length >= MIN && selected.length <= MAX;
 
@@ -75,8 +110,23 @@ export default function Interests() {
             setErrorOpen(true);
             return;
         }
-        //Add API call here to save selected interests to user profile
-        router.back();
+        setSaving(true);
+        try {
+            const res = await fetch(`${BASE_URL}/users/me/interests`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ interestIds: selected }),
+            });
+            if (!res.ok) throw new Error();
+            router.back();
+        } catch {
+            setErrorOpen(true);
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -261,10 +311,10 @@ export default function Interests() {
 
                     <Button
                         style={{ marginTop: "auto", width: "100%", alignSelf: "stretch" }}
-                        disabled={!canContinue || loading}
+                        disabled={!canContinue || loading || saving}
                         onPress={onContinue}
                     >
-                        {loading ? (
+                        {loading || saving ? (
                             <Loader />
                         ) : (
                             <BtnText>{(t as any)("continue")}</BtnText>

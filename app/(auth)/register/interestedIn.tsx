@@ -4,50 +4,52 @@ import { BtnText, Button } from "@/components/button";
 import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Mars, Venus } from "lucide-react-native";
-import { createT } from "@/i18n";
+import { Mars, Venus, Users } from "lucide-react-native";
 import { useRegisterStore } from "@/utils/registerStore";
-import { GenderType } from "@/types/register";
 
-const t = createT("auth.register.gender");
+type InterestedInType = "male" | "female" | "everyone";
 
-export default function Gender() {
+export default function InterestedIn() {
     const { gs, theme } = useTheme();
     const styles = makeStyles();
-    const { data, setGender } = useRegisterStore();
+    const { data, setInterestedIn } = useRegisterStore();
 
-    const [selected, setSelected] = useState<GenderType | null>(
-        data.gender ? (data.gender as GenderType) : null,
+    const [selected, setSelected] = useState<InterestedInType | null>(
+        data.interestedIn ? (data.interestedIn as InterestedInType) : null,
     );
 
     const muted = theme.base + "B3";
     const mutedSoft = theme.base + "0D";
     const primarySoft = theme.primary + "0D";
 
-    const getCardStyle = (type: GenderType) => {
+    const getCardStyle = (type: InterestedInType) => {
         const active = selected === type;
-
         return {
             borderColor: active ? theme.primary : muted,
             backgroundColor: active ? primarySoft : mutedSoft,
         };
     };
 
-    const getLabelColor = (type: GenderType) =>
+    const getLabelColor = (type: InterestedInType) =>
         selected === type ? theme.primary : theme.base;
 
     const onSubmit = () => {
         if (!selected) return;
-
-        setGender(selected);
-        router.push("/register/interestedIn");
+        setInterestedIn(selected);
+        router.push("/register/agePreferences");
     };
+
+    const options: { type: InterestedInType; label: string; Icon: any }[] = [
+        { type: "male", label: "Men", Icon: Mars },
+        { type: "female", label: "Women", Icon: Venus },
+        { type: "everyone", label: "Everyone", Icon: Users },
+    ];
 
     return (
         <>
             <Stack.Screen options={{ headerShown: false }} />
             <BackWrapper>
-                <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
+                <Text style={[gs.h1, { marginTop: 35 }]}>Who are you interested in?</Text>
 
                 <Text
                     style={[
@@ -55,32 +57,25 @@ export default function Gender() {
                         { marginTop: 10, color: theme.base + "54", textAlign: "left" },
                     ]}
                 >
-                    {t("body")}{" "}
-                    <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
+                    This helps us find the{" "}
+                    <Text style={{ fontWeight: "bold" }}>right matches</Text> for you.
                 </Text>
 
                 <View style={styles.cardsArea}>
-                    <Pressable
-                        style={[styles.card, getCardStyle("male")]}
-                        onPress={() => setSelected("male")}
-                    >
-                        <Mars size={36} color={getLabelColor("male")} />
-                        <Text style={[styles.cardText, { color: getLabelColor("male") }]}>
-                            {t("male")}
-                        </Text>
-                    </Pressable>
-
-                    <Pressable
-                        style={[styles.card, getCardStyle("female")]}
-                        onPress={() => setSelected("female")}
-                    >
-                        <Venus size={36} color={getLabelColor("female")} />
-                        <Text
-                            style={[styles.cardText, { color: getLabelColor("female") }]}
+                    {options.map(({ type, label, Icon }) => (
+                        <Pressable
+                            key={type}
+                            style={[styles.card, getCardStyle(type)]}
+                            onPress={() => setSelected(type)}
                         >
-                            {t("female")}
-                        </Text>
-                    </Pressable>
+                            <Icon size={36} color={getLabelColor(type)} />
+                            <Text
+                                style={[styles.cardText, { color: getLabelColor(type) }]}
+                            >
+                                {label}
+                            </Text>
+                        </Pressable>
+                    ))}
                 </View>
 
                 <Button
@@ -88,7 +83,7 @@ export default function Gender() {
                     onPress={onSubmit}
                     disabled={!selected}
                 >
-                    <BtnText>{t("continue")}</BtnText>
+                    <BtnText>Continue</BtnText>
                 </Button>
             </BackWrapper>
         </>
@@ -106,7 +101,7 @@ const makeStyles = () =>
 
         card: {
             width: 200,
-            height: 180,
+            height: 120,
             borderRadius: 22,
             borderWidth: 2,
             alignItems: "center",
