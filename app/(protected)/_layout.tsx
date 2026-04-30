@@ -5,7 +5,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { DebugProvider } from "@/components/debug/DebugContext";
 
 export default function ProtectedLayout() {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading, profileComplete } = useAuth();
 
     usePushNotifications();
 
@@ -17,9 +17,8 @@ export default function ProtectedLayout() {
         );
     }
 
-    if (!isAuthenticated) {
-        return <Redirect href="/login" />;
-    }
+    if (!isAuthenticated) return <Redirect href="/login" />;
+    if (!profileComplete) return <Redirect href="/complete-profile" />;
 
     return (
         <DebugProvider>
