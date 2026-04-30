@@ -102,6 +102,8 @@ export default function VideoCall() {
 
     const [isLiked, setIsLiked] = useState(false);
     const [receivedLike, setReceivedLike] = useState(false);
+    const [mutualLike, setMutualLike] = useState(false);
+    const chatRoomIdRef = useRef<string | null>(null);
 
     const matchmakingSocketRef = useRef<Socket | null>(null);
     const stopTracksRef = useRef<() => void>(() => {});
@@ -430,6 +432,12 @@ export default function VideoCall() {
                 setReceivedLike(true);
             });
 
+            socket.on("mutual_like", ({ chatRoomId: id }: { chatRoomId: string }) => {
+                setMutualLike(true);
+                setReceivedLike(false);
+                chatRoomIdRef.current = id;
+            });
+
             await new Promise<void>((resolve) => {
                 if (socket.connected) resolve();
                 else socket.once("connect", () => resolve());
@@ -525,6 +533,8 @@ export default function VideoCall() {
             setMatchmakingReady(false);
             setIsLiked(false);
             setReceivedLike(false);
+            setMutualLike(false);
+            chatRoomIdRef.current = null;
             roomIdRef.current = null;
 
             matchmakingSocketRef.current?.disconnect();
@@ -644,7 +654,6 @@ export default function VideoCall() {
     function handleLikeBack() {
         console.log("[LikeBack] User liked back in room:", roomIdRef.current);
         socketRef.current?.emit("send_like_back");
-        setReceivedLike(false);
     }
 
     function handleNextUser() {
@@ -762,6 +771,7 @@ export default function VideoCall() {
             icebreakerOpacity={icebreakerOpacity}
             isLiked={isLiked}
             receivedLike={receivedLike}
+            mutualLike={mutualLike}
             onToggleControls={toggleControls}
             onToggleMute={toggleMute}
             onFlipCamera={flipCamera}

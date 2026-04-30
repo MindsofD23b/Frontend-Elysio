@@ -40,6 +40,7 @@ interface Props {
     icebreakerOpacity: Animated.Value;
     isLiked: boolean;
     receivedLike: boolean;
+    mutualLike: boolean;
     onToggleControls: () => void;
     onToggleMute: () => void;
     onFlipCamera: () => void;
@@ -67,6 +68,7 @@ export function CallScreen({
     icebreakerOpacity,
     isLiked,
     receivedLike,
+    mutualLike,
     onToggleControls,
     onToggleMute,
     onFlipCamera,
@@ -78,14 +80,16 @@ export function CallScreen({
     onIcebreaker,
 }: Props) {
     const likeNotifOpacity = useRef(new Animated.Value(0)).current;
+    const showBanner = receivedLike || mutualLike;
 
     useEffect(() => {
         Animated.timing(likeNotifOpacity, {
-            toValue: receivedLike ? 1 : 0,
+            toValue: showBanner ? 1 : 0,
             duration: 300,
             useNativeDriver: true,
         }).start();
-    }, [receivedLike]);
+    }, [showBanner, likeNotifOpacity]);
+
     const { setDisableSafeArea } = useSafeAreaControl();
 
     useEffect(() => {
@@ -95,6 +99,10 @@ export function CallScreen({
             setDisableSafeArea(false);
         };
     });
+
+    const likeButtonVariant = mutualLike || receivedLike ? "liked" : "success";
+    const likeButtonIcon = isLiked || mutualLike ? "heart" : "heart-outline";
+    const likeButtonPress = mutualLike ? undefined : receivedLike ? onLikeBack : onLike;
 
     return (
         <View style={s.container}>
@@ -158,15 +166,11 @@ export function CallScreen({
                                 }
                             />
                             <ControlButton
-                                onPress={receivedLike ? onLikeBack : onLike}
-                                variant={receivedLike ? "liked" : "success"}
+                                onPress={likeButtonPress ?? (() => {})}
+                                variant={likeButtonVariant}
                                 icon={
                                     <Ionicons
-                                        name={
-                                            isLiked && !receivedLike
-                                                ? "heart"
-                                                : "heart-outline"
-                                        }
+                                        name={likeButtonIcon}
                                         size={22}
                                         color="#fff"
                                     />
@@ -203,13 +207,19 @@ export function CallScreen({
 
                 <Animated.View
                     style={[s.likeNotification, { opacity: likeNotifOpacity }]}
-                    pointerEvents={receivedLike ? "box-none" : "none"}
+                    pointerEvents={showBanner && !mutualLike ? "box-none" : "none"}
                 >
                     <Ionicons name="heart" size={16} color="#fff" />
-                    <Text style={s.likeNotificationText}>You got liked!</Text>
-                    <Pressable style={s.likeBackButton} onPress={onLikeBack}>
-                        <Text style={s.likeBackText}>Like back</Text>
-                    </Pressable>
+                    {mutualLike ? (
+                        <Text style={s.likeNotificationText}>{"It's a match! 💬"}</Text>
+                    ) : (
+                        <>
+                            <Text style={s.likeNotificationText}>You got liked!</Text>
+                            <Pressable style={s.likeBackButton} onPress={onLikeBack}>
+                                <Text style={s.likeBackText}>Like back</Text>
+                            </Pressable>
+                        </>
+                    )}
                 </Animated.View>
 
                 {localUrl && (
