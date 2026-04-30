@@ -81,6 +81,7 @@
                 "privacyPolicy": "I accept the Privacy Policy",
                 "selectBirthday": "Select your birthday",
                 "continue": "Create Account",
+                "phoneNumber": "Phone number",
                 "errors": {
                     "fullnameReq": "Full name is required",
                     "phonenumberReq": "Phone number is required",

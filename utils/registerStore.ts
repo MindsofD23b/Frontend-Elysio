@@ -19,6 +19,12 @@ export type RegisterData = {
     acceptedTerms: boolean;
     acceptedPrivacyPolicy: boolean;
     profilePictureUri: string;
+    interestedIn: "male" | "female" | "everyone" | "";
+    minPreferredAge: number;
+    maxPreferredAge: number;
+    city: string;
+    latitude: number | null;
+    longitude: number | null;
 };
 
 type PersonalDetailsPayload = {
@@ -33,6 +39,9 @@ type PersonalDetailsPayload = {
     aboutMe: string;
     acceptedTerms: boolean;
     acceptedPrivacyPolicy: boolean;
+    city: string;
+    latitude: number | null;
+    longitude: number | null;
 };
 
 type RegisterStore = {
@@ -40,6 +49,8 @@ type RegisterStore = {
     setEmail: (email: string) => void;
     setPassword: (password: string) => void;
     setGender: (gender: "male" | "female") => void;
+    setInterestedIn: (interestedIn: "male" | "female" | "everyone") => void;
+    setAgePreferences: (min: number, max: number) => void;
     setInterests: (interests: string[]) => void;
     setPersonalDetails: (payload: PersonalDetailsPayload) => void;
     setProfilePictureUri: (uri: string) => void;
@@ -63,6 +74,12 @@ const initialData: RegisterData = {
     aboutMe: "",
     acceptedTerms: false,
     acceptedPrivacyPolicy: false,
+    interestedIn: "",
+    minPreferredAge: 18,
+    maxPreferredAge: 35,
+    city: "",
+    latitude: null,
+    longitude: null,
 };
 
 export const useRegisterStore = create<RegisterStore>((set) => ({
@@ -89,6 +106,23 @@ export const useRegisterStore = create<RegisterStore>((set) => ({
             data: {
                 ...state.data,
                 gender,
+            },
+        })),
+
+    setInterestedIn: (interestedIn: "male" | "female" | "everyone") =>
+        set((state) => ({
+            data: {
+                ...state.data,
+                interestedIn,
+            },
+        })),
+
+    setAgePreferences: (min: number, max: number) =>
+        set((state) => ({
+            data: {
+                ...state.data,
+                minPreferredAge: min,
+                maxPreferredAge: max,
             },
         })),
 
