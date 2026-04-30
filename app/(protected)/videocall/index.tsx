@@ -100,6 +100,9 @@ export default function VideoCall() {
     const [_matchedUserId, setMatchedUserId] = useState<string | null>(null);
     const [gatewayRoomId, setGatewayRoomId] = useState<string | null>(null);
 
+    const [isLiked, setIsLiked] = useState(false);
+    const [receivedLike, setReceivedLike] = useState(false);
+
     const matchmakingSocketRef = useRef<Socket | null>(null);
     const stopTracksRef = useRef<() => void>(() => {});
     const connectingIntentRef = useRef(false);
@@ -422,6 +425,10 @@ export default function VideoCall() {
                 },
             );
 
+            socket.on("receive_like", () => {
+                setReceivedLike(true);
+            });
+
             await new Promise<void>((resolve) => {
                 if (socket.connected) resolve();
                 else socket.once("connect", () => resolve());
@@ -514,6 +521,8 @@ export default function VideoCall() {
             setMatchedUserId(null);
             setMatchState("idle");
             setMatchmakingReady(false);
+            setIsLiked(false);
+            setReceivedLike(false);
             roomIdRef.current = null;
 
             matchmakingSocketRef.current?.disconnect();
@@ -625,8 +634,17 @@ export default function VideoCall() {
     }
 
     function handleLike() {
-        Alert.alert("Liked", "User wurde geliked.");
+        if (isLiked) return;
+        socketRef.current?.emit("send_like");
+        setIsLiked(true);
     }
+
+    function handleLikeBack() {
+        console.log("[LikeBack] User liked back in room:", roomIdRef.current);
+        socketRef.current?.emit("send_like_back");
+        setReceivedLike(false);
+    }
+
     function handleNextUser() {
         Alert.alert("Next user", "Hier kannst du den nächsten Match laden.");
     }
@@ -740,11 +758,14 @@ export default function VideoCall() {
             icebreakerLoading={icebreakerLoading}
             icebreakerIndex={icebreakerIndex}
             icebreakerOpacity={icebreakerOpacity}
+            isLiked={isLiked}
+            receivedLike={receivedLike}
             onToggleControls={toggleControls}
             onToggleMute={toggleMute}
             onFlipCamera={flipCamera}
             onStop={() => stopCall(true)}
             onLike={handleLike}
+            onLikeBack={handleLikeBack}
             onNextUser={handleNextUser}
             onReaction={handleReaction}
             onIcebreaker={handleIcebreaker}
