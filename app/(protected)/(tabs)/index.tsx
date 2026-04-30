@@ -13,6 +13,8 @@ import { PAD, GAP } from "@/components/videocall/homeConstants";
 import { images } from "@/components/videocall/homeImages";
 import { InfiniteColumn } from "@/components/videocall/InfiniteColumn";
 import { useSafeAreaControl } from "@/components/SafeArea";
+import { DebugFAB } from "@/components/debug/DebugFAB";
+import { useDebugSection } from "@/components/debug/DebugContext";
 
 const t = createT("auth.home");
 
@@ -58,6 +60,20 @@ export default function Index() {
             refetch().catch(() => {});
         }
     }, [refetch]);
+
+    useDebugSection(
+        "Home",
+        [
+            { label: "plan", value: plan },
+            { label: "callsToday", value: String(callsData?.callsToday ?? "–") },
+            { label: "maxCalls", value: String(CONSTANTS.PLANS[plan].maxCalls) },
+            {
+                label: "canCall",
+                value: canCall(plan, callsData?.callsToday) ? "✅" : "❌ limit reached",
+            },
+        ],
+        [plan, callsData?.callsToday],
+    );
 
     const styles = makeStyles(theme);
 
@@ -135,6 +151,7 @@ export default function Index() {
 
     return (
         <View style={[gs.container, { paddingTop: 48 }]}>
+            <DebugFAB />
             <View style={styles.grid}>
                 <InfiniteColumn imgs={leftBase} duration={LEFT_DURATION} />
                 <InfiniteColumn imgs={rightBase} duration={RIGHT_DURATION} />
