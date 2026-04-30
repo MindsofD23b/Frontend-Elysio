@@ -750,9 +750,12 @@ export default function VideoCall() {
         chatRoomIdRef.current = null;
         roomIdRef.current = null;
 
-        // Re-enter matchmaking
+        // Re-enter matchmaking — deactivate first to guarantee IDLE state
         setScreen("connecting");
         await connectMatchmakingGateway();
+        try {
+            await deactivateMatchmakingRef.current();
+        } catch {}
         await activateMatchmaking();
     }
     function handleReaction() {
