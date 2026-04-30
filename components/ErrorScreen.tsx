@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import { useEffect, useRef } from "react";
 import {
     View,
@@ -12,6 +13,8 @@ import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme/context";
 import { router } from "expo-router";
+
+const t = createT("error");
 
 const CRACK_LENGTH = 50;
 
@@ -277,10 +280,8 @@ export function ErrorScreen({ error, retry }: Props) {
     return (
         <View style={s.container}>
             <BrokenHeart color={theme.primary} />
-            <Text style={s.title}>Something went wrong</Text>
-            <Text style={s.body}>
-                An unexpected error occurred. Try going back or tap retry to try again.
-            </Text>
+            <Text style={s.title}>{t("title")}</Text>
+            <Text style={s.body}>{t("body")}</Text>
 
             {__DEV__ && (
                 <ScrollView style={s.devBox} contentContainerStyle={s.devContent}>
@@ -300,7 +301,7 @@ export function ErrorScreen({ error, retry }: Props) {
                         ]}
                         onPress={retry}
                     >
-                        <Text style={s.btnPrimaryText}>Try again</Text>
+                        <Text style={s.btnPrimaryText}>{t("tryAgain")}</Text>
                     </Pressable>
                 )}
                 <Pressable
@@ -313,7 +314,7 @@ export function ErrorScreen({ error, retry }: Props) {
                         router.canGoBack() ? router.back() : router.replace("/")
                     }
                 >
-                    <Text style={s.btnSecondaryText}>Go back</Text>
+                    <Text style={s.btnSecondaryText}>{t("goBack")}</Text>
                 </Pressable>
             </View>
         </View>

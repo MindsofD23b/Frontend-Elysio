@@ -1,5 +1,8 @@
+import { createT } from "@/i18n";
 import { AlertTriangle, CheckCircle2 } from "lucide-react-native";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+
+const t = createT("serverStatus");
 
 export const ACCENT = "#d97706";
 
@@ -35,7 +38,7 @@ export function RecheckPill({ seconds }: { seconds: number }) {
             <View style={[styles.pill]}>
                 <ActivityIndicator size="small" color={ACCENT} />
                 <Text style={[styles.pillText, { color: ACCENT }]}>
-                    Rechecking in {seconds}s
+                    {t("recheckingIn", { seconds })}
                 </Text>
             </View>
         </View>

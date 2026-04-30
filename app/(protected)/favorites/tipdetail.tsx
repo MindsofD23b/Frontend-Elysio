@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import { useTheme } from "@/lib/theme/context";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { Sparkles } from "lucide-react-native";
@@ -5,6 +6,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { TipSection } from "@/components/favorites/TipSection";
 import { TIP_CONTENT } from "@/lib/favorites/tips";
 import BackWrapper from "@/components/backwrapper";
+
+const t = createT("favorites.tipDetail");
 
 export default function TipDetail() {
     const { theme } = useTheme();
@@ -16,7 +19,7 @@ export default function TipDetail() {
     if (!data) {
         return (
             <BackWrapper bg={theme.rootBg ?? theme.background}>
-                <Text style={{ color: theme.text }}>Tip not found.</Text>
+                <Text style={{ color: theme.text }}>{t("tipNotFound")}</Text>
             </BackWrapper>
         );
     }
@@ -89,15 +92,15 @@ export default function TipDetail() {
                                     ]}
                                 >
                                     <Sparkles size={14} color="#fff" strokeWidth={2.5} />
-                                    <Text style={s.premiumBadgeText}>PREMIUM</Text>
+                                    <Text style={s.premiumBadgeText}>{t("premium")}</Text>
                                 </View>
                                 <Text style={[s.premiumTitle, { color: theme.text }]}>
-                                    Continue reading
+                                    {t("continueReading")}
                                 </Text>
                                 <Text
                                     style={[s.premiumSub, { color: theme.text + "88" }]}
                                 >
-                                    Unlock the full guide with Premium
+                                    {t("unlockWithPremium")}
                                 </Text>
                             </Pressable>
                         </Link>

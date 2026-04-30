@@ -1,9 +1,12 @@
 import { useNavigation } from "expo-router";
+import { createT } from "@/i18n";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { useRef, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, Animated, Easing } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const t = createT("videocall.connecting");
 
 function PulsingDots() {
     const { theme } = useTheme();
@@ -76,10 +79,10 @@ export function ConnectingScreen({ matchState, onCancel }: Props) {
     const { theme } = useTheme();
     const statusLabel =
         matchState === "matched"
-            ? "Match found! Connecting…"
+            ? t("matchFound")
             : matchState === "waiting"
-              ? "Looking for someone…"
-              : "Connecting to matchmaking…";
+              ? t("looking")
+              : t("connecting");
 
     const s = makeStyle(theme);
 
@@ -100,15 +103,10 @@ export function ConnectingScreen({ matchState, onCancel }: Props) {
             <View style={s.card}>
                 <PulsingDots />
                 <Text style={s.label}>{statusLabel}</Text>
-                {matchState === "idle" && (
-                    <Text style={s.hint}>[DEV] Your state is idle</Text>
-                )}
-                {matchState === "waiting" && (
-                    <Text style={s.hint}>This usually takes a few seconds</Text>
-                )}
+                {matchState === "waiting" && <Text style={s.hint}>{t("hint")}</Text>}
             </View>
             <Pressable style={s.cancelBtn} onPress={onCancel}>
-                <Text style={s.cancelText}>Cancel</Text>
+                <Text style={s.cancelText}>{t("cancel")}</Text>
             </Pressable>
         </SafeAreaView>
     );

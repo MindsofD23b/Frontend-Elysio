@@ -19,16 +19,10 @@ import * as WebBrowser from "expo-web-browser";
 import { BtnText, Button } from "@/components/button";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useCallback } from "react";
+import { BROWSER_OPTS } from "@/lib/web/browserConfig";
 
 const t = createT("auth.settings");
 const version = Constants.expoConfig?.version;
-
-const BROWSER_OPTS = (theme: any): Parameters<typeof WebBrowser.openBrowserAsync>[1] => ({
-    presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-    controlsColor: theme.primary,
-    toolbarColor: theme.background,
-    enableBarCollapsing: true,
-});
 
 function SectionLabel({ label }: { label: string }) {
     return <Text style={styles.sectionLabel}>{label}</Text>;
@@ -126,7 +120,7 @@ export default function SettingsScreen() {
                     />
                     <SettingsRow
                         icon={Shield}
-                        label="Security"
+                        label={t("security")}
                         onPress={() => router.push("/settings/security")}
                     />
                     <SettingsRow
@@ -138,7 +132,7 @@ export default function SettingsScreen() {
                 </SettingsCard>
 
                 {/* ── App ── */}
-                <SectionLabel label="App" />
+                <SectionLabel label={t("app")} />
                 <SettingsCard>
                     <SettingsRow
                         icon={Moon}
@@ -149,7 +143,7 @@ export default function SettingsScreen() {
                 </SettingsCard>
 
                 {/* ── Legal ── */}
-                <SectionLabel label="Legal" />
+                <SectionLabel label={t("legal")} />
                 <SettingsCard>
                     <SettingsRow
                         icon={Globe}
@@ -185,11 +179,11 @@ export default function SettingsScreen() {
                 </SettingsCard>
 
                 {/* ── Version ── */}
-                <SectionLabel label="Info" />
+                <SectionLabel label={t("info")} />
                 <View style={[styles.card, { backgroundColor: theme.background }]}>
                     <View style={styles.infoRow}>
                         <Text style={[styles.rowLabel, { color: theme.text }]}>
-                            Version
+                            {t("version")}
                         </Text>
                         <Text style={[styles.infoValue, { color: theme.text + "66" }]}>
                             {version}

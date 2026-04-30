@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createT } from "@/i18n";
 import * as WebBrowser from "expo-web-browser";
 import {
     View,
@@ -16,6 +17,8 @@ import { ShieldCheck, CreditCard, Lock } from "lucide-react-native";
 import { type BillingCycle, type Plan, PLANS_MAP as PLANS } from "@/lib/plans";
 import Purchases, { PurchasesPackage } from "react-native-purchases";
 import { usePurchasesReady } from "@/lib/PurchasesContext";
+
+const t = createT("subscriptions.checkout");
 
 const BASE_URL = "https://elysio.jamiepoeffel.ch";
 
@@ -42,18 +45,18 @@ function OrderSummary({
     return (
         <View style={[styles.card, { backgroundColor: theme.card }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Order summary
+                {t("orderSummary")}
             </Text>
 
             <View style={styles.planRow}>
                 <View style={[styles.planDot, { backgroundColor: theme.primary }]} />
                 <View style={{ flex: 1 }}>
                     <Text style={[styles.planLabel, { color: theme.text }]}>
-                        {plan.name} plan · {isYearly ? "Yearly" : "Monthly"}
+                        {plan.name} plan · {isYearly ? t("yearly") : t("monthly")}
                     </Text>
                     {isYearly && (
                         <Text style={[styles.savingNote, { color: theme.primary }]}>
-                            Save 17% vs monthly
+                            {t("save17")}
                         </Text>
                     )}
                 </View>
@@ -66,7 +69,7 @@ function OrderSummary({
 
             <View style={styles.totalRow}>
                 <Text style={[styles.totalLabel, { color: theme.text }]}>
-                    Total today
+                    {t("totalToday")}
                 </Text>
                 <Text style={[styles.totalPrice, { color: theme.text }]}>
                     {displayPrice}
@@ -75,7 +78,7 @@ function OrderSummary({
 
             {isYearly && (
                 <Text style={[styles.perMonthNote, { color: theme.grayscale }]}>
-                    {displayPerMonth}/mo · billed annually
+                    {t("billedAnnually", { perMonth: displayPerMonth })}
                 </Text>
             )}
         </View>
@@ -87,7 +90,7 @@ function IncludedFeatures({ plan }: { plan: Plan }) {
     return (
         <View style={[styles.card, { backgroundColor: theme.card }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                What{"'"}s included
+                {t("whatsIncluded")}
             </Text>
             <View style={styles.featureList}>
                 {plan.features.map((f, i) => (
@@ -110,9 +113,9 @@ function IncludedFeatures({ plan }: { plan: Plan }) {
 function TrustBadges() {
     const { theme } = useTheme();
     const items = [
-        { Icon: Lock, label: "Secure payment" },
-        { Icon: ShieldCheck, label: "Cancel anytime" },
-        { Icon: CreditCard, label: "No hidden fees" },
+        { Icon: Lock, label: t("trust.securePayment") },
+        { Icon: ShieldCheck, label: t("trust.cancelAnytime") },
+        { Icon: CreditCard, label: t("trust.noHiddenFees") },
     ];
     return (
         <View style={styles.trustRow}>
@@ -192,9 +195,7 @@ export default function Checkout() {
         try {
             await Purchases.showManageSubscriptions();
         } catch {
-            setError(
-                "Could not open cancellation. Go to Settings → Apple ID → Subscriptions.",
-            );
+            setError(t("cancelError"));
         } finally {
             setLoading(false);
         }
@@ -212,16 +213,14 @@ export default function Checkout() {
             const { customerInfo } = await Purchases.purchasePackage(pkg);
 
             if (typeof customerInfo.entitlements.active[planId] === "undefined") {
-                setError(
-                    "Purchase completed but entitlement was not activated. Please contact support.",
-                );
+                setError(t("entitlementError"));
                 return;
             }
 
             router.replace("/(protected)/(tabs)");
         } catch (err: any) {
             if (err?.userCancelled) return;
-            setError("Something went wrong during the purchase. Please try again.");
+            setError(t("purchaseError"));
             console.error("Subscription error:", err);
         } finally {
             setLoading(false);
@@ -241,9 +240,11 @@ export default function Checkout() {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.header}>
-                    <Text style={[styles.title, { color: theme.text }]}>Checkout</Text>
+                    <Text style={[styles.title, { color: theme.text }]}>
+                        {t("title")}
+                    </Text>
                     <Text style={[styles.subtitle, { color: theme.grayscale }]}>
-                        Review your order before confirming
+                        {t("subtitle")}
                     </Text>
                 </View>
 
@@ -302,7 +303,7 @@ export default function Checkout() {
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={styles.ctaBtnText}>Cancel Plan</Text>
+                            <Text style={styles.ctaBtnText}>{t("cancelPlan")}</Text>
                         )}
                     </TouchableOpacity>
                 ) : hasOtherActivePlan ? (
@@ -313,8 +314,7 @@ export default function Checkout() {
                         ]}
                     >
                         <Text style={[styles.infoText, { color: theme.text }]}>
-                            You currently have an active {activePlanId} plan. Cancel it
-                            first to switch.
+                            {t("activePlanInfo", { planId: activePlanId })}
                         </Text>
                     </View>
                 ) : (
@@ -331,12 +331,14 @@ export default function Checkout() {
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={styles.ctaBtnText}>Confirm & Subscribe</Text>
+                            <Text style={styles.ctaBtnText}>
+                                {t("confirmAndSubscribe")}
+                            </Text>
                         )}
                     </TouchableOpacity>
                 )}
                 <Text style={[styles.legalNote, { color: theme.grayscale }]}>
-                    By subscribing you agree to our{" "}
+                    {t("legalNote")}{" "}
                     <Text
                         onPress={() =>
                             WebBrowser.openBrowserAsync(
@@ -352,9 +354,9 @@ export default function Checkout() {
                         }
                         style={{ color: theme.primary }}
                     >
-                        Terms and Conditions
+                        {t("termsAndConditions")}
                     </Text>{" "}
-                    and{" "}
+                    {t("and")}{" "}
                     <Text
                         onPress={() =>
                             WebBrowser.openBrowserAsync(
@@ -370,7 +372,7 @@ export default function Checkout() {
                         }
                         style={{ color: theme.primary }}
                     >
-                        Privacy Policy
+                        {t("privacyPolicy")}
                     </Text>
                     .
                 </Text>

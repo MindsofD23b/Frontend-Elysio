@@ -1,8 +1,11 @@
 // Made with the help of Claude.ai and ChatGPT
 
+import { createT } from "@/i18n";
 import { useTheme } from "@/lib/theme/context";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
+const t = createT("favorites.ideaDetail");
 
 type Props = {
     title: string;
@@ -33,7 +36,7 @@ export function DateIdeaCard({
             {isTopPick && (
                 <View style={s.topPickBadge}>
                     <Ionicons name="star" size={10} color={theme.primary} />
-                    <Text style={s.topPickText}>TOP PICK</Text>
+                    <Text style={s.topPickText}>{t("topPick")}</Text>
                 </View>
             )}
             <View style={s.priceTag}>
@@ -46,22 +49,22 @@ export function DateIdeaCard({
             </View>
             <View style={s.metaRow}>
                 <View style={s.metaItem}>
-                    <Text style={s.metaLabel}>EFFORT</Text>
+                    <Text style={s.metaLabel}>{t("effort")}</Text>
                     <Text style={[s.metaValue, { color: theme.primary }]}>{effort}</Text>
                 </View>
                 <View style={s.metaItem}>
-                    <Text style={s.metaLabel}>TIME</Text>
+                    <Text style={s.metaLabel}>{t("time")}</Text>
                     <Text style={s.metaValueWhite}>{duration}</Text>
                 </View>
                 <View style={s.metaItem}>
-                    <Text style={s.metaLabel}>VIBE</Text>
+                    <Text style={s.metaLabel}>{t("vibe")}</Text>
                     <Text style={[s.metaValue, { color: theme.planPremium }]}>
                         {vibe}
                     </Text>
                 </View>
             </View>
             <Pressable style={s.exploreBtn} onPress={onPress}>
-                <Text style={s.exploreBtnText}>Explore Details →</Text>
+                <Text style={s.exploreBtnText}>{t("exploreDetails")}</Text>
             </Pressable>
         </View>
     );

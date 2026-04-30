@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import {
     ActivityIndicator,
     Pressable,
@@ -19,6 +20,8 @@ import { Heart, MessageCircleMore, Search } from "lucide-react-native";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useSafeAreaControl } from "@/components/SafeArea";
+
+const t = createT("chat");
 
 // Design made with Pinterest and ChatGPT
 interface ChatResponse {
@@ -64,9 +67,9 @@ async function mapChatResponses(data: ChatResponse[], userId: string): Promise<C
             if (!chat.lastMessage) {
                 lastMessageText = "";
             } else if (chat.lastMessage.type !== "text") {
-                lastMessageText = "🎤 Voice message";
+                lastMessageText = t("voiceMessage");
             } else if (!chat.lastMessage.encryptedKeys) {
-                lastMessageText = "[Encrypted message]";
+                lastMessageText = t("encryptedMessage");
             } else {
                 try {
                     const myKey = chat.lastMessage.encryptedKeys?.find(
@@ -74,7 +77,7 @@ async function mapChatResponses(data: ChatResponse[], userId: string): Promise<C
                     );
 
                     if (!myKey) {
-                        lastMessageText = "[Encrypted message]";
+                        lastMessageText = t("encryptedMessage");
                     } else {
                         try {
                             lastMessageText = await decryptMessage({
@@ -84,11 +87,11 @@ async function mapChatResponses(data: ChatResponse[], userId: string): Promise<C
                                 encryptedKey: myKey.encryptedKey,
                             });
                         } catch {
-                            lastMessageText = "[Unable to decrypt]";
+                            lastMessageText = t("unableToDecrypt");
                         }
                     }
                 } catch {
-                    lastMessageText = "[Unable to decrypt]";
+                    lastMessageText = t("unableToDecrypt");
                 }
             }
 
@@ -249,7 +252,7 @@ function SearchBarComponent({ value, onChangeText }: ISearchBarComponent) {
             <View style={styles.inputContainer}>
                 <Search size={18} color={theme.grayscale} style={{ marginBottom: -1 }} />
                 <TextInput
-                    placeholder="Search"
+                    placeholder={t("search")}
                     value={value}
                     onChangeText={onChangeText}
                     style={styles.input}
@@ -324,18 +327,18 @@ function EmptyChatsState({ isSearching, onPrimaryPress }: EmptyChatsStateProps) 
             </View>
 
             <Text style={styles.emptyTitle}>
-                {isSearching ? "Keine Chats gefunden" : "Noch keine Chats"}
+                {isSearching ? t("empty.noChatsFound") : t("empty.noChats")}
             </Text>
 
             <Text style={styles.emptySubtitle}>
                 {isSearching
-                    ? "Zu deiner Suche konnten wir keine Unterhaltung finden. Versuche es mit einem anderen Namen."
-                    : "Hier erscheinen deine Matches und Nachrichten. Starte einen neuen Kontakt und bringe das erste Gespraech ins Rollen."}
+                    ? t("empty.noChatsFoundSubtitle")
+                    : t("empty.noChatsSubtitle")}
             </Text>
 
             <Pressable style={styles.emptyButton} onPress={onPrimaryPress}>
                 <Text style={styles.emptyButtonText}>
-                    {isSearching ? "Suche zuruecksetzen" : "Neue Leute entdecken"}
+                    {isSearching ? t("empty.resetSearch") : t("empty.discover")}
                 </Text>
             </Pressable>
         </View>

@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import { BtnText, Button } from "@/components/button";
 import { useTheme } from "@/lib/theme/context";
 import { get, store } from "@/utils/store";
@@ -7,6 +8,8 @@ import { Redirect } from "expo-router";
 import { Bell, Heart, Zap } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
+
+const t = createT("onboarding");
 
 const MAX_PAGE = 3;
 
@@ -104,7 +107,7 @@ export default function OnboardingScreen() {
                                 lineHeight: 42,
                             }}
                         >
-                            Find your{"\n"}person.
+                            {t("page0.title")}
                         </Text>
                         <Text
                             style={{
@@ -115,11 +118,11 @@ export default function OnboardingScreen() {
                                 lineHeight: 22,
                             }}
                         >
-                            Dating, reimagined. Connect with people who truly match you.
+                            {t("page0.subtitle")}
                         </Text>
                         <View style={{ height: 32 }} />
                         <Button onPress={continueToApp}>
-                            <BtnText>Get Started</BtnText>
+                            <BtnText>{t("page0.cta")}</BtnText>
                         </Button>
                     </>
                 )}
@@ -157,7 +160,7 @@ export default function OnboardingScreen() {
                                         fontSize: 14,
                                     }}
                                 >
-                                    You have a new match
+                                    {t("page1.notificationTitle")}
                                 </Text>
                                 <Text
                                     style={{
@@ -167,7 +170,7 @@ export default function OnboardingScreen() {
                                         marginTop: 2,
                                     }}
                                 >
-                                    Someone liked your profile — say hi!
+                                    {t("page1.notificationSubtitle")}
                                 </Text>
                             </View>
                         </View>
@@ -181,7 +184,7 @@ export default function OnboardingScreen() {
                                 lineHeight: 36,
                             }}
                         >
-                            Never miss a{"\n"}connection.
+                            {t("page1.title")}
                         </Text>
                         <Text
                             style={{
@@ -192,20 +195,21 @@ export default function OnboardingScreen() {
                                 lineHeight: 22,
                             }}
                         >
-                            We{"'"}ll notify you when you get a new match or message — so
-                            you never leave someone waiting.
+                            {t("page1.subtitle")}
                         </Text>
 
                         <View style={{ height: 24 }} />
                         <Button onPress={continueToApp}>
-                            <BtnText>Enable Notifications</BtnText>
+                            <BtnText>{t("page1.enable")}</BtnText>
                         </Button>
                         <Button
                             variante="outline"
                             style={{ marginTop: 10 }}
                             onPress={() => setCurrentPage(2)}
                         >
-                            <BtnText style={{ color: theme.primary }}>Not now</BtnText>
+                            <BtnText style={{ color: theme.primary }}>
+                                {t("page1.notNow")}
+                            </BtnText>
                         </Button>
                     </>
                 )}
@@ -232,7 +236,7 @@ export default function OnboardingScreen() {
                                         fontWeight: "600",
                                     }}
                                 >
-                                    Real connections
+                                    {t("page2.realConnections")}
                                 </Text>
                             </View>
                             <View
@@ -254,7 +258,7 @@ export default function OnboardingScreen() {
                                         fontWeight: "600",
                                     }}
                                 >
-                                    No ghosting
+                                    {t("page2.noGhosting")}
                                 </Text>
                             </View>
                         </View>
@@ -268,7 +272,7 @@ export default function OnboardingScreen() {
                                 lineHeight: 36,
                             }}
                         >
-                            Modern dating{"\n"}is broken.
+                            {t("page2.title")}
                         </Text>
                         <Text
                             style={{
@@ -279,21 +283,21 @@ export default function OnboardingScreen() {
                                 lineHeight: 22,
                             }}
                         >
-                            Endless swiping, shallow profiles, ghosting — you deserve
-                            better. Elysio is built around real conversations and genuine
-                            matches.
+                            {t("page2.subtitle")}
                         </Text>
 
                         <View style={{ height: 24 }} />
                         <Button onPress={continueToApp}>
-                            <BtnText>Let{"'"}s fix that</BtnText>
+                            <BtnText>{t("page2.cta")}</BtnText>
                         </Button>
                         <Button
                             variante="outline"
                             style={{ marginTop: 10 }}
                             onPress={() => setCurrentPage(currentPage - 1)}
                         >
-                            <BtnText style={{ color: theme.primary }}>Back</BtnText>
+                            <BtnText style={{ color: theme.primary }}>
+                                {t("page2.back")}
+                            </BtnText>
                         </Button>
                     </>
                 )}

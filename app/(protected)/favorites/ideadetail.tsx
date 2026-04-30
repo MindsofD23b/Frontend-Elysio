@@ -1,7 +1,10 @@
+import { createT } from "@/i18n";
 import { useTheme } from "@/lib/theme/context";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Clock, MapPin, Sparkles, Star, Zap } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+
+const t = createT("favorites.ideaDetail");
 
 const EFFORT_COLOR: Record<string, string> = {
     Low: "#4CAF50",
@@ -37,7 +40,7 @@ export default function IdeaDetail() {
                         <View style={s.topPickBadge}>
                             <Star size={11} color={theme.primary} fill={theme.primary} />
                             <Text style={[s.topPickText, { color: theme.primary }]}>
-                                TOP PICK
+                                {t("topPick")}
                             </Text>
                         </View>
                     )}
@@ -66,14 +69,14 @@ export default function IdeaDetail() {
                     <View style={s.metaRow}>
                         <View style={[s.metaCard, { borderColor: effortColor + "33" }]}>
                             <Zap size={18} color={effortColor} strokeWidth={2} />
-                            <Text style={s.metaLabel}>EFFORT</Text>
+                            <Text style={s.metaLabel}>{t("effort")}</Text>
                             <Text style={[s.metaValue, { color: effortColor }]}>
                                 {params.effort}
                             </Text>
                         </View>
                         <View style={[s.metaCard, { borderColor: theme.primary + "33" }]}>
                             <Clock size={18} color={theme.primary} strokeWidth={2} />
-                            <Text style={s.metaLabel}>DURATION</Text>
+                            <Text style={s.metaLabel}>{t("duration")}</Text>
                             <Text style={[s.metaValue, { color: theme.text }]}>
                                 {params.duration}
                             </Text>
@@ -89,7 +92,7 @@ export default function IdeaDetail() {
                                 color={theme.planPremium}
                                 strokeWidth={2}
                             />
-                            <Text style={s.metaLabel}>VIBE</Text>
+                            <Text style={s.metaLabel}>{t("vibe")}</Text>
                             <Text style={[s.metaValue, { color: theme.planPremium }]}>
                                 {params.vibe}
                             </Text>
@@ -98,37 +101,25 @@ export default function IdeaDetail() {
 
                     {/* Tips section */}
                     <View style={s.section}>
-                        <Text style={s.sectionTitle}>Why this works</Text>
+                        <Text style={s.sectionTitle}>{t("whyThisWorks")}</Text>
                         <View style={s.tipCard}>
                             <Text style={s.tipText}>
-                                A{" "}
-                                <Text style={{ color: theme.primary, fontWeight: "700" }}>
-                                    {params.vibe.toLowerCase()}
-                                </Text>{" "}
-                                date like this keeps things fresh and gives you both
-                                something to talk about. The{" "}
-                                <Text style={{ fontWeight: "700", color: theme.text }}>
-                                    {params.effort}
-                                </Text>{" "}
-                                effort level means it{"'"}s easy to plan without pressure.
+                                {t("whyBody", {
+                                    vibe: params.vibe.toLowerCase(),
+                                    effort: params.effort,
+                                })}
                             </Text>
                         </View>
                     </View>
 
                     <View style={s.section}>
-                        <Text style={s.sectionTitle}>What to keep in mind</Text>
+                        <Text style={s.sectionTitle}>{t("keepInMind")}</Text>
                         <View style={s.tipCard}>
                             <Text style={s.tipText}>
-                                Budget around{" "}
-                                <Text style={{ color: theme.primary, fontWeight: "700" }}>
-                                    ${params.price}
-                                </Text>{" "}
-                                and block out{" "}
-                                <Text style={{ fontWeight: "700", color: theme.text }}>
-                                    {params.duration}
-                                </Text>
-                                . Book in advance if the venue is popular — especially on
-                                weekends.
+                                {t("keepInMindBody", {
+                                    price: params.price,
+                                    duration: params.duration,
+                                })}
                             </Text>
                         </View>
                     </View>
