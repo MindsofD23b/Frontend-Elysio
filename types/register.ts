@@ -3,6 +3,7 @@ export type RegisterResponse = {
     error?: string;
     statusCode?: number;
     userId?: string;
+    token?: string;
 };
 
 export type ProfileDataFormErrors = {

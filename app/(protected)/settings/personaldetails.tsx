@@ -3,22 +3,24 @@
 import { createT } from "@/i18n";
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
-import { BtnText, Button } from "@/components/button";
+import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
 import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import type { Theme } from "@/lib/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { datePickerCallback } from "@/utils/datePickerCallback";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 const t = createT("settings.personalDetails");
 const MAX_BIO_LENGTH = 150;
 const MAX_GALLERY_IMAGES = 6;
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://elysio.jamiepoeffel.ch";
 
 const inputStyle = {
     height: 52,
@@ -47,14 +49,8 @@ type UserMe = {
 };
 
 type Props =
-    | {
-          onChangeText: (text: string) => void;
-          onPress?: never;
-      }
-    | {
-          onChangeText?: never;
-          onPress: () => void;
-      };
+    | { onChangeText: (text: string) => void; onPress?: never }
+    | { onChangeText?: never; onPress: () => void };
 
 type FieldProps = {
     label: string;
@@ -77,12 +73,7 @@ function Field({
 
     const styles = StyleSheet.create({
         inputWrap: { width: "100%", marginTop: 14 },
-        label: {
-            fontSize: 14,
-            fontWeight: "600",
-            marginBottom: 6,
-            color: theme.primary,
-        },
+        label: { fontSize: 14, fontWeight: "600", marginBottom: 6, color: theme.primary },
     });
 
     const input = (
@@ -109,16 +100,13 @@ function Field({
 export default function PersonalDetails() {
     const { gs, theme } = useTheme();
     const styles = makeStyles(theme);
+    const { token } = useAuth();
 
     const { setDisableSafeArea } = useSafeAreaControl();
-
     useFocusEffect(
         useCallback(() => {
             setDisableSafeArea(true);
-
-            return () => {
-                setDisableSafeArea(false);
-            };
+            return () => setDisableSafeArea(false);
         }, [setDisableSafeArea]),
     );
 
@@ -127,14 +115,19 @@ export default function PersonalDetails() {
     const [phone, setPhone] = useState("");
     const [country, setCountry] = useState("");
     const [birthday, setBirthday] = useState("");
+    const [jobTitle, setJobTitle] = useState("");
     const [bio, setBio] = useState("");
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [isEditingGallery, setIsEditingGallery] = useState(false);
+    const [saving, setSaving] = useState(false);
 
+    const originalPhotoUrl = useRef<string | null>(null);
     const bioCharactersLeft = MAX_BIO_LENGTH - bio.length;
 
-    const [userData, userLoading] = useAuthFetch<UserMe>("/users/me", { method: "GET" });
+    const [userData, userLoading, , refetchMe] = useAuthFetch<UserMe>("/users/me", {
+        method: "GET",
+    });
 
     useEffect(() => {
         if (!userData) return;
@@ -143,6 +136,8 @@ export default function PersonalDetails() {
         setEmail(userData.email ?? "");
         setPhone(userData.phoneNumber ?? "");
         setCountry(userData.country ?? "");
+        setJobTitle(userData.jobTitle ?? "");
+        if (userData.aboutMe) setBio(userData.aboutMe);
 
         if (userData.dateOfBirth) {
             const d = new Date(userData.dateOfBirth);
@@ -152,8 +147,10 @@ export default function PersonalDetails() {
             setBirthday(`${day}.${month}.${year}`);
         }
 
-        if (userData.aboutMe) setBio(userData.aboutMe);
-        if (userData.photoUrl) setProfileImage(userData.photoUrl);
+        if (userData.photoUrl) {
+            setProfileImage(userData.photoUrl);
+            originalPhotoUrl.current = userData.photoUrl;
+        }
     }, [userData]);
 
     datePickerCallback.set((newDate) => setBirthday(newDate));
@@ -186,19 +183,87 @@ export default function PersonalDetails() {
         });
 
         if (!result.canceled) {
-            setGalleryImages((currentImages) => [...currentImages, result.assets[0].uri]);
+            setGalleryImages((curr) => [...curr, result.assets[0].uri]);
         }
     }
 
     function deleteGalleryImage(imageUri: string) {
-        setGalleryImages((currentImages) =>
-            currentImages.filter((image) => image !== imageUri),
-        );
+        setGalleryImages((curr) => curr.filter((img) => img !== imageUri));
     }
 
-    function handleSaveAndExit() {
-        // TODO: Save updated data via API call
-        router.back();
+    const splitName = (name: string) => {
+        const trimmed = name.trim();
+        const lastSpace = trimmed.lastIndexOf(" ");
+        if (lastSpace === -1) return { firstName: trimmed, lastName: "" };
+        return {
+            firstName: trimmed.slice(0, lastSpace).trim(),
+            lastName: trimmed.slice(lastSpace + 1).trim(),
+        };
+    };
+
+    const parseBirthdayToISO = (dd_mm_yyyy: string): string | undefined => {
+        const parts = dd_mm_yyyy.split(".");
+        if (parts.length !== 3) return undefined;
+        const [day, month, year] = parts;
+        if (!day || !month || !year) return undefined;
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    };
+
+    async function handleSaveAndExit() {
+        setSaving(true);
+        try {
+            const { firstName, lastName } = splitName(fullName);
+            const dateOfBirth = parseBirthdayToISO(birthday);
+
+            const patch: Record<string, unknown> = {
+                firstName,
+                lastName,
+                country,
+                jobTitle,
+                aboutMe: bio,
+            };
+            if (dateOfBirth) patch.dateOfBirth = dateOfBirth;
+
+            await fetch(`${BASE_URL}/users/me`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(patch),
+            });
+
+            const imageChanged =
+                profileImage && profileImage !== originalPhotoUrl.current;
+            if (imageChanged) {
+                const uri = profileImage!;
+                const ext = uri.split(".").pop()?.split("?")[0] ?? "jpg";
+                const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+
+                const formData = new FormData();
+                formData.append("file", {
+                    uri,
+                    name: `photo.${ext}`,
+                    type: mimeType,
+                } as any);
+
+                await fetch(`${BASE_URL}/users/me/photo`, {
+                    method: "PUT",
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData,
+                });
+
+                originalPhotoUrl.current = profileImage;
+            }
+
+            await refetchMe();
+            router.back();
+        } catch (err) {
+            Alert.alert("Error", "Failed to save changes. Please try again.");
+            console.error("Save error:", err);
+        } finally {
+            setSaving(false);
+        }
     }
 
     return (
@@ -272,6 +337,12 @@ export default function PersonalDetails() {
                             autoComplete="tel"
                         />
                         <Field
+                            label="Job title"
+                            placeholder="Software Engineer"
+                            value={jobTitle}
+                            onChangeText={setJobTitle}
+                        />
+                        <Field
                             label={t("dateOfBirth")}
                             placeholder="dd.mm.yyyy"
                             value={birthday}
@@ -295,7 +366,10 @@ export default function PersonalDetails() {
                                 <Text style={styles.counter}>{bioCharactersLeft}</Text>
                             </View>
                             <TextInput
-                                style={styles.bioInput}
+                                style={[
+                                    styles.bioInput,
+                                    { color: theme.text, backgroundColor: theme.card },
+                                ]}
                                 placeholder={t("bioPlaceholder")}
                                 placeholderTextColor={theme.text + "70"}
                                 value={bio}
@@ -308,9 +382,7 @@ export default function PersonalDetails() {
 
                         <View style={styles.galleryHeader}>
                             <Text style={styles.sectionTitle}>{t("gallery")}</Text>
-                            <Pressable
-                                onPress={() => setIsEditingGallery((value) => !value)}
-                            >
+                            <Pressable onPress={() => setIsEditingGallery((v) => !v)}>
                                 <Text style={styles.editText}>
                                     {isEditingGallery ? t("done") : t("edit")}
                                 </Text>
@@ -373,8 +445,12 @@ export default function PersonalDetails() {
                         </View>
                     </View>
 
-                    <Button style={{ marginTop: 20 }} onPress={handleSaveAndExit}>
-                        <BtnText>{t("saveAndExit")}</BtnText>
+                    <Button
+                        style={{ marginTop: 20 }}
+                        onPress={handleSaveAndExit}
+                        disabled={saving}
+                    >
+                        {saving ? <Loader /> : <BtnText>{t("saveAndExit")}</BtnText>}
                     </Button>
                 </KeyboardAwareScrollView>
             </BackWrapper>
@@ -384,12 +460,7 @@ export default function PersonalDetails() {
 
 const makeStyles = (theme: Theme) =>
     StyleSheet.create({
-        page: {
-            width: "100%",
-            paddingTop: 2,
-            paddingBottom: 24,
-        },
-
+        page: { width: "100%", paddingTop: 2, paddingBottom: 24 },
         title: { marginTop: -25, textAlign: "center" },
         profileWrap: { alignItems: "center", marginTop: 20 },
         avatar: { width: 130, height: 130, borderRadius: 24 },
@@ -434,8 +505,6 @@ const makeStyles = (theme: Theme) =>
             paddingVertical: 14,
             marginTop: 8,
             fontSize: 15,
-            color: theme.text,
-            backgroundColor: theme.card,
         },
 
         // GALLERY
@@ -445,22 +514,9 @@ const makeStyles = (theme: Theme) =>
             justifyContent: "space-between",
             alignItems: "center",
         },
-        sectionTitle: {
-            fontSize: 18,
-            fontWeight: "800",
-            color: theme.text,
-        },
-        editText: {
-            fontSize: 15,
-            fontWeight: "700",
-            color: theme.primary,
-        },
-        galleryGrid: {
-            marginTop: 12,
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: 10,
-        },
+        sectionTitle: { fontSize: 18, fontWeight: "800", color: theme.text },
+        editText: { fontSize: 15, fontWeight: "700", color: theme.primary },
+        galleryGrid: { marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: 10 },
         galleryItem: {
             width: "31%",
             aspectRatio: 1,

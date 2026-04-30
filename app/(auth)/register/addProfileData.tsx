@@ -15,26 +15,76 @@ import { getLocales } from "expo-localization";
 
 const t = createT("auth.register.profileData");
 
+const inputStyle = {
+    height: 52,
+    borderWidth: 0,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    marginTop: 0,
+} as const;
+
+function Field({
+    label,
+    placeholder,
+    value,
+    onChangeText,
+    keyboardType,
+    autoCapitalize,
+    autoCorrect,
+    error,
+}: {
+    label: string;
+    placeholder: string;
+    value: string;
+    onChangeText: (v: string) => void;
+    keyboardType?: "default" | "numeric" | "email-address" | "phone-pad";
+    autoCapitalize?: "none" | "words" | "sentences" | "characters";
+    autoCorrect?: boolean;
+    error?: string;
+}) {
+    const { theme } = useTheme();
+    return (
+        <View style={{ width: "100%", marginTop: 14 }}>
+            <Text
+                style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginBottom: 6,
+                    color: theme.primary,
+                }}
+            >
+                {label}
+            </Text>
+            <Input
+                placeholder={placeholder}
+                value={value}
+                onChangeText={onChangeText}
+                keyboardType={keyboardType}
+                autoCapitalize={autoCapitalize}
+                autoCorrect={autoCorrect}
+                style={[inputStyle, { backgroundColor: theme.card }]}
+            />
+            {error && <Text style={styles.errorText}>{error}</Text>}
+        </View>
+    );
+}
+
 export default function AddProfileDataPage() {
     const { gs, theme } = useTheme();
-    const styles = makeStyles();
     const { data, setPersonalDetails, reset } = useRegisterStore();
 
-    const [fullName, setFullName] = useState(data.firstName + " " + data.lastName || "");
+    const [fullName, setFullName] = useState(
+        data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : "",
+    );
     const [phonePrefix, setPhonePrefix] = useState(data.phonePrefix || "");
     const [phoneNumber, setPhoneNumber] = useState(data.phoneNumber || "");
     const [dateOfBirth, setDateOfBirth] = useState(data.dateOfBirth || "");
     const [country, setCountry] = useState(data.country || "CH");
-    const [language, setLanguage] = useState(
-        data.language || getLocales()[0]?.languageCode || "en",
-    );
-    const fullLanguageName = Intl.DisplayNames
-        ? new Intl.DisplayNames([getLocales()[0]?.languageTag ?? "en"], {
-              type: "language",
-          }).of(language)
-        : language;
+    const [language] = useState(data.language || getLocales()[0]?.languageCode || "en");
     const [jobTitle, setJobTitle] = useState(data.jobTitle || "");
     const [aboutMe, setAboutMe] = useState(data.aboutMe || "");
+    const [city, setCity] = useState(data.city || "");
     const [acceptedTerms, setAcceptedTerms] = useState(data.acceptedTerms || false);
     const [acceptedPrivacyPolicy, setAcceptedPrivacyPolicy] = useState(
         data.acceptedPrivacyPolicy || false,
@@ -44,16 +94,8 @@ export default function AddProfileDataPage() {
 
     const [, loading, fetchError, registerUser] = usePublicFetch<RegisterResponse>(
         "/auth/register",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        },
-        {
-            manual: true,
-            useCache: false,
-        },
+        { method: "POST", headers: { "Content-Type": "application/json" } },
+        { manual: true, useCache: false },
     );
 
     function handleTelefonData(
@@ -65,74 +107,48 @@ export default function AddProfileDataPage() {
         setPhonePrefix(prefix);
         setCountry(cc);
         setPhoneNumber((nationalTel || tel || "").replace(/\s+/g, ""));
-
-        if (errors.phoneNumber) {
-            setErrors((prev) => ({
-                ...prev,
-                phoneNumber: undefined,
-            }));
-        }
+        if (errors.phoneNumber)
+            setErrors((prev) => ({ ...prev, phoneNumber: undefined }));
     }
 
     const formatDateInput = (value: string) => {
         const digitsOnly = value.replace(/\D/g, "").slice(0, 8);
-
         if (digitsOnly.length <= 4) return digitsOnly;
-        if (digitsOnly.length <= 6) {
+        if (digitsOnly.length <= 6)
             return `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4)}`;
-        }
-
         return `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`;
     };
 
     const validateDate = (value: string) => {
         const trimmed = value.trim();
-
         if (!trimmed) return false;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return false;
+        return !Number.isNaN(new Date(trimmed).getTime());
+    };
 
-        const regex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!regex.test(trimmed)) return false;
-
-        const date = new Date(trimmed);
-        return !Number.isNaN(date.getTime());
+    const splitName = (name: string): { firstName: string; lastName: string } => {
+        const trimmed = name.trim();
+        const lastSpace = trimmed.lastIndexOf(" ");
+        if (lastSpace === -1) return { firstName: trimmed, lastName: "" };
+        return {
+            firstName: trimmed.slice(0, lastSpace).trim(),
+            lastName: trimmed.slice(lastSpace + 1).trim(),
+        };
     };
 
     const validate = () => {
         const nextErrors: ProfileDataFormErrors = {};
 
-        if (!fullName.trim()) {
-            nextErrors.fullName = { message: t("errors.fullnameReq") };
-        }
-
-        if (!phoneNumber.trim()) {
+        if (!fullName.trim()) nextErrors.fullName = { message: t("errors.fullnameReq") };
+        if (!phoneNumber.trim())
             nextErrors.phoneNumber = { message: t("errors.phonenumberReq") };
-        }
-
-        if (!validateDate(dateOfBirth)) {
-            nextErrors.dateOfBirth = {
-                message: t("errors.validDate"),
-            };
-        }
-
-        if (!jobTitle.trim()) {
-            nextErrors.jobTitle = { message: t("errors.jobtitleReq") };
-        }
-
-        if (!aboutMe.trim()) {
-            nextErrors.aboutMe = { message: t("errors.aboutmeReq") };
-        }
-
-        if (!acceptedTerms) {
-            nextErrors.acceptedTerms = {
-                message: t("errors.termsReq"),
-            };
-        }
-
-        if (!acceptedPrivacyPolicy) {
-            nextErrors.acceptedPrivacyPolicy = {
-                message: t("errors.privReq"),
-            };
-        }
+        if (!validateDate(dateOfBirth))
+            nextErrors.dateOfBirth = { message: t("errors.validDate") };
+        if (!jobTitle.trim()) nextErrors.jobTitle = { message: t("errors.jobtitleReq") };
+        if (!aboutMe.trim()) nextErrors.aboutMe = { message: t("errors.aboutmeReq") };
+        if (!acceptedTerms) nextErrors.acceptedTerms = { message: t("errors.termsReq") };
+        if (!acceptedPrivacyPolicy)
+            nextErrors.acceptedPrivacyPolicy = { message: t("errors.privReq") };
 
         return nextErrors;
     };
@@ -146,11 +162,13 @@ export default function AddProfileDataPage() {
             return;
         }
 
+        const { firstName, lastName } = splitName(fullName);
+
         const personalPayload = {
             phonePrefix: phonePrefix.trim(),
             phoneNumber: phoneNumber.trim(),
-            firstName: fullName.split(" ")[0].trim(),
-            lastName: fullName.split(" ")[1].trim(),
+            firstName,
+            lastName,
             dateOfBirth: dateOfBirth.trim(),
             country: country.trim().toUpperCase(),
             language: language.trim().toLowerCase(),
@@ -158,6 +176,9 @@ export default function AddProfileDataPage() {
             aboutMe: aboutMe.trim(),
             acceptedTerms,
             acceptedPrivacyPolicy,
+            city: city.trim(),
+            latitude: null,
+            longitude: null,
         };
 
         setPersonalDetails(personalPayload);
@@ -178,14 +199,14 @@ export default function AddProfileDataPage() {
             acceptedTerms: personalPayload.acceptedTerms,
             acceptedPrivacyPolicy: personalPayload.acceptedPrivacyPolicy,
             interests: data.interests,
+            interestedIn: data.interestedIn || undefined,
+            minPreferredAge: data.minPreferredAge,
+            maxPreferredAge: data.maxPreferredAge,
+            city: personalPayload.city || undefined,
         };
 
         try {
-            const response = await registerUser({
-                body: JSON.stringify(finalPayload),
-            });
-            console.log("response:", JSON.stringify(response));
-            console.log("userId:", response?.userId);
+            const response = await registerUser({ body: JSON.stringify(finalPayload) });
 
             if (response?.statusCode && response.statusCode >= 400) {
                 setErrors({
@@ -194,16 +215,10 @@ export default function AddProfileDataPage() {
                 return;
             }
 
-            console.log("=== PHOTO UPLOAD START ===");
-            console.log("profilePictureUri:", data.profilePictureUri);
-            console.log("userId:", response?.userId);
-
             if (data.profilePictureUri && response?.userId) {
                 const uri = data.profilePictureUri;
                 const ext = uri.split(".").pop()?.split("?")[0] ?? "jpg";
                 const mimeType = ext === "png" ? "image/png" : "image/jpeg";
-
-                console.log("ext:", ext, "mimeType:", mimeType);
 
                 const formData = new FormData();
                 formData.append("file", {
@@ -212,30 +227,19 @@ export default function AddProfileDataPage() {
                     type: mimeType,
                 } as any);
 
-                console.log(
-                    "Sending fetch to:",
-                    `https://elysio.jamiepoeffel.ch/users/${response.userId}/photos`,
-                );
-
-                const photoRes = await fetch(
+                await fetch(
                     `https://elysio.jamiepoeffel.ch/users/${response.userId}/photos`,
                     {
                         method: "POST",
+                        headers: response.token
+                            ? { Authorization: `Bearer ${response.token}` }
+                            : {},
                         body: formData,
                     },
                 );
-
-                const photoBody = await photoRes.text();
-                console.log("=== PHOTO UPLOAD RESPONSE ===");
-                console.log("status:", photoRes.status);
-                console.log("body:", photoBody);
-            } else {
-                console.log("SKIPPED — profilePictureUri or userId missing");
-                console.log("profilePictureUri:", data.profilePictureUri);
-                console.log("userId:", response?.userId);
             }
         } catch (err) {
-            console.error("Photo upload error:", err);
+            console.error("Registration error:", err);
         }
 
         const registeredEmail = data.email;
@@ -255,114 +259,113 @@ export default function AddProfileDataPage() {
                 keyboardShouldPersistTaps="handled"
             >
                 <Text style={[gs.h1, { marginTop: 35 }]}>{t("title")}</Text>
-
                 <Text style={[gs.bodyText, { marginTop: 10, color: theme.base + "54" }]}>
                     {t("body")}
                 </Text>
 
                 <View style={styles.form}>
-                    <PhoneNumberInput sendData={handleTelefonData} />
-                    {errors.phoneNumber && (
-                        <Text style={styles.errorText}>{errors.phoneNumber.message}</Text>
-                    )}
+                    {/* Phone */}
+                    <View style={{ width: "100%", marginTop: 14 }}>
+                        <Text style={[styles.label, { color: theme.primary }]}>
+                            {t("phoneNumber")}
+                        </Text>
+                        <View style={{ marginTop: 6 }}>
+                            <PhoneNumberInput sendData={handleTelefonData} />
+                        </View>
+                        {errors.phoneNumber && (
+                            <Text style={styles.errorText}>
+                                {errors.phoneNumber.message}
+                            </Text>
+                        )}
+                    </View>
 
-                    <Input
-                        placeholder={t("fullName")}
+                    {/* Full name */}
+                    <Field
+                        label={t("fullName")}
+                        placeholder="Anna Müller"
                         value={fullName}
                         onChangeText={(val) => {
                             setFullName(val);
-                            if (errors.fullName) {
-                                setErrors((prev) => ({
-                                    ...prev,
-                                    lastName: undefined,
-                                }));
-                            }
+                            if (errors.fullName)
+                                setErrors((prev) => ({ ...prev, fullName: undefined }));
                         }}
+                        error={errors.fullName?.message}
                     />
-                    {errors.fullName && (
-                        <Text style={styles.errorText}>{errors.fullName.message}</Text>
-                    )}
 
-                    <Input
-                        placeholder={t("dateOfBirth")}
+                    {/* Date of birth */}
+                    <Field
+                        label={t("dateOfBirth")}
+                        placeholder="1995-08-24"
                         value={dateOfBirth}
                         onChangeText={(val) => {
                             setDateOfBirth(formatDateInput(val));
-
-                            if (errors.dateOfBirth) {
+                            if (errors.dateOfBirth)
                                 setErrors((prev) => ({
                                     ...prev,
                                     dateOfBirth: undefined,
                                 }));
-                            }
                         }}
                         keyboardType="numeric"
                         autoCapitalize="none"
                         autoCorrect={false}
+                        error={errors.dateOfBirth?.message}
                     />
-                    {errors.dateOfBirth && (
-                        <Text style={styles.errorText}>{errors.dateOfBirth.message}</Text>
-                    )}
 
-                    <Input
-                        placeholder={t("jobTitle")}
+                    {/* Job title */}
+                    <Field
+                        label={t("jobTitle")}
+                        placeholder="Software Engineer"
                         value={jobTitle}
                         onChangeText={(val) => {
                             setJobTitle(val);
-                            if (errors.jobTitle) {
-                                setErrors((prev) => ({
-                                    ...prev,
-                                    jobTitle: undefined,
-                                }));
-                            }
+                            if (errors.jobTitle)
+                                setErrors((prev) => ({ ...prev, jobTitle: undefined }));
                         }}
+                        error={errors.jobTitle?.message}
                     />
-                    {errors.jobTitle && (
-                        <Text style={styles.errorText}>{errors.jobTitle.message}</Text>
-                    )}
 
-                    <Input
-                        placeholder={t("aboutMe")}
+                    {/* About me */}
+                    <Field
+                        label={t("aboutMe")}
+                        placeholder="I love hiking, coffee and good conversations…"
                         value={aboutMe}
                         onChangeText={(val) => {
                             setAboutMe(val);
-                            if (errors.aboutMe) {
-                                setErrors((prev) => ({
-                                    ...prev,
-                                    aboutMe: undefined,
-                                }));
-                            }
+                            if (errors.aboutMe)
+                                setErrors((prev) => ({ ...prev, aboutMe: undefined }));
                         }}
+                        error={errors.aboutMe?.message}
                     />
-                    {errors.aboutMe && (
-                        <Text style={styles.errorText}>{errors.aboutMe.message}</Text>
-                    )}
 
-                    <Input
-                        placeholder={t("countryCode")}
+                    {/* City */}
+                    <Field
+                        label="City"
+                        placeholder="Zurich"
+                        value={city}
+                        onChangeText={setCity}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                    />
+
+                    {/* Country */}
+                    <Field
+                        label={t("countryCode")}
+                        placeholder="CH"
                         value={country}
                         onChangeText={setCountry}
                         autoCapitalize="characters"
                         autoCorrect={false}
                     />
 
-                    <Input
-                        placeholder={t("language")}
-                        value={fullLanguageName ?? language}
-                        onChangeText={setLanguage}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                    />
-
+                    {/* Terms */}
                     <Pressable
                         onPress={() => {
                             setAcceptedTerms((prev) => !prev);
-                            if (errors.acceptedTerms) {
+                            if (errors.acceptedTerms)
                                 setErrors((prev) => ({
                                     ...prev,
                                     acceptedTerms: undefined,
                                 }));
-                            }
                         }}
                         style={styles.checkRow}
                     >
@@ -385,15 +388,15 @@ export default function AddProfileDataPage() {
                         </Text>
                     )}
 
+                    {/* Privacy policy */}
                     <Pressable
                         onPress={() => {
                             setAcceptedPrivacyPolicy((prev) => !prev);
-                            if (errors.acceptedPrivacyPolicy) {
+                            if (errors.acceptedPrivacyPolicy)
                                 setErrors((prev) => ({
                                     ...prev,
                                     acceptedPrivacyPolicy: undefined,
                                 }));
-                            }
                         }}
                         style={styles.checkRow}
                     >
@@ -419,7 +422,6 @@ export default function AddProfileDataPage() {
                     {errors.general && (
                         <Text style={styles.errorText}>{errors.general.message}</Text>
                     )}
-
                     {!errors.general && fetchError && (
                         <Text style={styles.errorText}>
                             {fetchError instanceof Error
@@ -437,39 +439,43 @@ export default function AddProfileDataPage() {
     );
 }
 
-const makeStyles = () =>
-    StyleSheet.create({
-        scrollContent: {
-            paddingBottom: 32,
-            flexGrow: 1,
-        },
+const styles = StyleSheet.create({
+    scrollContent: {
+        paddingBottom: 32,
+        flexGrow: 1,
+    },
 
-        form: {
-            marginTop: 20,
-            gap: 14,
-        },
+    form: {
+        marginTop: 6,
+        gap: 0,
+    },
 
-        submitButton: {
-            marginTop: 24,
-        },
+    label: {
+        fontSize: 14,
+        fontWeight: "600",
+    },
 
-        checkRow: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            marginTop: 4,
-        },
+    submitButton: {
+        marginTop: 24,
+    },
 
-        checkbox: {
-            width: 20,
-            height: 20,
-            borderRadius: 6,
-            borderWidth: 1.5,
-        },
+    checkRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        marginTop: 18,
+    },
 
-        errorText: {
-            color: "red",
-            fontSize: 12,
-            marginTop: -6,
-        },
-    });
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 6,
+        borderWidth: 1.5,
+    },
+
+    errorText: {
+        color: "red",
+        fontSize: 12,
+        marginTop: 4,
+    },
+});
