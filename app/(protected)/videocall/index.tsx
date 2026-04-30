@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Alert, Animated, Easing, PanResponder } from "react-native";
+import { Alert, Animated, Easing, PanResponder, View } from "react-native";
 import { registerGlobals, mediaDevices, MediaStream } from "react-native-webrtc";
 import * as mediasoupClient from "mediasoup-client";
 import { io, Socket } from "socket.io-client";
@@ -11,6 +11,13 @@ import { SetupScreen } from "@/app/(protected)/videocall/(pages)/SetupScreen";
 import { ConnectingScreen } from "@/app/(protected)/videocall/(pages)/ConnectingScreen";
 import { CallScreen, ICEBREAKERS } from "@/app/(protected)/videocall/(pages)/CallScreen";
 import StreakCelebrationScreen from "@/components/StreakCelebrationModal";
+import { DebugFAB } from "@/components/debug/DebugFAB";
+import {
+    useDebugLog,
+    useDebugSection,
+    useDebugActions,
+} from "@/components/debug/DebugContext";
+import { router } from "expo-router";
 
 registerGlobals();
 
@@ -29,6 +36,16 @@ export default function VideoCall() {
             setDisableSafeArea(false);
         };
     });
+
+    const [debugTick, setDebugTick] = useState(0);
+    const _rawLog = useDebugLog("VideoCall");
+    const log = useCallback(
+        (msg: string) => {
+            _rawLog(msg);
+            setDebugTick((t) => t + 1);
+        },
+        [_rawLog],
+    );
 
     const [icebreakerLoading, setIcebreakerLoading] = useState(false);
     const [controlsVisible, setControlsVisible] = useState(true);
@@ -130,6 +147,8 @@ export default function VideoCall() {
         async (path: string, options?: RequestInit) => {
             if (!token) throw new Error("Unauthorized");
             const url = `${BASE_URL}${path}`;
+            // [DEBUG]
+            log(`[API] ${options?.method ?? "GET"} ${path}`);
             const res = await fetch(url, {
                 headers: {
                     "Content-Type": "application/json",
@@ -139,31 +158,39 @@ export default function VideoCall() {
                 ...options,
             });
             const text = await res.text();
-            if (!res.ok) throw new Error(`${res.status} ${text}`);
+            if (!res.ok) {
+                log(`[API] ❌ ${res.status} ${path}`);
+                throw new Error(`${res.status} ${text}`);
+            }
+            log(`[API] ✅ ${res.status} ${path}`);
             return text ? JSON.parse(text) : {};
         },
-        [token],
+        [token, log],
     );
 
     const refreshIceCredentials = useCallback(async () => {
         try {
+            log("[ICE] Refreshing credentials…");
             const { iceServers } = await api("/video/turn-credentials");
 
             iceServersRef.current = iceServers;
+            log(`[ICE] Got ${iceServers.length} server(s)`);
 
             if (sendTransportRef.current) await sendTransportRef.current.restartIce();
             if (recvTransportRef.current) await recvTransportRef.current.restartIce();
 
             iceRefreshTimerRef.current = setTimeout(refreshIceCredentials, REFRESH_AT);
         } catch (err) {
+            log(`[ICE] ❌ refreshIceCredentials: ${err}`);
             console.error("refreshIceCredentials error", err);
         }
-    }, [api]);
+    }, [api, log]);
 
     const connectMatchmakingGateway = useCallback(async () => {
         if (!token) return;
         if (matchmakingSocketRef.current?.connected) return;
 
+        log("[MM] Connecting matchmaking socket…");
         const socket = io(BASE_URL, {
             auth: { token },
             transports: ["websocket"],
@@ -172,24 +199,39 @@ export default function VideoCall() {
 
         matchmakingSocketRef.current = socket;
 
-        socket.on("connect", () => console.log("Matchmaking socket connected"));
-        socket.on("connect_error", (err) =>
-            console.log("Matchmaking connect_error:", err.message),
-        );
-        socket.on("disconnect", () => setMatchmakingReady(false));
-        socket.on("socket_ready", () => setMatchmakingReady(true));
-        socket.on("queue_waiting", () => setMatchState("waiting"));
+        socket.on("connect", () => {
+            log(`[MM] Socket connected: ${socket.id}`);
+            console.log("Matchmaking socket connected");
+        });
+        socket.on("connect_error", (err) => {
+            log(`[MM] connect_error: ${err.message}`);
+            console.log("Matchmaking connect_error:", err.message);
+        });
+        socket.on("disconnect", () => {
+            log("[MM] Socket disconnected");
+            setMatchmakingReady(false);
+        });
+        socket.on("socket_ready", () => {
+            log("[MM] socket_ready");
+            setMatchmakingReady(true);
+        });
+        socket.on("queue_waiting", () => {
+            log("[MM] queue_waiting");
+            setMatchState("waiting");
+        });
         socket.on("match_found", (payload: { matchedUserId: string; roomId: string }) => {
+            log(`[MM] match_found roomId=${payload.roomId}`);
             setMatchState("matched");
             setMatchedUserId(payload.matchedUserId);
             setGatewayRoomId(payload.roomId);
             updateRoomId(payload.roomId);
         });
         socket.on("room_ready", (payload: { roomId: string }) => {
+            log(`[MM] room_ready roomId=${payload.roomId}`);
             setGatewayRoomId(payload.roomId);
             updateRoomId(payload.roomId);
         });
-    }, [token]);
+    }, [token, log]);
 
     const consumeProducer = useCallback(
         async (producerId: string) => {
@@ -200,6 +242,7 @@ export default function VideoCall() {
             if (consumingProducerIdsRef.current.has(producerId)) return;
 
             consumingProducerIdsRef.current.add(producerId);
+            log(`[WebRTC] consuming producerId=${producerId.slice(0, 8)}…`);
             const currentRoomId = getRoomIdOrThrow();
 
             try {
@@ -233,6 +276,7 @@ export default function VideoCall() {
                 consumer.track.enabled = true;
 
                 if (consumer.kind === "video") {
+                    log(`[WebRTC] ✅ remote video consumer ready`);
                     const videoStream = new MediaStream([consumer.track]);
                     remoteVideoStreamRef.current = videoStream;
                     setTimeout(() => setRemoteUrl(videoStream.toURL()), 300);
@@ -241,14 +285,16 @@ export default function VideoCall() {
                 consumingProducerIdsRef.current.delete(producerId);
             } catch (err) {
                 consumingProducerIdsRef.current.delete(producerId);
+                log(`[WebRTC] ❌ consumeProducer: ${err}`);
                 console.error("consumeProducer error", err);
             }
         },
-        [api],
+        [api, log],
     );
 
     const createRecvTransport = useCallback(
         async (device: any) => {
+            log("[WebRTC] createRecvTransport…");
             const currentRoomId = getRoomIdOrThrow();
             const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
                 method: "POST",
@@ -261,11 +307,13 @@ export default function VideoCall() {
             });
 
             recvTransportRef.current = recvTransport;
+            log(`[WebRTC] recvTransport created id=${recvTransport.id?.slice(0, 8)}…`);
 
             recvTransport.on(
                 "connect",
                 async ({ dtlsParameters }: any, callback: any, errback: any) => {
                     try {
+                        log("[WebRTC] recvTransport connect event");
                         const roomId = getRoomIdOrThrow();
                         await api(
                             `/video/room/${roomId}/transport/${recvTransport.id}/connect`,
@@ -279,16 +327,18 @@ export default function VideoCall() {
                         );
                         callback();
                     } catch (err) {
+                        log(`[WebRTC] ❌ recvTransport connect: ${err}`);
                         errback(err);
                     }
                 },
             );
         },
-        [api],
+        [api, log],
     );
 
     const createSendTransportAndProduce = useCallback(
         async (device: any, localStream: any) => {
+            log("[WebRTC] createSendTransportAndProduce…");
             const currentRoomId = getRoomIdOrThrow();
             const transportInfo = await api(`/video/room/${currentRoomId}/transport`, {
                 method: "POST",
@@ -301,11 +351,13 @@ export default function VideoCall() {
             });
 
             sendTransportRef.current = sendTransport;
+            log(`[WebRTC] sendTransport created id=${sendTransport.id?.slice(0, 8)}…`);
 
             sendTransport.on(
                 "connect",
                 async ({ dtlsParameters }: any, callback: any, errback: any) => {
                     try {
+                        log("[WebRTC] sendTransport connect event");
                         const currentRoomId = getRoomIdOrThrow();
                         await api(
                             `/video/room/${currentRoomId}/transport/${sendTransport.id}/connect`,
@@ -319,6 +371,7 @@ export default function VideoCall() {
                         );
                         callback();
                     } catch (err) {
+                        log(`[WebRTC] ❌ sendTransport connect: ${err}`);
                         errback(err);
                     }
                 },
@@ -328,6 +381,7 @@ export default function VideoCall() {
                 "produce",
                 async ({ kind, rtpParameters }: any, callback: any, errback: any) => {
                     try {
+                        log(`[WebRTC] produce kind=${kind}`);
                         const data = await api(
                             `/video/room/${currentRoomId}/transport/${sendTransport.id}/produce`,
                             {
@@ -341,6 +395,7 @@ export default function VideoCall() {
                         );
                         callback({ id: data.id });
                     } catch (err) {
+                        log(`[WebRTC] ❌ produce: ${err}`);
                         errback(err);
                     }
                 },
@@ -353,12 +408,13 @@ export default function VideoCall() {
                 const producer = await sendTransport.produce({ track: videoTrack });
                 videoProducerRef.current = producer;
             }
+            log("[WebRTC] ✅ producing audio + video");
             if (videoTrack) {
                 const producer = await sendTransport.produce({ track: videoTrack });
                 videoProducerRef.current = producer;
             }
         },
-        [api],
+        [api, log],
     );
 
     const consumeExistingProducers = useCallback(async () => {
@@ -367,17 +423,19 @@ export default function VideoCall() {
             `/video/room/${currentRoomId}/producers?peerId=${peerIdRef.current}`,
             { method: "GET" },
         );
+        log(`[WebRTC] consumeExisting: ${producers.length} producer(s)`);
         for (const producer of producers) {
             if (producer.peerId === peerIdRef.current) continue;
             await consumeProducer(producer.producerId);
         }
-    }, [api, consumeProducer]);
+    }, [api, consumeProducer, log]);
 
     const startCall = useCallback(async () => {
         if (startingRef.current || screen === "call") return;
         const currentRoomId = roomIdRef.current;
         if (!currentRoomId) return;
         startingRef.current = true;
+        log("[Call] startCall…");
 
         try {
             const localStream = await mediaDevices.getUserMedia({
@@ -387,6 +445,7 @@ export default function VideoCall() {
 
             localStreamRef.current = localStream;
             setLocalUrl(localStream.toURL());
+            log("[Call] getUserMedia ✅");
 
             const joinData = await api(`/video/room/${currentRoomId}/join`, {
                 method: "POST",
@@ -394,9 +453,11 @@ export default function VideoCall() {
             });
 
             iceServersRef.current = joinData.iceServers;
+            log(`[Call] joined room, ${joinData.iceServers?.length ?? 0} ICE server(s)`);
             const device = new mediasoupClient.Device();
             await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
             deviceRef.current = device;
+            log("[Call] mediasoup Device loaded ✅");
 
             await createRecvTransport(device);
 
@@ -417,6 +478,7 @@ export default function VideoCall() {
                     producerId: string;
                     peerId: string;
                 }) => {
+                    log(`[Call] new-producer from peerId=${peerId.slice(0, 8)}…`);
                     if (peerId === peerIdRef.current) return;
                     await consumeProducer(producerId);
                 },
@@ -426,14 +488,17 @@ export default function VideoCall() {
                 if (socket.connected) resolve();
                 else socket.once("connect", () => resolve());
             });
+            log(`[Call] call socket connected id=${socket.id}`);
 
             await createSendTransportAndProduce(device, localStream);
             await consumeExistingProducers();
             setTimeout(() => consumeExistingProducers().catch(console.error), 2000);
 
             iceRefreshTimerRef.current = setTimeout(refreshIceCredentials, REFRESH_AT);
+            log("[Call] ✅ call started");
             setScreen("call");
         } catch (error) {
+            log(`[Call] ❌ startCall error: ${error}`);
             console.error("startCall error", error);
             startingRef.current = false;
         }
@@ -444,11 +509,14 @@ export default function VideoCall() {
         createRecvTransport,
         createSendTransportAndProduce,
         consumeExistingProducers,
+        log,
     ]);
 
     const activateMatchmaking = useCallback(async () => {
         try {
+            log("[MM] activateMatchmaking…");
             const data = await activateMatchmakingRef.current();
+            log(`[MM] activate response type=${data.type}`);
             if (data.type === "waiting") setMatchState("waiting");
             if (data.type === "matched") {
                 setMatchState("matched");
@@ -459,12 +527,14 @@ export default function VideoCall() {
                 }
             }
         } catch (error) {
+            log(`[MM] ❌ activateMatchmaking: ${error}`);
             console.error("activateMatchmaking error", error);
         }
-    }, []);
+    }, [log]);
 
     const stopCall = useCallback(
         async (callCompleted = false) => {
+            log(`[Call] stopCall callCompleted=${callCompleted}`);
             localStreamRef.current?.getTracks()?.forEach((t: any) => t.stop());
             localStreamRef.current = null;
             startingRef.current = false;
@@ -520,6 +590,7 @@ export default function VideoCall() {
             matchmakingSocketRef.current = null;
             iceRefreshTimerRef.current && clearTimeout(iceRefreshTimerRef.current);
             iceRefreshTimerRef.current = null;
+            log("[Call] cleanup done");
 
             // only show streak screen after a real call, once per day
             const today = new Date().toISOString().slice(0, 10);
@@ -537,16 +608,17 @@ export default function VideoCall() {
                 setScreen("setup");
             }
         },
-        [api],
+        [api, log],
     );
 
     const handleStartConnecting = useCallback(
         async (_camera: string, _mic: string, _interests: string[]) => {
             connectingIntentRef.current = true;
+            log("[Nav] → connecting");
             setScreen("connecting");
             await connectMatchmakingGateway();
         },
-        [connectMatchmakingGateway],
+        [connectMatchmakingGateway, log],
     );
 
     function toggleMute() {
@@ -556,6 +628,7 @@ export default function VideoCall() {
         stream
             .getAudioTracks()
             .forEach((track: MediaStreamTrack) => (track.enabled = !nextMuted));
+        log(`[Call] mute → ${nextMuted}`);
         setIsMuted(nextMuted);
     }
 
@@ -588,6 +661,7 @@ export default function VideoCall() {
         const nextFacing = facingMode === "user" ? "environment" : "user";
         const stream = localStreamRef.current;
         if (!stream) return;
+        log(`[Call] flipCamera → ${nextFacing}`);
 
         stream.getVideoTracks().forEach((t: any) => t.stop());
         setLocalUrl(null);
@@ -608,13 +682,16 @@ export default function VideoCall() {
             localStreamRef.current = newStream;
             setFacingMode(nextFacing);
             setLocalUrl(newStream.toURL());
+            log(`[Call] flipCamera ✅`);
         } catch (err) {
+            log(`[Call] ❌ flipCamera: ${err}`);
             console.error("flipCamera error", err);
             setFacingMode(facingMode);
         }
     }
 
     function updateRoomId(nextRoomId: string) {
+        log(`[Room] roomId → ${nextRoomId}`);
         roomIdRef.current = nextRoomId;
     }
 
@@ -700,6 +777,104 @@ export default function VideoCall() {
         };
     }, []);
 
+    // Debug sections — only active in dev builds (__DEV__)
+    useDebugSection(
+        "Matchmaking",
+        [
+            { label: "screen", value: screen },
+            { label: "matchState", value: matchState },
+            { label: "matchmakingReady", value: matchmakingReady ? "✅" : "❌" },
+            { label: "gatewayRoomId", value: gatewayRoomId ?? "–" },
+            { label: "roomId", value: roomIdRef.current ?? "–" },
+            {
+                label: "mmSocket",
+                value: matchmakingSocketRef.current?.connected
+                    ? `✅ ${matchmakingSocketRef.current.id?.slice(0, 8)}…`
+                    : "❌",
+            },
+            {
+                label: "callSocket",
+                value: socketRef.current?.connected
+                    ? `✅ ${socketRef.current.id?.slice(0, 8)}…`
+                    : "❌",
+            },
+        ],
+        [screen, matchState, matchmakingReady, gatewayRoomId, debugTick],
+        0,
+    );
+
+    useDebugSection(
+        "WebRTC",
+        [
+            { label: "Device loaded", value: deviceRef.current ? "✅" : "❌" },
+            {
+                label: "Device codecs",
+                value: deviceRef.current
+                    ? Object.keys(deviceRef.current.rtpCapabilities?.codecs ?? {})
+                          .length + " codecs"
+                    : "–",
+            },
+            {
+                label: "sendTransport",
+                value: sendTransportRef.current
+                    ? `${sendTransportRef.current.id?.slice(0, 8)}… [${sendTransportRef.current.connectionState ?? "?"}]`
+                    : "❌",
+            },
+            {
+                label: "recvTransport",
+                value: recvTransportRef.current
+                    ? `${recvTransportRef.current.id?.slice(0, 8)}… [${recvTransportRef.current.connectionState ?? "?"}]`
+                    : "❌",
+            },
+            { label: "localUrl", value: localUrl ? "✅" : "❌" },
+            { label: "remoteUrl", value: remoteUrl ? "✅" : "❌" },
+            { label: "Muted", value: isMuted ? "🔇" : "🔊" },
+            { label: "Camera", value: facingMode },
+            { label: "Consumers (active)", value: String(consumersRef.current.size) },
+            {
+                label: "Consumers (consuming)",
+                value: String(consumingProducerIdsRef.current.size),
+            },
+            { label: "Consumed IDs", value: String(consumedProducerIdsRef.current.size) },
+        ],
+        [localUrl, remoteUrl, isMuted, facingMode, debugTick],
+        1,
+    );
+
+    useDebugSection(
+        "ICE / Network",
+        [
+            { label: "ICE Server count", value: String(iceServersRef.current.length) },
+            ...iceServersRef.current.map((srv, i) => ({
+                label: `Server ${i + 1}`,
+                value: Array.isArray(srv.urls) ? srv.urls[0] : (srv.urls ?? "?"),
+            })),
+        ],
+        [debugTick],
+        2,
+    );
+
+    useDebugActions(
+        [
+            ...(["setup", "connecting", "call", "streak"] as AppScreen[]).map((s) => ({
+                key: `screen:${s}`,
+                label: `→ ${s}`,
+                active: screen === s,
+                onPress: () => {
+                    setScreen(s);
+                    router.back();
+                },
+            })),
+            ...[1, 7, 30, 100, 365, 1047].map((n) => ({
+                key: `streak:${n}`,
+                label: `streak ${n}`,
+                active: streakCount === n,
+                onPress: () => setStreakCount(n),
+            })),
+        ],
+        [screen, streakCount],
+    );
+
     if (screen === "streak") {
         return (
             <StreakCelebrationScreen
@@ -711,43 +886,54 @@ export default function VideoCall() {
 
     if (screen === "setup") {
         return (
-            <SetupScreen
-                onConnect={handleStartConnecting}
-                onTestStreak={() => {
-                    setStreakCount(1047);
-                    setScreen("streak");
-                }}
-            />
+            <>
+                <SetupScreen
+                    onConnect={handleStartConnecting}
+                    onTestStreak={() => {
+                        setStreakCount(1047);
+                        setScreen("streak");
+                    }}
+                />
+                <DebugFAB />
+            </>
         );
     }
 
     if (screen === "connecting") {
-        return <ConnectingScreen matchState={matchState} onCancel={stopCall} />;
+        return (
+            <>
+                <ConnectingScreen matchState={matchState} onCancel={stopCall} />
+                <DebugFAB />
+            </>
+        );
     }
 
     return (
-        <CallScreen
-            remoteUrl={remoteUrl}
-            localUrl={localUrl}
-            isMuted={isMuted}
-            facingMode={facingMode}
-            controlsVisible={controlsVisible}
-            controlsOpacity={controlsOpacity}
-            previewBottomAnim={previewBottomAnim}
-            localPreviewAnim={localPreviewAnim}
-            panHandlers={panResponder.panHandlers}
-            icebreakerVisible={icebreakerVisible}
-            icebreakerLoading={icebreakerLoading}
-            icebreakerIndex={icebreakerIndex}
-            icebreakerOpacity={icebreakerOpacity}
-            onToggleControls={toggleControls}
-            onToggleMute={toggleMute}
-            onFlipCamera={flipCamera}
-            onStop={() => stopCall(true)}
-            onLike={handleLike}
-            onNextUser={handleNextUser}
-            onReaction={handleReaction}
-            onIcebreaker={handleIcebreaker}
-        />
+        <>
+            <CallScreen
+                remoteUrl={remoteUrl}
+                localUrl={localUrl}
+                isMuted={isMuted}
+                facingMode={facingMode}
+                controlsVisible={controlsVisible}
+                controlsOpacity={controlsOpacity}
+                previewBottomAnim={previewBottomAnim}
+                localPreviewAnim={localPreviewAnim}
+                panHandlers={panResponder.panHandlers}
+                icebreakerVisible={icebreakerVisible}
+                icebreakerLoading={icebreakerLoading}
+                icebreakerIndex={icebreakerIndex}
+                icebreakerOpacity={icebreakerOpacity}
+                onToggleControls={toggleControls}
+                onToggleMute={toggleMute}
+                onFlipCamera={flipCamera}
+                onStop={() => stopCall(true)}
+                onLike={handleLike}
+                onNextUser={handleNextUser}
+                onReaction={handleReaction}
+                onIcebreaker={handleIcebreaker}
+            />
+            <DebugFAB />
+        </>
     );
 }

@@ -100,6 +100,9 @@ export function ConnectingScreen({ matchState, onCancel }: Props) {
             <View style={s.card}>
                 <PulsingDots />
                 <Text style={s.label}>{statusLabel}</Text>
+                {matchState === "idle" && (
+                    <Text style={s.hint}>[DEV] Your state is idle</Text>
+                )}
                 {matchState === "waiting" && (
                     <Text style={s.hint}>This usually takes a few seconds</Text>
                 )}
