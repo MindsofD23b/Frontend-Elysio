@@ -210,5 +210,14 @@
                 "passwordMismatch": "Passwords dont match"
             }
         }
+    },
+    "outage": {
+        "title": "We're experiencing issues",
+        "body": "Our team is on it and working as fast as possible to get everything back up. We apologize for the inconvenience.",
+        "retryLabel": "Retrying in"
+    },
+    "noInternet": {
+        "title": "No Internet Connection",
+        "body": "Please check your internet connection and try again."
     }
 }

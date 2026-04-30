@@ -2,6 +2,7 @@ import { Redirect, Stack } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { ActivityIndicator, View } from "react-native";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { DebugProvider } from "@/components/debug/DebugContext";
 
 export default function ProtectedLayout() {
     const { isAuthenticated, isLoading } = useAuth();
@@ -21,20 +22,33 @@ export default function ProtectedLayout() {
     }
 
     return (
-        <View style={{ flex: 1 }}>
-            <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen
-                    name="datePickerModal"
-                    options={{
-                        headerShown: false,
-                        presentation: "formSheet",
-                        gestureEnabled: true,
-                        sheetGrabberVisible: true,
-                        sheetAllowedDetents: [0.5, 1],
-                        sheetInitialDetentIndex: 0,
-                    }}
-                />
-            </Stack>
-        </View>
+        <DebugProvider>
+            <View style={{ flex: 1 }}>
+                <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen
+                        name="datePickerModal"
+                        options={{
+                            headerShown: false,
+                            presentation: "formSheet",
+                            gestureEnabled: true,
+                            sheetGrabberVisible: true,
+                            sheetAllowedDetents: [0.5, 1],
+                            sheetInitialDetentIndex: 0,
+                        }}
+                    />
+                    <Stack.Screen
+                        name="debugSheet"
+                        options={{
+                            headerShown: false,
+                            presentation: "formSheet",
+                            gestureEnabled: true,
+                            sheetGrabberVisible: true,
+                            sheetAllowedDetents: [0.6, 1],
+                            sheetInitialDetentIndex: 0,
+                        }}
+                    />
+                </Stack>
+            </View>
+        </DebugProvider>
     );
 }
