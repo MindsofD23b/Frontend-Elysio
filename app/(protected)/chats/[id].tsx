@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useTheme } from "@/lib/theme/context";
 import { Chat } from "@/types/chats";
@@ -41,6 +42,8 @@ import {
 import { MessageBubble } from "@/components/messageBubble";
 import { useRoomSocket } from "@/hooks/useRoomSocket";
 import { useSafeAreaControl } from "@/components/SafeArea";
+
+const t = createT("chat");
 // Design made with Pinterest and ChatGPT
 
 // Wie viele Pixel vom unteren Ende entfernt gilt noch als "unten"
@@ -319,10 +322,10 @@ export default function ChatsScreen() {
     useRoomSocket(id, async (incoming) => {
         if (incoming.senderId === currentUserId) return;
 
-        let text = "[Encrypted message]";
+        let text = t("encryptedMessage");
 
         if (incoming.type !== "text") {
-            text = "Voice message";
+            text = t("voiceMessage");
         } else {
             const myKey = incoming.encryptedKeys.find((k) => k.userId === currentUserId);
             if (myKey) {
@@ -334,7 +337,7 @@ export default function ChatsScreen() {
                         encryptedKey: myKey.encryptedKey,
                     });
                 } catch {
-                    text = "[Unable to decrypt]";
+                    text = t("unableToDecrypt");
                 }
             }
         }
@@ -539,7 +542,7 @@ export default function ChatsScreen() {
                     >
                         <TextInput
                             ref={inputRef}
-                            placeholder="Type a message..."
+                            placeholder={t("typeMessage")}
                             placeholderTextColor={theme.base + "66"}
                             multiline
                             value={message}
@@ -620,7 +623,7 @@ export default function ChatsScreen() {
                                         fontWeight: "600",
                                     }}
                                 >
-                                    🚩 Report {user.name}
+                                    {t("report", { name: user.name })}
                                 </Text>
                             </Pressable>
                             <Pressable
@@ -639,7 +642,7 @@ export default function ChatsScreen() {
                                         fontWeight: "500",
                                     }}
                                 >
-                                    Cancel
+                                    {t("cancel")}
                                 </Text>
                             </Pressable>
                         </View>
@@ -783,7 +786,7 @@ function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => vo
                     marginBottom: 12,
                 }}
             >
-                No messages yet
+                {t("noMessagesYet")}
             </Text>
 
             <Text
@@ -796,8 +799,7 @@ function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => vo
                     marginBottom: 28,
                 }}
             >
-                Start the conversation with {firstName}. A simple hello can turn into
-                something special.
+                {t("startConversation", { name: firstName })}
             </Text>
 
             <Pressable
@@ -819,7 +821,7 @@ function EmptyMessagesState({ name, onPress }: { name: string; onPress: () => vo
                         fontWeight: "700",
                     }}
                 >
-                    Say hi
+                    {t("sayHi")}
                 </Text>
             </Pressable>
         </View>

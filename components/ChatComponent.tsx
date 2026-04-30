@@ -1,9 +1,12 @@
+import { createT } from "@/i18n";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { Chat } from "@/types/chats";
 import { formatTime } from "@/utils/formatTime";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
+const t = createT("chat");
 
 interface ChatComponentProps {
     chat: Chat;
@@ -53,7 +56,7 @@ export default function ChatComponent({ chat, onPress }: ChatComponentProps) {
                     </View>
 
                     <Text style={styles.message} numberOfLines={2}>
-                        {chat.lastMessage ? chat.lastMessage : "No messages yet"}
+                        {chat.lastMessage ? chat.lastMessage : t("noMessagesYet")}
                     </Text>
                 </View>
             </View>

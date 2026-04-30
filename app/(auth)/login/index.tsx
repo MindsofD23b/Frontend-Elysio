@@ -2,11 +2,20 @@ import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
 import { Link, router } from "expo-router";
 import { HomeIcon } from "lucide-react-native";
-import { StyleSheet, Text, View, useColorScheme, Platform } from "react-native";
+import {
+    StyleSheet,
+    Text,
+    View,
+    useColorScheme,
+    Platform,
+    Pressable,
+} from "react-native";
 import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
 import { createT } from "@/i18n";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
+import * as WebBrowser from "expo-web-browser";
+import { BROWSER_OPTS } from "@/lib/web/browserConfig";
 
 export default function Login() {
     const { gs, theme } = useTheme();
@@ -15,12 +24,6 @@ export default function Login() {
     const t = createT("auth.login");
 
     const { signInWithApple, loading: appleLoading, error: appleError } = useAppleAuth();
-
-    // useEffect(() => {
-    //     router.prefetch("/login/withEmail");
-    //     router.prefetch("/login/withPhoneNumber");
-    //     router.prefetch("/register");
-    // }, []);
 
     return (
         <View style={gs.container}>
@@ -153,25 +156,33 @@ export default function Login() {
             )}
 
             <View>
-                {/* <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
-                    By continuing, you agree to our{" "}
-                    <Link
-                        href={"/legal/termsOfService"}
-                        style={{ color: theme.primary }}
-                        onPress={() => alert("Terms of Service")}
+                <Text style={{ fontSize: 12, textAlign: "center", color: theme.text }}>
+                    {t("continuingWith")}{" "}
+                    <Pressable
+                        onPress={() => {
+                            WebBrowser.openBrowserAsync(
+                                "https://mindsofd23b.github.io/Landing-Elysio/termsandconditions/",
+                                BROWSER_OPTS(theme),
+                            );
+                        }}
                     >
-                        {t("termsOfService")}
-                    </Link>{" "}
+                        <Text style={{ color: theme.primary }}>
+                            {t("termsOfService")}
+                        </Text>
+                    </Pressable>{" "}
                     {t("and")}{" "}
-                    <Link
-                        href={"/legal/privacyPolicy"}
-                        style={{ color: theme.primary }}
-                        onPress={() => alert("Privacy Policy")}
+                    <Pressable
+                        onPress={() => {
+                            WebBrowser.openBrowserAsync(
+                                "https://mindsofd23b.github.io/Landing-Elysio/privacypolicy/",
+                                BROWSER_OPTS(theme),
+                            );
+                        }}
                     >
-                        {t("privacyPolicy")}
-                    </Link>
+                        <Text style={{ color: theme.primary }}>{t("privacyPolicy")}</Text>
+                    </Pressable>
                     .
-                </Text> */}
+                </Text>
             </View>
         </View>
     );

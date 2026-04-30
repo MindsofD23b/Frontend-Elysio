@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createT } from "@/i18n";
 import {
     View,
     Text,
@@ -16,6 +17,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 
+const t = createT("report");
+
 interface ReportedUser {
     id: string;
     name: string;
@@ -29,14 +32,14 @@ interface Props {
 }
 
 const REPORT_REASONS = [
-    "Inappropriate behaviour",
-    "Explicit content",
-    "Harassment or bullying",
-    "Hate speech",
-    "Illegal activities",
-    "Spam or scam",
-    "Underage user",
-    "Impersonation",
+    t("reasons.inappropriateBehaviour"),
+    t("reasons.explicitContent"),
+    t("reasons.harassmentOrBullying"),
+    t("reasons.hateSpeech"),
+    t("reasons.illegalActivities"),
+    t("reasons.spamOrScam"),
+    t("reasons.underageUser"),
+    t("reasons.impersonation"),
 ];
 
 export default function ReportUser({ user, onBack, onSubmit }: Props) {
@@ -58,21 +61,18 @@ export default function ReportUser({ user, onBack, onSubmit }: Props) {
 
     async function handleSubmit(andBlock: boolean) {
         if (!reportText) {
-            Alert.alert(
-                "Missing reason",
-                "Please select or describe the reason for your report.",
-            );
+            Alert.alert(t("missingReason"), t("missingReasonBody"));
             return;
         }
         setSubmitting(true);
         try {
             onSubmit?.(reportText, andBlock);
             Alert.alert(
-                andBlock ? "Reported & Blocked" : "Report Submitted",
+                andBlock ? t("reportedAndBlocked") : t("reportSubmitted"),
                 andBlock
-                    ? `${user.name} has been reported and blocked.`
-                    : `Your report has been submitted. We'll review it shortly.`,
-                [{ text: "OK", onPress: onBack }],
+                    ? t("reportedAndBlockedBody", { name: user.name })
+                    : t("reportSubmittedBody"),
+                [{ text: t("ok"), onPress: onBack }],
             );
         } finally {
             setSubmitting(false);
@@ -88,7 +88,7 @@ export default function ReportUser({ user, onBack, onSubmit }: Props) {
                 <Pressable style={styles.backBtn} onPress={onBack} hitSlop={10}>
                     <Ionicons name="arrow-back" size={22} color={theme.text} />
                 </Pressable>
-                <Text style={styles.headerTitle}>Report</Text>
+                <Text style={styles.headerTitle}>{t("title")}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -116,14 +116,14 @@ export default function ReportUser({ user, onBack, onSubmit }: Props) {
                         </View>
                     </View>
                     <View style={styles.userInfo}>
-                        <Text style={styles.reportingLabel}>You are reporting</Text>
+                        <Text style={styles.reportingLabel}>{t("youAreReporting")}</Text>
                         <Text style={styles.userName}>{user.name}</Text>
                     </View>
                 </View>
 
                 <View style={styles.divider} />
 
-                <Text style={styles.sectionLabel}>What is the issue?</Text>
+                <Text style={styles.sectionLabel}>{t("whatIsTheIssue")}</Text>
                 <View style={styles.chipsGrid}>
                     {REPORT_REASONS.map((reason) => (
                         <Pressable
@@ -146,10 +146,10 @@ export default function ReportUser({ user, onBack, onSubmit }: Props) {
                     ))}
                 </View>
 
-                <Text style={styles.sectionLabel}>Add more detail (optional)</Text>
+                <Text style={styles.sectionLabel}>{t("addDetail")}</Text>
                 <TextInput
                     style={styles.textArea}
-                    placeholder="Describe what happened…"
+                    placeholder={t("detailPlaceholder")}
                     placeholderTextColor={theme.grayscale}
                     multiline
                     numberOfLines={5}
@@ -167,10 +167,7 @@ export default function ReportUser({ user, onBack, onSubmit }: Props) {
                         color={theme.grayscale}
                         style={{ marginTop: 1 }}
                     />
-                    <Text style={styles.noteText}>
-                        Reports are anonymous. Our team reviews every report within 24
-                        hours.
-                    </Text>
+                    <Text style={styles.noteText}>{t("anonymous")}</Text>
                 </View>
 
                 <View style={styles.actions}>
@@ -179,7 +176,7 @@ export default function ReportUser({ user, onBack, onSubmit }: Props) {
                         onPress={() => handleSubmit(false)}
                         disabled={submitting}
                     >
-                        <Text style={styles.btnSubmitText}>Submit report</Text>
+                        <Text style={styles.btnSubmitText}>{t("submitReport")}</Text>
                     </Pressable>
 
                     <Pressable
@@ -193,7 +190,7 @@ export default function ReportUser({ user, onBack, onSubmit }: Props) {
                             color="#df1d1d"
                             style={{ marginRight: 7 }}
                         />
-                        <Text style={styles.btnBlockText}>Submit & Block</Text>
+                        <Text style={styles.btnBlockText}>{t("submitAndBlock")}</Text>
                     </Pressable>
                 </View>
             </ScrollView>

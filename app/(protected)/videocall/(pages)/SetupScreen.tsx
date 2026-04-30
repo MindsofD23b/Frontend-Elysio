@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { createT } from "@/i18n";
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme/context";
@@ -7,14 +8,20 @@ import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button } from "@/components/button";
 import { ArrowRightIcon, Check } from "lucide-react-native";
 
-const CAMERAS = [
-    { id: "front", label: "Front camera" },
-    { id: "back", label: "Back camera" },
-];
-const MICROPHONES = [
-    { id: "default", label: "Built-in microphone" },
-    { id: "headset", label: "Headset microphone" },
-];
+const t = createT("videocall.setup");
+
+function getCameras() {
+    return [
+        { id: "front", label: t("frontCamera") },
+        { id: "back", label: t("backCamera") },
+    ];
+}
+function getMicrophones() {
+    return [
+        { id: "default", label: t("builtInMic") },
+        { id: "headset", label: t("headsetMic") },
+    ];
+}
 const INTERESTS = [
     "Music",
     "Travel",
@@ -39,6 +46,8 @@ interface Props {
 }
 
 export function SetupScreen({ onConnect, onTestStreak }: Props) {
+    const CAMERAS = getCameras();
+    const MICROPHONES = getMicrophones();
     const [selectedCamera, setSelectedCamera] = useState(CAMERAS[0].id);
     const [selectedMic, setSelectedMic] = useState(MICROPHONES[0].id);
     const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -60,17 +69,15 @@ export function SetupScreen({ onConnect, onTestStreak }: Props) {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={s.header}>
-                    <Text style={s.title}>Ready to connect?</Text>
-                    <Text style={s.subtitle}>
-                        Set up your devices and pick your interests
-                    </Text>
+                    <Text style={s.title}>{t("title")}</Text>
+                    <Text style={s.subtitle}>{t("subtitle")}</Text>
                 </View>
 
                 {/* Camera */}
                 <View style={s.section}>
                     <View style={s.sectionHeader}>
                         <Ionicons name="videocam-outline" size={16} color="#888" />
-                        <Text style={s.sectionLabel}>Camera</Text>
+                        <Text style={s.sectionLabel}>{t("camera")}</Text>
                     </View>
                     <View style={s.pillRow}>
                         {CAMERAS.map((cam) => (
@@ -99,7 +106,7 @@ export function SetupScreen({ onConnect, onTestStreak }: Props) {
                 <View style={s.section}>
                     <View style={s.sectionHeader}>
                         <Feather name="mic" size={15} color="#888" />
-                        <Text style={s.sectionLabel}>Microphone</Text>
+                        <Text style={s.sectionLabel}>{t("microphone")}</Text>
                     </View>
                     <View style={s.pillRow}>
                         {MICROPHONES.map((mic) => (
@@ -126,9 +133,9 @@ export function SetupScreen({ onConnect, onTestStreak }: Props) {
                     <View style={s.sectionHeader}>
                         <Ionicons name="sparkles-outline" size={16} color="#888" />
                         <Text style={s.sectionLabel}>
-                            Interests{" "}
+                            {t("interests")}{" "}
                             <Text style={s.sectionLabelMuted}>
-                                · match with people like you
+                                {t("interestsMatchHint")}
                             </Text>
                         </Text>
                     </View>
@@ -167,7 +174,7 @@ export function SetupScreen({ onConnect, onTestStreak }: Props) {
                         onConnect(selectedCamera, selectedMic, selectedInterests)
                     }
                 >
-                    <BtnText>Find a match</BtnText>
+                    <BtnText>{t("findMatch")}</BtnText>
                     <ArrowRightIcon size={18} color="#fff" />
                 </Button>
 
@@ -181,7 +188,7 @@ export function SetupScreen({ onConnect, onTestStreak }: Props) {
                         }}
                     >
                         <Text style={{ color: theme.text + "55", fontSize: 12 }}>
-                            [DEV] Test streak screen
+                            {t("devTestStreak")}
                         </Text>
                     </Pressable>
                 )}

@@ -1,5 +1,6 @@
 // Made with the help of Claude.ai and ChatGPT
 
+import { createT } from "@/i18n";
 import { router, useFocusEffect } from "expo-router";
 import { CategoryGridCard } from "@/components/favorites/CategoryCard";
 import { DateIdeaCard } from "@/components/favorites/DateIdeaCard";
@@ -56,6 +57,8 @@ const CATEGORIES = [
     { label: "ACTIVE", icon: Dumbbell },
     { label: "CHILL", icon: Armchair },
 ];
+
+const t = createT("favorites");
 
 export default function Favorites() {
     const { theme } = useTheme();
@@ -129,9 +132,9 @@ export default function Favorites() {
             {/* ── Explore Categories ── */}
             <View style={s.section}>
                 <View style={s.sectionHeader}>
-                    <Text style={s.sectionTitle}>Explore Categories</Text>
+                    <Text style={s.sectionTitle}>{t("exploreCategories")}</Text>
                     <Pressable onPress={() => router.push("/favorites/allcategories")}>
-                        <Text style={s.viewAll}>View All</Text>
+                        <Text style={s.viewAll}>{t("viewAll")}</Text>
                     </Pressable>
                 </View>
                 <View style={s.categoryRow}>
@@ -148,7 +151,7 @@ export default function Favorites() {
 
             {/* ── Winning Tips ── */}
             <View style={s.tipsSection}>
-                <Text style={s.sectionTitle}>Winning Tips</Text>
+                <Text style={s.sectionTitle}>{t("winningTips")}</Text>
                 <View style={s.tipsCol}>
                     {TIPS.map((tip, i) => (
                         <TipRow

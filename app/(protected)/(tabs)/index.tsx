@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { createT } from "@/i18n";
 import { Animated, Easing, StyleSheet, View, Text, Pressable } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
@@ -12,6 +13,8 @@ import { PAD, GAP } from "@/components/videocall/homeConstants";
 import { images } from "@/components/videocall/homeImages";
 import { InfiniteColumn } from "@/components/videocall/InfiniteColumn";
 import { useSafeAreaControl } from "@/components/SafeArea";
+
+const t = createT("auth.home");
 
 const handleReview = async () => {
     if (await StoreReview.isAvailableAsync()) {
@@ -122,7 +125,7 @@ export default function Index() {
 
     const onStart = () => {
         if (!canCall(plan, callsData?.callsToday)) {
-            return alert("You have no more calls today. Upgrade your plan for more!");
+            return alert(t("noMoreCalls"));
         }
         if (callsData?.callsToday === 3) {
             handleReview();
