@@ -18,7 +18,8 @@ import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
 import { BtnText, Button } from "@/components/button";
 import { useSafeAreaControl } from "@/components/SafeArea";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
+import { setDebugEnabled, useDebugEnabled } from "@/utils/debugState";
 
 const t = createT("auth.settings");
 const version = Constants.expoConfig?.version;
@@ -88,6 +89,28 @@ export default function SettingsScreen() {
 
     const { theme } = useTheme();
     const { logout } = useAuth();
+    const isDebug = useDebugEnabled();
+
+    const tapCount = useRef(0);
+    const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    function handleVersionTap() {
+        tapCount.current += 1;
+        if (tapTimer.current) clearTimeout(tapTimer.current);
+        tapTimer.current = setTimeout(() => {
+            tapCount.current = 0;
+        }, 2000);
+
+        if (tapCount.current >= 5) {
+            tapCount.current = 0;
+            const next = !isDebug;
+            setDebugEnabled(next);
+            Alert.alert(
+                next ? "Debug ON" : "Debug OFF",
+                next ? "Debug panel is now enabled." : "Debug panel is now disabled.",
+            );
+        }
+    }
 
     const handleLogout = async () => {
         Alert.alert(t("logOut"), t("confirmLogOut"), [
@@ -187,14 +210,15 @@ export default function SettingsScreen() {
                 {/* ── Version ── */}
                 <SectionLabel label="Info" />
                 <View style={[styles.card, { backgroundColor: theme.background }]}>
-                    <View style={styles.infoRow}>
+                    <Pressable onPress={handleVersionTap} style={styles.infoRow}>
                         <Text style={[styles.rowLabel, { color: theme.text }]}>
                             Version
                         </Text>
                         <Text style={[styles.infoValue, { color: theme.text + "66" }]}>
                             {version}
+                            {isDebug ? " 🐛" : ""}
                         </Text>
-                    </View>
+                    </Pressable>
                 </View>
             </View>
 

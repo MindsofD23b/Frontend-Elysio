@@ -6,6 +6,7 @@ import React, {
     useState,
     useMemo,
 } from "react";
+import { useDebugEnabled } from "@/utils/debugState";
 
 export type DebugRow = { label: string; value: string };
 export type DebugLog = { ts: string; section: string; msg: string };
@@ -32,9 +33,6 @@ type DebugMethods = {
     addLog: (section: string, msg: string) => void;
 };
 
-// Split into two contexts: methods are stable (no deps), data changes with state.
-// useDebugSection/useDebugActions depend only on MethodsCtx so state changes
-// never trigger effect cleanup → re-register cycles.
 const MethodsCtx = createContext<DebugMethods | null>(null);
 const DataCtx = createContext<DebugData | null>(null);
 
@@ -87,7 +85,6 @@ function DebugProviderInner({ children }: { children: React.ReactNode }) {
         );
     }, []);
 
-    // Methods object is stable — all callbacks have empty deps arrays
     const methods = useMemo<DebugMethods>(
         () => ({
             _registerSection,
@@ -113,7 +110,8 @@ function DebugProviderInner({ children }: { children: React.ReactNode }) {
 }
 
 export function DebugProvider({ children }: { children: React.ReactNode }) {
-    if (!__DEV__) return <>{children}</>;
+    // Always render the provider so hooks below never lose their context.
+    // The individual hooks bail out early when debug is disabled.
     return <DebugProviderInner>{children}</DebugProviderInner>;
 }
 
@@ -128,32 +126,43 @@ export function useDebugSection(
     deps: unknown[],
     order = 0,
 ) {
+    const isDebug = useDebugEnabled();
     const methods = useContext(MethodsCtx);
+    const allDeps = [methods, name, order, isDebug, ...deps];
+
     useEffect(() => {
-        if (!methods) return;
+        if (!isDebug || !methods) {
+            methods?._unregisterSection(name);
+            return;
+        }
         methods._registerSection(name, order, rows);
         return () => methods._unregisterSection(name);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [methods, name, order, ...deps]);
+    }, allDeps);
 }
 
 export function useDebugActions(actions: DebugAction[], deps: unknown[]) {
+    const isDebug = useDebugEnabled();
     const methods = useContext(MethodsCtx);
     useEffect(() => {
-        if (!methods) return;
+        if (!isDebug || !methods) {
+            // Unregister all when debug is turned off
+            actions.forEach((a) => methods?._unregisterAction(a.key));
+            return;
+        }
         actions.forEach((a) => methods._registerAction(a));
         return () => actions.forEach((a) => methods._unregisterAction(a.key));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [methods, ...deps]);
+    }, [methods, isDebug, ...deps]);
 }
 
 export function useDebugLog(section: string) {
+    const isDebug = useDebugEnabled();
     const methods = useContext(MethodsCtx);
     return useCallback(
         (msg: string) => {
-            if (!__DEV__) return;
+            if (!isDebug) return;
             methods?.addLog(section, msg);
         },
-        [methods, section],
+        [methods, section, isDebug],
     );
 }

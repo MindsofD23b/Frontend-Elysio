@@ -1,4 +1,12 @@
-import { View, Text, StyleSheet, Pressable, Animated } from "react-native";
+import {
+    View,
+    Text,
+    StyleSheet,
+    Pressable,
+    Animated,
+    PanResponder,
+    useWindowDimensions,
+} from "react-native";
 import { RTCView } from "react-native-webrtc";
 import {
     Ionicons,
@@ -7,7 +15,8 @@ import {
     FontAwesome6,
 } from "@expo/vector-icons";
 import { useSafeAreaControl } from "@/components/SafeArea";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigation } from "expo-router";
 
 export const ICEBREAKERS = [
     "What's the weirdest thing you've ever eaten?",
@@ -24,6 +33,12 @@ export const ICEBREAKERS = [
     "What's the last thing that made you laugh out loud?",
 ];
 
+const PREVIEW_W = 94;
+const PREVIEW_H = 154;
+const MARGIN = 16;
+const TOP_INSET = 80;
+const BOTTOM_INSET = 120;
+
 interface Props {
     remoteUrl: string | null;
     localUrl: string | null;
@@ -31,9 +46,6 @@ interface Props {
     facingMode: "user" | "environment";
     controlsVisible: boolean;
     controlsOpacity: Animated.Value;
-    previewBottomAnim: Animated.Value;
-    localPreviewAnim: Animated.ValueXY;
-    panHandlers: object;
     icebreakerVisible: boolean;
     icebreakerLoading: boolean;
     icebreakerIndex: number;
@@ -55,9 +67,6 @@ export function CallScreen({
     facingMode,
     controlsVisible,
     controlsOpacity,
-    previewBottomAnim,
-    localPreviewAnim,
-    panHandlers,
     icebreakerVisible,
     icebreakerLoading,
     icebreakerIndex,
@@ -72,31 +81,125 @@ export function CallScreen({
     onIcebreaker,
 }: Props) {
     const { setDisableSafeArea } = useSafeAreaControl();
+    const { width: W, height: H } = useWindowDimensions();
 
     useEffect(() => {
         setDisableSafeArea(true);
-
-        return () => {
-            setDisableSafeArea(false);
-        };
+        return () => setDisableSafeArea(false);
     });
+
+    const parentNavigation = useNavigation("/(protected)");
+    const navigation = useNavigation();
+
+    useEffect(() => {
+        navigation.setOptions({ gestureEnabled: false });
+        parentNavigation.setOptions({ gestureEnabled: false });
+        return () => {
+            navigation.setOptions({ gestureEnabled: true });
+            parentNavigation.setOptions({ gestureEnabled: true });
+        };
+    }, [navigation, parentNavigation]);
+
+    // Corner positions
+    const corners = {
+        topLeft: { x: MARGIN, y: TOP_INSET },
+        topRight: { x: W - PREVIEW_W - MARGIN, y: TOP_INSET },
+        bottomLeft: { x: MARGIN, y: H - PREVIEW_H - BOTTOM_INSET },
+        bottomRight: { x: W - PREVIEW_W - MARGIN, y: H - PREVIEW_H - BOTTOM_INSET },
+    };
+
+    const [swapped, setSwapped] = useState(false);
+    const swapScale = useRef(new Animated.Value(1)).current;
+
+    function handleSwap() {
+        Animated.sequence([
+            Animated.spring(swapScale, {
+                toValue: 0.88,
+                useNativeDriver: true,
+                speed: 40,
+                bounciness: 0,
+            }),
+            Animated.spring(swapScale, {
+                toValue: 1,
+                useNativeDriver: true,
+                speed: 14,
+                bounciness: 8,
+            }),
+        ]).start();
+        setSwapped((v) => !v);
+    }
+
+    const bgUrl = swapped ? localUrl : remoteUrl;
+    const previewUrl = swapped ? remoteUrl : localUrl;
+    const previewMirror = swapped ? false : facingMode === "user";
+
+    const pos = useRef(new Animated.ValueXY(corners.topRight)).current;
+    const currentPos = useRef(corners.topRight);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                pos.setOffset(currentPos.current);
+                pos.setValue({ x: 0, y: 0 });
+            },
+            onPanResponderMove: Animated.event([null, { dx: pos.x, dy: pos.y }], {
+                useNativeDriver: false,
+            }),
+            onPanResponderRelease: () => {
+                pos.flattenOffset();
+                const cx = (pos.x as any)._value + PREVIEW_W / 2;
+                const cy = (pos.y as any)._value + PREVIEW_H / 2;
+
+                // Pick nearest corner
+                const nearest = Object.values({
+                    topLeft: corners.topLeft,
+                    topRight: corners.topRight,
+                    bottomLeft: corners.bottomLeft,
+                    bottomRight: corners.bottomRight,
+                }).reduce((best, c) =>
+                    Math.hypot(cx - (c.x + PREVIEW_W / 2), cy - (c.y + PREVIEW_H / 2)) <
+                    Math.hypot(
+                        cx - (best.x + PREVIEW_W / 2),
+                        cy - (best.y + PREVIEW_H / 2),
+                    )
+                        ? c
+                        : best,
+                );
+
+                currentPos.current = nearest;
+                Animated.spring(pos, {
+                    toValue: nearest,
+                    useNativeDriver: false,
+                    bounciness: 6,
+                }).start();
+            },
+        }),
+    ).current;
 
     return (
         <View style={s.container}>
             <Pressable style={s.videoLayer} onPress={onToggleControls}>
-                {remoteUrl ? (
+                {bgUrl ? (
                     <RTCView
-                        key={remoteUrl}
-                        streamURL={remoteUrl}
+                        key={bgUrl}
+                        streamURL={bgUrl}
                         style={s.remoteVideo}
                         objectFit="cover"
-                        mirror={false}
+                        mirror={swapped && facingMode === "user"}
                     />
                 ) : (
                     <View style={[s.remoteVideo, s.waitingContainer]}>
                         <Text style={s.waitingText}>Warte auf Gegenüber...</Text>
                     </View>
                 )}
+
+                <View style={s.topBar} pointerEvents="box-none">
+                    <Pressable style={s.topButton} onPress={onStop}>
+                        <Ionicons name="chevron-back" size={22} color="#fff" />
+                    </Pressable>
+                </View>
 
                 <Animated.View
                     style={{ opacity: controlsOpacity, ...StyleSheet.absoluteFill }}
@@ -115,11 +218,6 @@ export function CallScreen({
                             )}
                         </Animated.View>
                     )}
-                    <View style={s.topBar}>
-                        <Pressable style={s.topButton} onPress={onStop}>
-                            <Ionicons name="chevron-back" size={22} color="#fff" />
-                        </Pressable>
-                    </View>
                     <View style={s.bottomControlsWrapper}>
                         <View style={s.bottomControls}>
                             <ControlButton
@@ -182,26 +280,22 @@ export function CallScreen({
                     </View>
                 </Animated.View>
 
-                {localUrl && (
+                {previewUrl && (
                     <Animated.View
                         style={[
                             s.localPreviewWrapper,
-                            {
-                                transform: localPreviewAnim.getTranslateTransform(),
-                                bottom: previewBottomAnim,
-                            },
+                            pos.getLayout(),
+                            { transform: [{ scale: swapScale }] },
                         ]}
-                        {...panHandlers}
-                        onStartShouldSetResponder={() => true}
+                        {...panResponder.panHandlers}
                     >
-                        <View pointerEvents="none" style={{ flex: 1 }}>
-                            <RTCView
-                                streamURL={localUrl}
-                                style={s.localPreview}
-                                objectFit="cover"
-                                mirror={facingMode === "user"}
-                            />
-                        </View>
+                        <RTCView
+                            streamURL={previewUrl}
+                            style={StyleSheet.absoluteFill}
+                            objectFit="cover"
+                            mirror={previewMirror}
+                        />
+                        <Pressable style={StyleSheet.absoluteFill} onPress={handleSwap} />
                     </Animated.View>
                 )}
             </Pressable>
@@ -240,18 +334,20 @@ const s = StyleSheet.create({
     waitingText: { color: "#fff", fontSize: 18, fontWeight: "600" },
     localPreviewWrapper: {
         position: "absolute",
-        right: 16,
-        width: 94,
-        height: 154,
+        width: PREVIEW_W,
+        height: PREVIEW_H,
         borderRadius: 16,
         overflow: "hidden",
         backgroundColor: "#222",
-        borderWidth: 1.5,
-        borderColor: "rgba(255,255,255,0.18)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 8,
     },
-    localPreview: { width: "100%", height: "100%", backgroundColor: "#222" },
     topBar: {
         position: "absolute",
+        zIndex: 10,
         top: 60,
         left: 12,
         right: 12,
