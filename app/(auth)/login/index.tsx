@@ -14,6 +14,7 @@ import { Image } from "expo-image";
 import { Theme } from "@/lib/theme/theme";
 import { createT } from "@/i18n";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import * as WebBrowser from "expo-web-browser";
 import { BROWSER_OPTS } from "@/lib/web/browserConfig";
 
@@ -24,6 +25,12 @@ export default function Login() {
     const t = createT("auth.login");
 
     const { signInWithApple, loading: appleLoading, error: appleError } = useAppleAuth();
+    const {
+        signInWithGoogle,
+        loading: googleLoading,
+        error: googleError,
+        ready: googleReady,
+    } = useGoogleAuth();
 
     return (
         <View style={gs.container}>
@@ -99,7 +106,8 @@ export default function Login() {
                 <Button
                     variante="outline"
                     style={{ flex: 1, width: "100%", borderColor: theme.base + "4D" }}
-                    onPress={() => alert("Login button pressed")}
+                    onPress={signInWithGoogle}
+                    disabled={googleLoading || !googleReady}
                 >
                     <Image
                         source={require("@/assets/google.png")}
@@ -109,7 +117,9 @@ export default function Login() {
                         }
                         transition={1000}
                     />
-                    <BtnText style={{ color: theme.text }}>{t("google")}</BtnText>
+                    <BtnText style={{ color: theme.text }}>
+                        {googleLoading ? t("loading") : t("google")}
+                    </BtnText>
                 </Button>
                 <Button
                     variante="outline"
@@ -142,7 +152,7 @@ export default function Login() {
                 </Button>
             </View>
 
-            {appleError && (
+            {(appleError || googleError) && (
                 <Text
                     style={{
                         fontSize: 12,
@@ -151,7 +161,7 @@ export default function Login() {
                         marginTop: 8,
                     }}
                 >
-                    {appleError.message}
+                    {appleError?.message ?? googleError?.message}
                 </Text>
             )}
 
