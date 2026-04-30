@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button, Loader } from "@/components/button";
 import Input from "@/components/input";
@@ -8,6 +9,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useFocusEffect, router } from "expo-router";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+
+const t = createT("settings.security");
 
 export default function Security() {
     const { gs, theme } = useTheme();
@@ -34,15 +37,15 @@ export default function Security() {
 
     async function handleSave() {
         if (!currentPassword || !newPassword || !confirmPassword) {
-            Alert.alert("Error", "Please fill in all fields.");
+            Alert.alert(t("error"), t("errors.fillAllFields"));
             return;
         }
         if (newPassword !== confirmPassword) {
-            Alert.alert("Error", "New passwords do not match.");
+            Alert.alert(t("error"), t("errors.passwordsNoMatch"));
             return;
         }
         if (newPassword.length < 8) {
-            Alert.alert("Error", "Password must be at least 8 characters.");
+            Alert.alert(t("error"), t("errors.passwordTooShort"));
             return;
         }
 
@@ -51,11 +54,11 @@ export default function Security() {
                 method: "PATCH",
                 body: JSON.stringify({ currentPassword, newPassword }),
             });
-            Alert.alert("Success", "Password changed successfully.", [
-                { text: "OK", onPress: () => router.back() },
+            Alert.alert(t("success"), t("successMessage"), [
+                { text: t("ok"), onPress: () => router.back() },
             ]);
         } catch (err: any) {
-            Alert.alert("Error", err?.message ?? "Something went wrong.");
+            Alert.alert(t("error"), err?.message ?? t("errors.somethingWentWrong"));
         }
     }
 
@@ -67,19 +70,19 @@ export default function Security() {
                 enableOnAndroid
                 extraScrollHeight={20}
             >
-                <Text style={[gs.h1, styles.title]}>Security</Text>
+                <Text style={[gs.h1, styles.title]}>{t("title")}</Text>
 
                 <Text style={[styles.subtitle, { color: theme.text + "66" }]}>
-                    Change your password below.
+                    {t("subtitle")}
                 </Text>
 
                 <View style={styles.form}>
                     <View style={styles.fieldWrap}>
                         <Text style={[styles.label, { color: theme.primary }]}>
-                            Current Password
+                            {t("currentPassword")}
                         </Text>
                         <Input
-                            placeholder="Current password"
+                            placeholder={t("currentPasswordPlaceholder")}
                             value={currentPassword}
                             onChangeText={setCurrentPassword}
                             autoComplete="current-password"
@@ -90,10 +93,10 @@ export default function Security() {
 
                     <View style={styles.fieldWrap}>
                         <Text style={[styles.label, { color: theme.primary }]}>
-                            New Password
+                            {t("newPassword")}
                         </Text>
                         <Input
-                            placeholder="New password"
+                            placeholder={t("newPasswordPlaceholder")}
                             value={newPassword}
                             onChangeText={setNewPassword}
                             autoComplete="new-password"
@@ -104,10 +107,10 @@ export default function Security() {
 
                     <View style={styles.fieldWrap}>
                         <Text style={[styles.label, { color: theme.primary }]}>
-                            Confirm New Password
+                            {t("confirmNewPassword")}
                         </Text>
                         <Input
-                            placeholder="Repeat new password"
+                            placeholder={t("confirmPasswordPlaceholder")}
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
                             autoComplete="new-password"
@@ -118,7 +121,7 @@ export default function Security() {
                 </View>
 
                 <Button style={{ marginTop: 24 }} onPress={handleSave} disabled={loading}>
-                    {loading ? <Loader /> : <BtnText>Save Password</BtnText>}
+                    {loading ? <Loader /> : <BtnText>{t("savePassword")}</BtnText>}
                 </Button>
             </KeyboardAwareScrollView>
         </BackWrapper>

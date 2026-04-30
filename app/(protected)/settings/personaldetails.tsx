@@ -1,5 +1,6 @@
 // Created with Claude.ai and ChatGPT
 
+import { createT } from "@/i18n";
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button } from "@/components/button";
@@ -15,6 +16,7 @@ import { datePickerCallback } from "@/utils/datePickerCallback";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 
+const t = createT("settings.personalDetails");
 const MAX_BIO_LENGTH = 150;
 const MAX_GALLERY_IMAGES = 6;
 
@@ -209,7 +211,7 @@ export default function PersonalDetails() {
                     extraScrollHeight={20}
                 >
                     <Text style={[gs.h1, styles.title, { marginTop: 2 }]}>
-                        Edit Profile
+                        {t("title")}
                     </Text>
 
                     <View style={styles.profileWrap}>
@@ -248,29 +250,29 @@ export default function PersonalDetails() {
 
                     <View style={styles.form}>
                         <Field
-                            label="Full Name"
-                            placeholder="Your Full Name"
+                            label={t("fullName")}
+                            placeholder={t("fullNamePlaceholder")}
                             value={fullName}
                             onChangeText={setFullName}
                         />
                         <Field
-                            label="Email Address"
-                            placeholder="Your Email"
+                            label={t("emailAddress")}
+                            placeholder={t("emailPlaceholder")}
                             value={email}
                             onChangeText={setEmail}
                             keyboardType="email-address"
                             autoComplete="email"
                         />
                         <Field
-                            label="Phone Number"
-                            placeholder="Your Phone Number"
+                            label={t("phoneNumber")}
+                            placeholder={t("phonePlaceholder")}
                             value={phone}
                             onChangeText={setPhone}
                             keyboardType="phone-pad"
                             autoComplete="tel"
                         />
                         <Field
-                            label="Date of Birth"
+                            label={t("dateOfBirth")}
                             placeholder="dd.mm.yyyy"
                             value={birthday}
                             onPress={() => {
@@ -281,20 +283,20 @@ export default function PersonalDetails() {
                             }}
                         />
                         <Field
-                            label="Country"
-                            placeholder="Country"
+                            label={t("country")}
+                            placeholder={t("country")}
                             value={country}
                             onChangeText={setCountry}
                         />
 
                         <View style={styles.bioWrap}>
                             <View style={styles.bioHeader}>
-                                <Text style={styles.label}>Bio</Text>
+                                <Text style={styles.label}>{t("bio")}</Text>
                                 <Text style={styles.counter}>{bioCharactersLeft}</Text>
                             </View>
                             <TextInput
                                 style={styles.bioInput}
-                                placeholder="Show people what you like - maybe your perfect video date, your vibe, or what makes you laugh."
+                                placeholder={t("bioPlaceholder")}
                                 placeholderTextColor={theme.text + "70"}
                                 value={bio}
                                 onChangeText={setBio}
@@ -305,12 +307,12 @@ export default function PersonalDetails() {
                         </View>
 
                         <View style={styles.galleryHeader}>
-                            <Text style={styles.sectionTitle}>Gallery</Text>
+                            <Text style={styles.sectionTitle}>{t("gallery")}</Text>
                             <Pressable
                                 onPress={() => setIsEditingGallery((value) => !value)}
                             >
                                 <Text style={styles.editText}>
-                                    {isEditingGallery ? "Done" : "Edit"}
+                                    {isEditingGallery ? t("done") : t("edit")}
                                 </Text>
                             </Pressable>
                         </View>
@@ -348,7 +350,9 @@ export default function PersonalDetails() {
                                             size={28}
                                             color={theme.primary}
                                         />
-                                        <Text style={styles.addImageText}>Add</Text>
+                                        <Text style={styles.addImageText}>
+                                            {t("add")}
+                                        </Text>
                                     </Pressable>
                                 )}
 
@@ -370,7 +374,7 @@ export default function PersonalDetails() {
                     </View>
 
                     <Button style={{ marginTop: 20 }} onPress={handleSaveAndExit}>
-                        <BtnText>Save and Exit</BtnText>
+                        <BtnText>{t("saveAndExit")}</BtnText>
                     </Button>
                 </KeyboardAwareScrollView>
             </BackWrapper>

@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import { useEffect, useRef } from "react";
 import {
     View,
@@ -11,6 +12,8 @@ import {
 import Svg, { Circle, Defs, Filter, FeGaussianBlur } from "react-native-svg";
 import { Flame } from "lucide-react-native";
 import { useTheme } from "@/lib/theme/context";
+
+const t = createT("streak");
 
 const { width: W, height: H } = Dimensions.get("window");
 
@@ -206,19 +209,16 @@ export default function StreakCelebrationScreen({ streak, onDismiss }: Props) {
 
     const message =
         streak >= 30
-            ? "Legendary!"
+            ? t("messages.legendary")
             : streak >= 14
-              ? "Unstoppable!"
+              ? t("messages.unstoppable")
               : streak >= 7
-                ? "One week strong!"
+                ? t("messages.oneWeekStrong")
                 : streak >= 3
-                  ? "Keep it going!"
-                  : "Great start!";
+                  ? t("messages.keepItGoing")
+                  : t("messages.greatStart");
 
-    const sub =
-        streak >= 7
-            ? "You're building something real. See you tomorrow."
-            : "Come back tomorrow to keep your streak alive.";
+    const sub = streak >= 7 ? t("sub.buildingReal") : t("sub.comeTomorrow");
 
     return (
         <Animated.View
@@ -300,7 +300,9 @@ export default function StreakCelebrationScreen({ streak, onDismiss }: Props) {
                 ]}
             >
                 <Text style={[s.number, { color: theme.text }]}>{streak}</Text>
-                <Text style={[s.dayLabel, { color: theme.text + "55" }]}>day streak</Text>
+                <Text style={[s.dayLabel, { color: theme.text + "55" }]}>
+                    {t("dayStreak")}
+                </Text>
             </Animated.View>
 
             {/* text */}
@@ -329,7 +331,7 @@ export default function StreakCelebrationScreen({ streak, onDismiss }: Props) {
                     onPress={onDismiss}
                     activeOpacity={0.85}
                 >
-                    <Text style={s.buttonText}>Continue</Text>
+                    <Text style={s.buttonText}>{t("continue")}</Text>
                 </TouchableOpacity>
             </Animated.View>
         </Animated.View>

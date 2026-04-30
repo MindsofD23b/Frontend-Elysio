@@ -1,5 +1,6 @@
 export const colors = {
     light: {
+        $_name: "light",
         background: "#FFFFFF",
         primary: "#EC136A",
         secondary: "#9EBDCC",
@@ -37,6 +38,7 @@ export const colors = {
         orange: "#f3722c",
     },
     dark: {
+        $_name: "dark",
         background: "#1E1E1E",
         primary: "#ec136a",
         secondary: "#8F1E4B",

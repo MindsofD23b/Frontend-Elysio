@@ -1,3 +1,4 @@
+import { createT } from "@/i18n";
 import { useTheme } from "@/lib/theme/context";
 import { colors, strToOption, ThemeOptions } from "@/lib/theme/theme";
 import BackWrapper from "@/components/backwrapper";
@@ -8,6 +9,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, useColorScheme, View } from "react-native";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useFocusEffect } from "expo-router";
+
+const t = createT("settings.appearance");
 
 export default function Apperance() {
     const COLOR_SCHEME = useColorScheme();
@@ -58,7 +61,7 @@ export default function Apperance() {
 
     return (
         <BackWrapper m bg={theme.cardBg}>
-            <Text style={s.sectionLabel}>Theme</Text>
+            <Text style={s.sectionLabel}>{t("theme")}</Text>
             <View style={[s.card, { backgroundColor: theme.background }]}>
                 <View style={s.pickerRow}>
                     <Pressable
@@ -70,7 +73,9 @@ export default function Apperance() {
                             style={s.preview}
                             contentFit="fill"
                         />
-                        <Text style={[s.optionLabel, { color: theme.text }]}>Light</Text>
+                        <Text style={[s.optionLabel, { color: theme.text }]}>
+                            {t("light")}
+                        </Text>
                         <Select
                             checked={mode === ThemeOptions.light}
                             onChange={() => setMode(ThemeOptions.light)}
@@ -89,7 +94,9 @@ export default function Apperance() {
                             style={s.preview}
                             contentFit="fill"
                         />
-                        <Text style={[s.optionLabel, { color: theme.text }]}>Dark</Text>
+                        <Text style={[s.optionLabel, { color: theme.text }]}>
+                            {t("dark")}
+                        </Text>
                         <Select
                             checked={mode === ThemeOptions.dark}
                             label=""
@@ -102,7 +109,7 @@ export default function Apperance() {
 
                 <View style={s.switchRow}>
                     <Text style={[s.switchLabel, { color: theme.text }]}>
-                        System Theme
+                        {t("systemTheme")}
                     </Text>
                     <Switch
                         value={mode === ThemeOptions.automatic}

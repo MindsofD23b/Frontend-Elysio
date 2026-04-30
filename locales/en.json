@@ -16,6 +16,7 @@
             "termsOfService": "Terms of Service",
             "and": "and",
             "privacyPolicy": "Privacy Policy",
+            "continuingWith": "By continuing, you agree to our",
             "withEmail": {
                 "title": "Login with Email",
                 "body": "Please enter your",
@@ -160,7 +161,8 @@
             }
         },
         "home": {
-            "start": "START"
+            "start": "START",
+            "noMoreCalls": "You have no more calls today. Upgrade your plan for more!"
         },
         "settings": {
             "title": "Settings",
@@ -175,7 +177,12 @@
             "appearance": "Appearance",
             "logOut": "Log Out",
             "confirmLogOut": "Are you sure you want to log out?",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "security": "Security",
+            "app": "App",
+            "legal": "Legal",
+            "info": "Info",
+            "version": "Version"
         },
         "forgotPassword": {
             "title": "Forgot Password",
@@ -210,6 +217,285 @@
                 "passwordMismatch": "Passwords dont match"
             }
         }
+    },
+    "settings": {
+        "interests": {
+            "title": "Select your Interests",
+            "body": "Pick between {{min}} and {{max}} interests to match with users who have similar things in common",
+            "continue": "Save",
+            "errorTitle": "Selection limit",
+            "ok": "OK",
+            "errorBody": "Please choose minimum {{min}} and maximum {{max}} interests.",
+            "fallbacks": {
+                "failToLoad": "Failed to load interests"
+            }
+        },
+        "appearance": {
+            "theme": "Theme",
+            "light": "Light",
+            "dark": "Dark",
+            "systemTheme": "System Theme"
+        },
+        "personalDetails": {
+            "title": "Edit Profile",
+            "fullName": "Full Name",
+            "fullNamePlaceholder": "Your Full Name",
+            "emailAddress": "Email Address",
+            "emailPlaceholder": "Your Email",
+            "phoneNumber": "Phone Number",
+            "phonePlaceholder": "Your Phone Number",
+            "dateOfBirth": "Date of Birth",
+            "country": "Country",
+            "bio": "Bio",
+            "bioPlaceholder": "Show people what you like - maybe your perfect video date, your vibe, or what makes you laugh.",
+            "gallery": "Gallery",
+            "edit": "Edit",
+            "done": "Done",
+            "add": "Add",
+            "saveAndExit": "Save and Exit"
+        },
+        "security": {
+            "title": "Security",
+            "subtitle": "Change your password below.",
+            "currentPassword": "Current Password",
+            "currentPasswordPlaceholder": "Current password",
+            "newPassword": "New Password",
+            "newPasswordPlaceholder": "New password",
+            "confirmNewPassword": "Confirm New Password",
+            "confirmPasswordPlaceholder": "Repeat new password",
+            "savePassword": "Save Password",
+            "error": "Error",
+            "errors": {
+                "fillAllFields": "Please fill in all fields.",
+                "passwordsNoMatch": "New passwords do not match.",
+                "passwordTooShort": "Password must be at least 8 characters.",
+                "somethingWentWrong": "Something went wrong."
+            },
+            "success": "Success",
+            "successMessage": "Password changed successfully.",
+            "ok": "OK"
+        }
+    },
+    "chat": {
+        "search": "Search",
+        "voiceMessage": "🎤 Voice message",
+        "encryptedMessage": "[Encrypted message]",
+        "unableToDecrypt": "[Unable to decrypt]",
+        "typeMessage": "Type a message...",
+        "noMessagesYet": "No messages yet",
+        "startConversation": "Start the conversation with {{name}}. A simple hello can turn into something special.",
+        "sayHi": "Say hi",
+        "report": "🚩 Report {{name}}",
+        "cancel": "Cancel",
+        "empty": {
+            "noChats": "No Chats Yet",
+            "noChatsFound": "No Chats Found",
+            "noChatsSubtitle": "Your matches and messages will appear here. Start a new connection and get the first conversation going.",
+            "noChatsFoundSubtitle": "We couldn't find any conversation matching your search. Try a different name.",
+            "resetSearch": "Reset Search",
+            "discover": "Discover New People"
+        }
+    },
+    "favorites": {
+        "exploreCategories": "Explore Categories",
+        "viewAll": "View All",
+        "winningTips": "Winning Tips",
+        "categories": "Categories",
+        "ideaDetail": {
+            "topPick": "TOP PICK",
+            "effort": "EFFORT",
+            "duration": "DURATION",
+            "time": "TIME",
+            "vibe": "VIBE",
+            "exploreDetails": "Explore Details →",
+            "whyThisWorks": "Why this works",
+            "keepInMind": "What to keep in mind",
+            "whyBody": "A {{vibe}} date like this keeps things fresh and gives you both something to talk about. The {{effort}} effort level means it's easy to plan without pressure.",
+            "keepInMindBody": "Budget around ${{price}} and block out {{duration}}. Book in advance if the venue is popular — especially on weekends."
+        },
+        "tipDetail": {
+            "tipNotFound": "Tip not found.",
+            "continueReading": "Continue reading",
+            "unlockWithPremium": "Unlock the full guide with Premium",
+            "premium": "PREMIUM"
+        }
+    },
+    "videocall": {
+        "setup": {
+            "title": "Ready to connect?",
+            "subtitle": "Set up your devices and pick your interests",
+            "camera": "Camera",
+            "microphone": "Microphone",
+            "interests": "Interests",
+            "interestsMatchHint": "· match with people like you",
+            "frontCamera": "Front camera",
+            "backCamera": "Back camera",
+            "builtInMic": "Built-in microphone",
+            "headsetMic": "Headset microphone",
+            "findMatch": "Find a match",
+            "devTestStreak": "[DEV] Test streak screen"
+        },
+        "connecting": {
+            "matchFound": "Match found! Connecting…",
+            "looking": "Looking for someone…",
+            "connecting": "Connecting to matchmaking…",
+            "hint": "This usually takes a few seconds",
+            "cancel": "Cancel"
+        },
+        "call": {
+            "waitingForPartner": "Waiting for partner..."
+        },
+        "icebreakers": {
+            "0": "What's the weirdest thing you've ever eaten?",
+            "1": "If you could live in any movie universe, which would you pick?",
+            "2": "What's a skill you're secretly proud of?",
+            "3": "What's the most spontaneous thing you've ever done?",
+            "4": "If you had to eat one meal forever, what would it be?",
+            "5": "What's your most controversial food opinion?",
+            "6": "Would you rather explore space or the deep ocean?",
+            "7": "What's the best trip you've ever been on?",
+            "8": "What did you want to be as a kid?",
+            "9": "What's your go-to karaoke song?",
+            "10": "What's a hobby you've always wanted to try?",
+            "11": "What's the last thing that made you laugh out loud?"
+        }
+    },
+    "report": {
+        "title": "Report",
+        "youAreReporting": "You are reporting",
+        "whatIsTheIssue": "What is the issue?",
+        "addDetail": "Add more detail (optional)",
+        "detailPlaceholder": "Describe what happened…",
+        "anonymous": "Reports are anonymous. Our team reviews every report within 24 hours.",
+        "submitReport": "Submit report",
+        "submitAndBlock": "Submit & Block",
+        "missingReason": "Missing reason",
+        "missingReasonBody": "Please select or describe the reason for your report.",
+        "reportedAndBlocked": "Reported & Blocked",
+        "reportSubmitted": "Report Submitted",
+        "reportedAndBlockedBody": "{{name}} has been reported and blocked.",
+        "reportSubmittedBody": "Your report has been submitted. We'll review it shortly.",
+        "ok": "OK",
+        "reasons": {
+            "inappropriateBehaviour": "Inappropriate behaviour",
+            "explicitContent": "Explicit content",
+            "harassmentOrBullying": "Harassment or bullying",
+            "hateSpeech": "Hate speech",
+            "illegalActivities": "Illegal activities",
+            "spamOrScam": "Spam or scam",
+            "underageUser": "Underage user",
+            "impersonation": "Impersonation"
+        }
+    },
+    "subscriptions": {
+        "title": "Choose your plan",
+        "subtitle": "Upgrade or downgrade at any time.",
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "cancelAnytime": "Cancel anytime · No hidden fees",
+        "active": "✓ ACTIVE",
+        "subscribe": "Subscribe",
+        "activeStatus": "Active",
+        "perMonth": "/mo",
+        "perAnnually": "/annually",
+        "checkout": {
+            "title": "Checkout",
+            "subtitle": "Review your order before confirming",
+            "orderSummary": "Order summary",
+            "whatsIncluded": "What's included",
+            "totalToday": "Total today",
+            "billedAnnually": "{{perMonth}}/mo · billed annually",
+            "cancelPlan": "Cancel Plan",
+            "confirmAndSubscribe": "Confirm & Subscribe",
+            "save17": "Save 17% vs monthly",
+            "yearly": "Yearly",
+            "monthly": "Monthly",
+            "legalNote": "By subscribing you agree to our",
+            "termsAndConditions": "Terms and Conditions",
+            "and": "and",
+            "privacyPolicy": "Privacy Policy",
+            "activePlanInfo": "You currently have an active {{planId}} plan. Cancel it first to switch.",
+            "purchaseError": "Something went wrong during the purchase. Please try again.",
+            "entitlementError": "Purchase completed but entitlement was not activated. Please contact support.",
+            "cancelError": "Could not open cancellation. Go to Settings → Apple ID → Subscriptions.",
+            "trust": {
+                "securePayment": "Secure payment",
+                "cancelAnytime": "Cancel anytime",
+                "noHiddenFees": "No hidden fees"
+            }
+        }
+    },
+    "stats": {
+        "premium": "PREMIUM",
+        "findYourMatch": "Find your perfect match",
+        "exclusiveInsights": "Exclusive insights · Unlimited features",
+        "upgrade": "Upgrade",
+        "mutualInterests": "Mutual Interests",
+        "matchScore": "MATCH SCORE",
+        "averageWaitingTime": "Average waiting time",
+        "seconds": "SECONDS",
+        "dayStreak": "day streak",
+        "keepItUp": "Keep it up, you're on a roll!",
+        "bestTimeOnline": "Best time to be online",
+        "activityPeaks": "Activity peaks between 8 PM and 10 PM in your area.",
+        "topMatchInterests": "Top Match Interests"
+    },
+    "onboarding": {
+        "page0": {
+            "title": "Find your\nperson.",
+            "subtitle": "Dating, reimagined. Connect with people who truly match you.",
+            "cta": "Get Started"
+        },
+        "page1": {
+            "notificationTitle": "You have a new match",
+            "notificationSubtitle": "Someone liked your profile — say hi!",
+            "title": "Never miss a\nconnection.",
+            "subtitle": "We'll notify you when you get a new match or message — so you never leave someone waiting.",
+            "enable": "Enable Notifications",
+            "notNow": "Not now"
+        },
+        "page2": {
+            "realConnections": "Real connections",
+            "noGhosting": "No ghosting",
+            "title": "Modern dating\nis broken.",
+            "subtitle": "Endless swiping, shallow profiles, ghosting — you deserve better. Elysio is built around real conversations and genuine matches.",
+            "cta": "Let's fix that",
+            "back": "Back"
+        }
+    },
+    "datePicker": {
+        "title": "Date of Birth",
+        "save": "Save"
+    },
+    "update": {
+        "title": "Update in progress",
+        "body": "We're updating Elysio to bring you new features and improvements. The app will be back shortly.",
+        "estimatedTime": "Estimated time",
+        "unknown": "Unknown"
+    },
+    "streak": {
+        "dayStreak": "day streak",
+        "continue": "Continue",
+        "messages": {
+            "legendary": "Legendary!",
+            "unstoppable": "Unstoppable!",
+            "oneWeekStrong": "One week strong!",
+            "keepItGoing": "Keep it going!",
+            "greatStart": "Great start!"
+        },
+        "sub": {
+            "buildingReal": "You're building something real. See you tomorrow.",
+            "comeTomorrow": "Come back tomorrow to keep your streak alive."
+        }
+    },
+    "error": {
+        "title": "Something went wrong",
+        "body": "An unexpected error occurred. Try going back or tap retry to try again.",
+        "tryAgain": "Try again",
+        "goBack": "Go back"
+    },
+    "serverStatus": {
+        "recheckingIn": "Rechecking in {{seconds}}s"
     },
     "outage": {
         "title": "We're experiencing issues",

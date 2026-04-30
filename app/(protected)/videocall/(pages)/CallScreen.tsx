@@ -1,3 +1,4 @@
+import i18n, { createT } from "@/i18n";
 import { View, Text, StyleSheet, Pressable, Animated } from "react-native";
 import { RTCView } from "react-native-webrtc";
 import {
@@ -9,20 +10,11 @@ import {
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useEffect, useRef } from "react";
 
-export const ICEBREAKERS = [
-    "What's the weirdest thing you've ever eaten?",
-    "If you could live in any movie universe, which would you pick?",
-    "What's a skill you're secretly proud of?",
-    "What's the most spontaneous thing you've ever done?",
-    "If you had to eat one meal forever, what would it be?",
-    "What's your most controversial food opinion?",
-    "Would you rather explore space or the deep ocean?",
-    "What's the best trip you've ever been on?",
-    "What did you want to be as a kid?",
-    "What's your go-to karaoke song?",
-    "What's a hobby you've always wanted to try?",
-    "What's the last thing that made you laugh out loud?",
-];
+const tCall = createT("videocall.call");
+
+export const ICEBREAKERS = Array.from({ length: 12 }, (_, i) =>
+    i18n.t(`videocall.icebreakers.${i}`),
+);
 
 interface Props {
     remoteUrl: string | null;
@@ -117,7 +109,7 @@ export function CallScreen({
                     />
                 ) : (
                     <View style={[s.remoteVideo, s.waitingContainer]}>
-                        <Text style={s.waitingText}>Warte auf Gegenüber...</Text>
+                        <Text style={s.waitingText}>{tCall("waitingForPartner")}</Text>
                     </View>
                 )}
 

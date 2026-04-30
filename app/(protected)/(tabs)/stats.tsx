@@ -1,11 +1,14 @@
 // Made with the help of Claude.ai and ChatGPT
 
+import { createT } from "@/i18n";
 import { router, useFocusEffect } from "expo-router";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/lib/theme/context";
 import { Check, Clock, Flame, Heart, Snowflake } from "lucide-react-native";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useCallback } from "react";
+
+const t = createT("stats");
 
 const DAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const TODAY_INDEX = 4;
@@ -47,14 +50,12 @@ export default function Index() {
                 activeOpacity={0.8}
             >
                 <View style={s.premiumTextCol}>
-                    <Text style={s.premiumEyebrow}>PREMIUM</Text>
-                    <Text style={s.premiumTitle}>Find your perfect match</Text>
-                    <Text style={s.premiumSub}>
-                        Exclusive insights · Unlimited features
-                    </Text>
+                    <Text style={s.premiumEyebrow}>{t("premium")}</Text>
+                    <Text style={s.premiumTitle}>{t("findYourMatch")}</Text>
+                    <Text style={s.premiumSub}>{t("exclusiveInsights")}</Text>
                 </View>
                 <View style={s.premiumBtn}>
-                    <Text style={s.premiumBtnText}>Upgrade</Text>
+                    <Text style={s.premiumBtnText}>{t("upgrade")}</Text>
                 </View>
             </TouchableOpacity>
 
@@ -66,11 +67,11 @@ export default function Index() {
                     >
                         <Heart color={theme.white} size={18} />
                     </View>
-                    <Text style={s.statLabel}>Mutual Interests</Text>
+                    <Text style={s.statLabel}>{t("mutualInterests")}</Text>
                     <Text style={[s.statValue, { color: theme.matchValue }]}>
                         64%{" "}
                         <Text style={[s.statUnit, { color: theme.matchValue }]}>
-                            MATCH SCORE
+                            {t("matchScore")}
                         </Text>
                     </Text>
                 </View>
@@ -80,11 +81,11 @@ export default function Index() {
                     >
                         <Clock color={theme.white} size={18} />
                     </View>
-                    <Text style={s.statLabel}>Average waiting time</Text>
+                    <Text style={s.statLabel}>{t("averageWaitingTime")}</Text>
                     <Text style={[s.statValue, { color: theme.waitColor }]}>
                         6.32{" "}
                         <Text style={[s.statUnit, { color: theme.waitColor }]}>
-                            SECONDS
+                            {t("seconds")}
                         </Text>
                     </Text>
                 </View>
@@ -106,11 +107,11 @@ export default function Index() {
                             </Text>
                             <Text style={[s.streakDayWord, { color: theme.text + "55" }]}>
                                 {" "}
-                                day streak
+                                {t("dayStreak")}
                             </Text>
                         </View>
                         <Text style={[s.streakQuote, { color: theme.text + "44" }]}>
-                            Keep it up, you{"'"}re on a roll!
+                            {t("keepItUp")}
                         </Text>
                     </View>
                 </View>
@@ -187,7 +188,7 @@ export default function Index() {
 
             {/* ── Best Time to be Online ── */}
             <View style={s.chartCard}>
-                <Text style={s.sectionTitle}>Best time to be online</Text>
+                <Text style={s.sectionTitle}>{t("bestTimeOnline")}</Text>
                 <View style={s.barsRow}>
                     {BAR_VALUES.map((val, i) => {
                         const isPeak = i === PEAK_INDEX;
@@ -223,14 +224,12 @@ export default function Index() {
                         );
                     })}
                 </View>
-                <Text style={s.chartNote}>
-                    Activity peaks between 8 PM and 10 PM in your area.
-                </Text>
+                <Text style={s.chartNote}>{t("activityPeaks")}</Text>
             </View>
 
             {/* ── Top Match Interests ── */}
             <View style={s.interestsCard}>
-                <Text style={s.sectionTitle}>Top Match Interests</Text>
+                <Text style={s.sectionTitle}>{t("topMatchInterests")}</Text>
                 <View style={s.tagsRow}>
                     {[
                         { label: "MUSIC", color: theme.interestMusic },
