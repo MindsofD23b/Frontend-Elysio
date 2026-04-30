@@ -404,6 +404,7 @@ export default function VideoCall() {
             await createRecvTransport(device);
 
             const socket: Socket = io(BASE_URL, {
+                auth: { token },
                 query: { peerId: peerIdRef.current, roomId: currentRoomId },
                 transports: ["websocket"],
                 forceNew: true,
@@ -446,6 +447,7 @@ export default function VideoCall() {
         }
     }, [
         screen,
+        token,
         api,
         consumeProducer,
         createRecvTransport,
