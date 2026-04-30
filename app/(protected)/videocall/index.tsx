@@ -451,7 +451,7 @@ export default function VideoCall() {
             });
 
             socket.on("peer_left", () => {
-                stopCallRef.current(false);
+                handleNextUserRef.current();
             });
 
             await new Promise<void>((resolve) => {
@@ -587,6 +587,11 @@ export default function VideoCall() {
     useEffect(() => {
         stopCallRef.current = stopCall;
     }, [stopCall]);
+
+    const handleNextUserRef = useRef<() => Promise<void>>(async () => {});
+    useEffect(() => {
+        handleNextUserRef.current = handleNextUser;
+    });
 
     const handleStartConnecting = useCallback(
         async (_camera: string, _mic: string, _interests: string[]) => {
