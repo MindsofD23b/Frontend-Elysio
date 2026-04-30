@@ -1,8 +1,11 @@
+import { createT } from "@/i18n";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { WifiOff } from "lucide-react-native";
 import { View, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const t = createT("noInternet");
 
 export default function NoInternetScreen() {
     const { theme } = useTheme();
@@ -12,10 +15,8 @@ export default function NoInternetScreen() {
         <SafeAreaView style={s.root}>
             <View style={s.card}>
                 <WifiOff size={48} color={theme.primary} />
-                <Text style={s.title}>No Connection</Text>
-                <Text style={s.subtitle}>
-                    Please check your internet connection and try again.
-                </Text>
+                <Text style={s.title}>{t("title")}</Text>
+                <Text style={s.subtitle}>{t("body")}</Text>
             </View>
         </SafeAreaView>
     );
