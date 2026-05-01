@@ -5,6 +5,7 @@ import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
 import { BtnText, Button, Loader } from "@/components/button";
 import LabeledInput from "@/components/LabeledInput";
+import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import type { Theme } from "@/lib/theme/theme";
@@ -24,7 +25,8 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { datePickerCallback } from "@/utils/datePickerCallback";
-import PhoneNumberInput from "@/components/PhoneNumberInput";
+import { CountryCode as CC } from "react-native-country-picker-modal";
+import { CountryCode } from "libphonenumber-js";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -45,6 +47,7 @@ type UserMe = {
     id: string;
     email: string | null;
     phoneNumber: string | null;
+    phonePrefix: string | null;
     emailVerified: boolean;
     gender: string;
     firstName: string;
@@ -197,7 +200,8 @@ export default function PersonalDetails() {
     // ── Profile fields ──
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [phonePrefix, setPhonePrefix] = useState("");
     const [country, setCountry] = useState("");
     const [birthday, setBirthday] = useState("");
     const [jobTitle, setJobTitle] = useState("");
@@ -225,7 +229,8 @@ export default function PersonalDetails() {
 
         setFullName(`${userData.firstName} ${userData.lastName}`);
         setEmail(userData.email ?? "");
-        setPhone(userData.phoneNumber ?? "");
+        setPhoneNumber(userData.phoneNumber ?? "");
+        setPhonePrefix(userData.phonePrefix ?? "");
         setCountry(userData.country ?? "");
         setJobTitle(userData.jobTitle ?? "");
         if (userData.aboutMe) setBio(userData.aboutMe);
@@ -247,6 +252,17 @@ export default function PersonalDetails() {
     }, [userData]);
 
     datePickerCallback.set((newDate) => setBirthday(newDate));
+
+    // ── Phone handler ──
+    function handlePhoneData(
+        cc: CountryCode,
+        prefix: string,
+        tel: string,
+        nationalTel: string | undefined,
+    ) {
+        setPhonePrefix(prefix);
+        setPhoneNumber((nationalTel || tel || "").replace(/\s+/g, ""));
+    }
 
     // ── Gallery: load ──
     async function loadGalleryPhotos() {
@@ -311,7 +327,6 @@ export default function PersonalDetails() {
 
             const { id } = await uploadRes.json();
 
-            // Fetch the signed URL for the newly uploaded photo
             const urlRes = await fetch(
                 `${BASE_URL}/users/${userData.id}/photos/${id}/url`,
                 { headers: { Authorization: `Bearer ${token}` } },
@@ -413,6 +428,8 @@ export default function PersonalDetails() {
                 country,
                 jobTitle,
                 aboutMe: bio,
+                phoneNumber,
+                phonePrefix,
             };
             if (dateOfBirth) patch.dateOfBirth = dateOfBirth;
 
@@ -554,14 +571,21 @@ export default function PersonalDetails() {
                                     keyboardType="email-address"
                                     autoComplete="email"
                                 />
-                                <LabeledInput
-                                    label={t("phoneNumber")}
-                                    placeholder={t("phonePlaceholder")}
-                                    value={phone}
-                                    onChangeText={setPhone}
-                                    keyboardType="phone-pad"
-                                    autoComplete="tel"
-                                />
+
+                                {/* ── Phone ── */}
+                                <View style={{ width: "100%", marginTop: 14 }}>
+                                    <Text style={styles.label}>{t("phoneNumber")}</Text>
+                                    <View style={{ marginTop: 6 }}>
+                                        <PhoneNumberInput
+                                            sendData={handlePhoneData}
+                                            initialValue={userData?.phoneNumber ?? ""}
+                                            initialCountryCode={
+                                                (userData?.country ?? "CH") as CC
+                                            }
+                                        />
+                                    </View>
+                                </View>
+
                                 <LabeledInput
                                     label="Job title"
                                     placeholder="Software Engineer"
@@ -589,99 +613,6 @@ export default function PersonalDetails() {
                                     value={country}
                                     onChangeText={setCountry}
                                 />
-                            )}
-                            <Pressable
-                                style={[
-                                    styles.editIcon,
-                                    { backgroundColor: theme.primary },
-                                ]}
-                                onPress={changePicture}
-                            >
-                                <Ionicons name="pencil" size={18} color="#fff" />
-                            </Pressable>
-                        </View>
-
-                        <Text style={[styles.name, { color: theme.text }]}>
-                            {userLoading ? "" : fullName}
-                        </Text>
-                        <Text style={[styles.emailTop, { color: theme.text + "80" }]}>
-                            {userLoading ? "" : email}
-                        </Text>
-                    </View>
-
-                    <View style={styles.form}>
-                        <Field
-                            label={t("fullName")}
-                            placeholder={t("fullNamePlaceholder")}
-                            value={fullName}
-                            onChangeText={setFullName}
-                        />
-                        <Field
-                            label={t("emailAddress")}
-                            placeholder={t("emailPlaceholder")}
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoComplete="email"
-                        />
-                        <View style={{ width: "100%", marginTop: 14 }}>
-                            <Text
-                                style={{
-                                    fontSize: 14,
-                                    fontWeight: "600",
-                                    marginBottom: 6,
-                                    color: theme.primary,
-                                }}
-                            >
-                                Phone Number
-                            </Text>
-                            {!userLoading && (
-                                <PhoneNumberInput
-                                    key={phone}
-                                    initialValue={phone}
-                                    style={{
-                                        height: 52,
-                                        borderWidth: 0,
-                                        borderRadius: 18,
-                                        paddingHorizontal: 16,
-                                        backgroundColor: theme.card,
-                                        marginVertical: 0,
-                                        gap: 8,
-                                    }}
-                                    sendData={(tel, nationalTel) => {
-                                        setPhone(
-                                            (nationalTel || tel || "").replace(
-                                                /\s+/g,
-                                                "",
-                                            ),
-                                        );
-                                    }}
-                                />
-                            )}
-                        </View>
-                        <Field
-                            label="Job title"
-                            placeholder="Software Engineer"
-                            value={jobTitle}
-                            onChangeText={setJobTitle}
-                        />
-                        <Field
-                            label={t("dateOfBirth")}
-                            placeholder="dd.mm.yyyy"
-                            value={birthday}
-                            onPress={() => {
-                                router.push({
-                                    pathname: "/datePickerModal",
-                                    params: { birthday },
-                                });
-                            }}
-                        />
-                        <Field
-                            label={t("country")}
-                            placeholder={t("country")}
-                            value={country}
-                            onChangeText={setCountry}
-                        />
 
                                 {/* ── Bio ── */}
                                 <View style={styles.bioWrap}>
@@ -737,7 +668,6 @@ export default function PersonalDetails() {
                                 </View>
 
                                 <View style={styles.galleryGrid}>
-                                    {/* Existing photos */}
                                     {galleryPhotos.map((photo) => (
                                         <Pressable
                                             key={photo.id}
@@ -751,7 +681,6 @@ export default function PersonalDetails() {
                                                 source={{ uri: photo.url }}
                                                 style={styles.galleryImage}
                                             />
-                                            {/* Delete overlay */}
                                             {isEditingGallery && (
                                                 <Pressable
                                                     style={styles.deleteIcon}
@@ -777,7 +706,6 @@ export default function PersonalDetails() {
                                         </Pressable>
                                     ))}
 
-                                    {/* Upload-in-progress tile */}
                                     {uploadingGallery && (
                                         <View
                                             style={[
@@ -793,7 +721,6 @@ export default function PersonalDetails() {
                                         </View>
                                     )}
 
-                                    {/* Add button */}
                                     {showAddButton && (
                                         <Pressable
                                             style={styles.addImageBox}
@@ -811,7 +738,6 @@ export default function PersonalDetails() {
                                         </Pressable>
                                     )}
 
-                                    {/* Gallery loading skeletons */}
                                     {galleryLoading &&
                                         Array.from({ length: MAX_GALLERY_IMAGES }).map(
                                             (_, i) => (
@@ -825,7 +751,6 @@ export default function PersonalDetails() {
                                             ),
                                         )}
 
-                                    {/* Empty filler slots */}
                                     {!galleryLoading &&
                                         Array.from({
                                             length: Math.max(0, emptySlots),
@@ -867,7 +792,6 @@ export default function PersonalDetails() {
                     style={styles.lightboxBackdrop}
                     onPress={() => setSelectedPhoto(null)}
                 >
-                    {/* Prevent tap on the image itself from closing */}
                     <Pressable onPress={(e) => e.stopPropagation()}>
                         <Image
                             source={{ uri: selectedPhoto ?? "" }}
