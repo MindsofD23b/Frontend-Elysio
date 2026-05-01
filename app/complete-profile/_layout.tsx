@@ -2,7 +2,7 @@ import { Redirect, Stack } from "expo-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { ActivityIndicator, View } from "react-native";
 
-export default function RootLayout() {
+export default function CompleteProfileLayout() {
     const { isAuthenticated, isLoading, profileComplete } = useAuth();
 
     if (isLoading) {
@@ -13,10 +13,8 @@ export default function RootLayout() {
         );
     }
 
-    if (isAuthenticated) {
-        if (!profileComplete) return <Redirect href="/complete-profile" />;
-        return <Redirect href="/(protected)/(tabs)" />;
-    }
+    if (!isAuthenticated) return <Redirect href="/login" />;
+    if (profileComplete) return <Redirect href="/(protected)/(tabs)" />;
 
     return <Stack screenOptions={{ headerShown: false }} />;
 }
