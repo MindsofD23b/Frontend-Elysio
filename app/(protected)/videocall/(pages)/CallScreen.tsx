@@ -16,6 +16,52 @@ export const ICEBREAKERS = Array.from({ length: 12 }, (_, i) =>
     i18n.t(`videocall.icebreakers.${i}`),
 );
 
+// ✅ Moved to module level — was incorrectly inside the component
+export const REACTION_EMOJIS = ["😂", "❤️", "🔥", "😮", "👋", "👏", "🎉", "😍"];
+
+// ✅ Moved to module level — was incorrectly inside the component
+// Replace FloatingReaction — give it a randomized left position via prop
+function FloatingReaction({ emoji, startX }: { emoji: string; startX: number }) {
+    const translateY = useRef(new Animated.Value(0)).current;
+    const opacity = useRef(new Animated.Value(1)).current;
+    const scale = useRef(new Animated.Value(0.4)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: -280,
+                duration: 2200,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scale, {
+                toValue: 1,
+                friction: 4,
+                tension: 80,
+                useNativeDriver: true,
+            }),
+            Animated.sequence([
+                Animated.delay(1400),
+                Animated.timing(opacity, {
+                    toValue: 0,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+    }, []);
+
+    return (
+        <Animated.Text
+            style={[
+                s.floatingReaction,
+                { left: startX, transform: [{ translateY }, { scale }], opacity },
+            ]}
+        >
+            {emoji}
+        </Animated.Text>
+    );
+}
+
 interface Props {
     remoteUrl: string | null;
     localUrl: string | null;
@@ -33,6 +79,10 @@ interface Props {
     isLiked: boolean;
     receivedLike: boolean;
     mutualLike: boolean;
+    reactionPickerVisible: boolean;
+    floatingReactions: { id: string; emoji: string; startX: number }[];
+    onSelectReaction: (emoji: string) => void;
+    onCloseReactionPicker: () => void;
     onToggleControls: () => void;
     onToggleMute: () => void;
     onFlipCamera: () => void;
@@ -61,6 +111,11 @@ export function CallScreen({
     isLiked,
     receivedLike,
     mutualLike,
+    // ✅ These were in the interface but missing from destructuring
+    reactionPickerVisible,
+    floatingReactions,
+    onSelectReaction,
+    onCloseReactionPicker,
     onToggleControls,
     onToggleMute,
     onFlipCamera,
@@ -86,7 +141,6 @@ export function CallScreen({
 
     useEffect(() => {
         setDisableSafeArea(true);
-
         return () => {
             setDisableSafeArea(false);
         };
@@ -237,6 +291,31 @@ export function CallScreen({
                     </Animated.View>
                 )}
             </Pressable>
+
+            {/* ✅ Outside the Pressable so they overlay the whole screen */}
+            {floatingReactions.map((r) => (
+                <FloatingReaction key={r.id} emoji={r.emoji} startX={r.startX} />
+            ))}
+
+            {reactionPickerVisible && (
+                <Pressable style={s.pickerBackdrop} onPress={onCloseReactionPicker}>
+                    <View style={s.pickerSheet}>
+                        <View style={s.pickerHandle} />
+                        <Text style={s.pickerLabel}>React</Text>
+                        <View style={s.pickerGrid}>
+                            {REACTION_EMOJIS.map((emoji) => (
+                                <Pressable
+                                    key={emoji}
+                                    style={s.emojiButton}
+                                    onPress={() => onSelectReaction(emoji)}
+                                >
+                                    <Text style={s.emojiText}>{emoji}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                    </View>
+                </Pressable>
+            )}
         </View>
     );
 }
@@ -281,6 +360,56 @@ const s = StyleSheet.create({
         backgroundColor: "#222",
         borderWidth: 1.5,
         borderColor: "rgba(255,255,255,0.18)",
+    },
+    pickerBackdrop: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: "flex-end",
+        alignItems: "center",
+        paddingBottom: 110,
+    },
+    pickerSheet: {
+        width: 220,
+        backgroundColor: "rgba(28,28,30,0.96)",
+        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingTop: 10,
+        paddingBottom: 14,
+        alignItems: "center",
+    },
+    pickerHandle: {
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        marginBottom: 8,
+    },
+    pickerLabel: {
+        color: "rgba(255,255,255,0.5)",
+        fontSize: 11,
+        fontWeight: "600",
+        letterSpacing: 0.5,
+        textTransform: "uppercase",
+        marginBottom: 10,
+    },
+    pickerGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        gap: 6,
+    },
+    emojiButton: {
+        width: 52,
+        height: 52,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 14,
+        backgroundColor: "rgba(255,255,255,0.08)",
+    },
+    emojiText: { fontSize: 26 },
+    floatingReaction: {
+        position: "absolute",
+        bottom: 130,
+        fontSize: 38,
     },
     localPreview: { width: "100%", height: "100%", backgroundColor: "#222" },
     topBar: {
@@ -370,4 +499,12 @@ const s = StyleSheet.create({
         backgroundColor: "#ddd",
     },
     icebreakerText: { color: "#111", fontSize: 13, fontWeight: "500", lineHeight: 18 },
+    pickerContainer: {
+        flexDirection: "row",
+        backgroundColor: "rgba(255,255,255,0.95)",
+        borderRadius: 24,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        gap: 6,
+    },
 });

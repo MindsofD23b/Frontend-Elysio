@@ -46,7 +46,10 @@ export default function VideoCall() {
         },
         [_rawLog],
     );
-
+    const [reactionPickerVisible, setReactionPickerVisible] = useState(false);
+    const [floatingReactions, setFloatingReactions] = useState<
+        { id: string; emoji: string; startX: number }[]
+    >([]);
     const [icebreakerLoading, setIcebreakerLoading] = useState(false);
     const [controlsVisible, setControlsVisible] = useState(true);
     const controlsOpacity = useRef(new Animated.Value(1)).current;
@@ -515,7 +518,14 @@ export default function VideoCall() {
             socket.on("peer_left", () => {
                 handleNextUserRef.current();
             });
-
+            socket.on("receive_reaction", ({ emoji }: { emoji: string }) => {
+                const id = Math.random().toString(36).slice(2);
+                const startX = Math.floor(Math.random() * 300) + 20;
+                setFloatingReactions((prev) => [...prev, { id, emoji, startX }]);
+                setTimeout(() => {
+                    setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
+                }, 2500);
+            });
             await new Promise<void>((resolve) => {
                 if (socket.connected) resolve();
                 else socket.once("connect", () => resolve());
@@ -841,7 +851,18 @@ export default function VideoCall() {
         await activateMatchmaking();
     }
     function handleReaction() {
-        Alert.alert("Reaction", "Emoji Picker oder Quick Reaction öffnen.");
+        setReactionPickerVisible((v) => !v);
+    }
+
+    function handleSelectReaction(emoji: string) {
+        setReactionPickerVisible(false);
+        const id = Math.random().toString(36).slice(2);
+        const startX = Math.floor(Math.random() * 300) + 20;
+        setFloatingReactions((prev) => [...prev, { id, emoji, startX }]);
+        setTimeout(() => {
+            setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
+        }, 2500);
+        socketRef.current?.emit("send_reaction", { emoji });
     }
 
     function handleIcebreaker() {
@@ -1057,6 +1078,14 @@ export default function VideoCall() {
                 icebreakerLoading={icebreakerLoading}
                 icebreakerIndex={icebreakerIndex}
                 icebreakerOpacity={icebreakerOpacity}
+                isLiked={isLiked}
+                receivedLike={receivedLike}
+                mutualLike={mutualLike}
+                onLikeBack={handleLikeBack}
+                reactionPickerVisible={reactionPickerVisible}
+                floatingReactions={floatingReactions}
+                onSelectReaction={handleSelectReaction}
+                onCloseReactionPicker={() => setReactionPickerVisible(false)}
                 onToggleControls={toggleControls}
                 onToggleMute={toggleMute}
                 onFlipCamera={flipCamera}
