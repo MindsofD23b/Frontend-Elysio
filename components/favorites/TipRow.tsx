@@ -25,7 +25,7 @@ export function TipRow({ title, subtitle, icon, iconBg, onPress }: Props) {
                 <Text style={s.title}>{title}</Text>
                 <Text style={s.subtitle}>{subtitle}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color="#555" />
+            <Ionicons name="chevron-forward" size={22} color={theme.text + "44"} />
         </TouchableOpacity>
     );
 }
