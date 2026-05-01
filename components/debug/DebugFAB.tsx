@@ -1,5 +1,6 @@
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
+import { Settings2 } from "lucide-react-native";
 
 export function DebugFAB() {
     if (!__DEV__) return null;
@@ -8,7 +9,9 @@ export function DebugFAB() {
             style={s.btn}
             onPress={() => router.push("/(protected)/debugSheet")}
         >
-            <Text style={s.txt}>⚙</Text>
+            <Text style={s.txt}>
+                <Settings2 />
+            </Text>
         </TouchableOpacity>
     );
 }

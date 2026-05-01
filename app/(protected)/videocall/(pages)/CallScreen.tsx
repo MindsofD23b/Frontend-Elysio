@@ -6,6 +6,7 @@ import {
     Animated,
     PanResponder,
     useWindowDimensions,
+    ActivityIndicator,
 } from "react-native";
 import i18n, { createT } from "@/i18n";
 import { RTCView } from "react-native-webrtc";
@@ -16,7 +17,7 @@ import {
     FontAwesome6,
 } from "@expo/vector-icons";
 import { useSafeAreaControl } from "@/components/SafeArea";
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
 import { useNavigation } from "expo-router";
@@ -281,7 +282,7 @@ export function CallScreen({
                             style={[s.icebreakerBubble, { opacity: icebreakerOpacity }]}
                         >
                             {icebreakerLoading ? (
-                                <View style={s.icebreakerSkeleton} />
+                                <ActivityIndicator />
                             ) : (
                                 <Text style={s.icebreakerText}>
                                     {ICEBREAKERS[icebreakerIndex]}

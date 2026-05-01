@@ -9,6 +9,7 @@ import {
     Briefcase,
     CalendarDays,
     MessageCircle,
+    ImageIcon,
 } from "lucide-react-native";
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -151,7 +152,7 @@ export default function UserProfile() {
                         source={
                             user.image
                                 ? { uri: user.image }
-                                : require("@/assets/images/placeholder.png")
+                                : require("@/assets/blank-profile.png")
                         }
                         contentFit="cover"
                         transition={400}
@@ -282,21 +283,36 @@ export default function UserProfile() {
                                 style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}
                             >
                                 {user.gallery.map((uri, i) => (
-                                    <Image
+                                    <View
                                         key={i}
-                                        source={
-                                            uri
-                                                ? { uri }
-                                                : require("@/assets/images/placeholder.png")
-                                        }
-                                        contentFit="cover"
                                         style={{
                                             width: imageSize,
                                             height: imageSize,
                                             borderRadius: 8,
                                             backgroundColor: theme.cardBg,
+                                            overflow: "hidden",
+                                            alignItems: "center",
+                                            justifyContent: "center",
                                         }}
-                                    />
+                                    >
+                                        {uri ? (
+                                            <Image
+                                                source={uri}
+                                                contentFit="cover"
+                                                style={{
+                                                    width: imageSize,
+                                                    height: imageSize,
+                                                    borderRadius: 8,
+                                                    backgroundColor: theme.cardBg,
+                                                }}
+                                            />
+                                        ) : (
+                                            <ImageIcon
+                                                size={imageSize * 0.35}
+                                                color={theme.barInactive}
+                                            />
+                                        )}
+                                    </View>
                                 ))}
                             </View>
                             <Divider />
