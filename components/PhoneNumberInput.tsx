@@ -27,24 +27,26 @@ interface IPhoneNumberInput {
     ) => void;
     style?: ViewStyle;
     initialValue?: string;
+    initialCountryCode?: CC;
 }
 
 export default function PhoneNumberInput({
     sendData,
     style,
     initialValue,
+    initialCountryCode = "CH",
 }: IPhoneNumberInput) {
     const { theme } = useTheme();
 
-    const [countryCode, setCountryCode] = useState<CC>("CH");
+    const [countryCode, setCountryCode] = useState<CC>(initialCountryCode);
     const [tel, setTel] = useState(() => {
         if (!initialValue) return "";
         const parsed = parsePhoneNumberFromString(
             initialValue,
-            countryCode as CountryCode,
+            initialCountryCode as CountryCode,
         );
         if (parsed) return parsed.formatNational();
-        return new AsYouType(countryCode as CountryCode).input(initialValue);
+        return new AsYouType(initialCountryCode as CountryCode).input(initialValue);
     });
     const [errors, setErrors] = useState<{ tel?: { message: string } }>({});
 
@@ -89,63 +91,66 @@ export default function PhoneNumberInput({
     }
 
     return (
-        <View
-            style={[
-                {
-                    width: "100%",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginVertical: 16,
-                    gap: 20,
-                    borderColor: theme.primary,
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                },
-                style,
-            ]}
-        >
-            <CountryPicker
-                theme={{
-                    primaryColorVariant: theme.base,
-                    primaryColor: theme.primary,
-                    backgroundColor: theme.background,
-                    onBackgroundTextColor: theme.text,
-                    filterPlaceholderTextColor: theme.text,
-                }}
-                withFlag
-                withModal
-                withFilter
-                withEmoji
-                withAlphaFilter={false}
-                countryCode={countryCode}
-                preferredCountries={["US", "GB", "CH", "DE", "FR"]}
-                containerButtonStyle={{
-                    alignSelf: "flex-start",
-                    paddingVertical: 8,
-                    translateY: 8,
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
-                onSelect={(country) => setCountryCode(country.cca2)}
-            />
-            <TextInput
-                placeholder="Phone Number"
-                keyboardType="phone-pad"
-                returnKeyType="done"
-                submitBehavior="blurAndSubmit"
-                autoCapitalize="none"
-                autoComplete="tel"
-                style={{ color: theme.text, flex: 1 }}
-                onChangeText={(text) =>
-                    setTel(new AsYouType(countryCode as CountryCode).input(text))
-                }
-                onBlur={() => onInputExit(tel)}
-                value={tel}
-            />
-            {errors.tel && (
-                <Text style={{ color: "red", fontSize: 12 }}>{errors.tel.message}</Text>
-            )}
+        <View style={{ width: "100%" }}>
+            <View
+                style={[
+                    {
+                        width: "100%",
+                        height: 52,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: theme.card,
+                        borderRadius: 18,
+                        paddingHorizontal: 16,
+                        gap: 8,
+                    },
+                    style,
+                ]}
+            >
+                <CountryPicker
+                    theme={{
+                        primaryColorVariant: theme.base,
+                        primaryColor: theme.primary,
+                        backgroundColor: theme.background,
+                        onBackgroundTextColor: theme.text,
+                        filterPlaceholderTextColor: theme.text,
+                    }}
+                    withFlag
+                    withModal
+                    withFilter
+                    withEmoji
+                    withAlphaFilter={false}
+                    countryCode={countryCode}
+                    preferredCountries={["US", "GB", "CH", "DE", "FR"]}
+                    containerButtonStyle={{
+                        alignSelf: "center",
+                        paddingVertical: 8,
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                    onSelect={(country) => setCountryCode(country.cca2)}
+                />
+                <TextInput
+                    placeholder="Phone number"
+                    keyboardType="phone-pad"
+                    returnKeyType="done"
+                    submitBehavior="blurAndSubmit"
+                    autoCapitalize="none"
+                    autoComplete="tel"
+                    placeholderTextColor={theme.primary + "BF"}
+                    style={{ color: theme.text, flex: 1, fontSize: 15 }}
+                    onChangeText={(text) =>
+                        setTel(new AsYouType(countryCode as CountryCode).input(text))
+                    }
+                    onBlur={() => onInputExit(tel)}
+                    value={tel}
+                />
+            </View>
+            {errors.tel ? (
+                <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                    {errors.tel.message}
+                </Text>
+            ) : null}
         </View>
     );
 }

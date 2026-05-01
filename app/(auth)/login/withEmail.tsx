@@ -1,7 +1,7 @@
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "../../../lib/theme/context";
 import { Text, View } from "react-native";
-import Input from "@/components/input";
+import LabeledInput from "@/components/LabeledInput";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
@@ -115,9 +115,10 @@ export default function WithEmail() {
                     <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
                 </Text>
 
-                <View style={{ width: "100%", marginTop: 30 }}>
-                    <Input
-                        placeholder={t("emailPlaceholder")}
+                <View style={{ width: "100%", marginTop: 16 }}>
+                    <LabeledInput
+                        label={t("emailPlaceholder")}
+                        placeholder="anna@example.com"
                         keyboardType="email-address"
                         onChangeText={(text) => {
                             setEmail(text);
@@ -133,16 +134,12 @@ export default function WithEmail() {
                         autoComplete="email"
                         autoCapitalize="none"
                         autoCorrect={false}
+                        error={errors.email?.message}
                     />
 
-                    {errors.email && (
-                        <Text style={{ color: "red", fontSize: 12 }}>
-                            {errors.email.message}
-                        </Text>
-                    )}
-
-                    <Input
-                        placeholder={t("passwordPlaceholder")}
+                    <LabeledInput
+                        label={t("passwordPlaceholder")}
+                        placeholder="••••••••"
                         secureTextEntry
                         onChangeText={(text) => {
                             setPassword(text);
@@ -156,13 +153,8 @@ export default function WithEmail() {
                         }}
                         value={password}
                         autoComplete="current-password"
+                        error={errors.password?.message}
                     />
-
-                    {errors.password && (
-                        <Text style={{ color: "red", fontSize: 12 }}>
-                            {errors.password.message}
-                        </Text>
-                    )}
 
                     {errors.general && (
                         <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>

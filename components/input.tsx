@@ -33,13 +33,14 @@ export default function Input({ style, ...props }: InputProps) {
             style={[
                 {
                     width: "100%",
-                    height: 50,
-                    borderWidth: 1,
-                    borderColor: theme.primary,
+                    height: 52,
+                    borderWidth: 0,
+                    borderRadius: 18,
+                    paddingHorizontal: 16,
+                    fontSize: 15,
+                    marginTop: 0,
+                    backgroundColor: theme.card,
                     color: theme.text,
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    marginTop: 16,
                 },
                 style,
             ]}

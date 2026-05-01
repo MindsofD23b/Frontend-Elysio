@@ -1,7 +1,7 @@
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
 import { Text, View } from "react-native";
-import Input from "@/components/input";
+import LabeledInput from "@/components/LabeledInput";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
@@ -93,9 +93,10 @@ export default function WithEmail() {
                     <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
                 </Text>
 
-                <View style={{ width: "100%", marginTop: 30 }}>
-                    <Input
-                        placeholder={t("email")}
+                <View style={{ width: "100%", marginTop: 16 }}>
+                    <LabeledInput
+                        label={t("email")}
+                        placeholder="anna@example.com"
                         keyboardType="email-address"
                         value={email}
                         onChangeText={(text) => {
@@ -105,13 +106,8 @@ export default function WithEmail() {
                         autoComplete="email"
                         autoCapitalize="none"
                         autoCorrect={false}
+                        error={errors.email?.message}
                     />
-
-                    {errors.email && (
-                        <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
-                            {errors.email.message}
-                        </Text>
-                    )}
 
                     {!errors.email && errors.general && (
                         <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
