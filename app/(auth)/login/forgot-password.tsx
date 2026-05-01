@@ -1,8 +1,7 @@
-// MADE WITH HELP FROM CLAUD AI
 import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "@/lib/theme/context";
 import { Text, View } from "react-native";
-import Input from "@/components/input";
+import LabeledInput from "@/components/LabeledInput";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
 import { router } from "expo-router";
@@ -77,21 +76,19 @@ export default function ForgotPassword() {
                             </Text>{" "}
                             {t("subtitleSuffix")}
                         </Text>
-                        <View style={{ marginTop: 30 }}>
-                            <Input
-                                placeholder={t("emailPlaceholder")}
+                        <View style={{ marginTop: 16 }}>
+                            <LabeledInput
+                                label={t("emailPlaceholder")}
+                                placeholder="anna@example.com"
                                 keyboardType="email-address"
-                                onChangeText={setEmail}
+                                onChangeText={(v) => {
+                                    setEmail(v);
+                                    setError(null);
+                                }}
                                 value={email}
                                 autoComplete="email"
+                                error={error ?? undefined}
                             />
-                            {error && (
-                                <Text
-                                    style={{ color: "red", fontSize: 12, marginTop: 4 }}
-                                >
-                                    {error}
-                                </Text>
-                            )}
                         </View>
                         <Button
                             style={{ marginTop: "auto" }}
@@ -126,28 +123,26 @@ export default function ForgotPassword() {
                                 {email}
                             </Text>
                         </Text>
-                        <View style={{ marginTop: 30 }}>
-                            <Input
-                                placeholder={t("codePlaceholder")}
+                        <View style={{ marginTop: 16 }}>
+                            <LabeledInput
+                                label={t("codePlaceholder")}
+                                placeholder="123456"
                                 keyboardType="phone-pad"
-                                onChangeText={setCode}
+                                onChangeText={(v) => {
+                                    setCode(v);
+                                    setError(null);
+                                }}
                                 value={code}
                                 autoComplete="sms-otp"
+                                error={error ?? undefined}
                             />
-                            {error && (
-                                <Text
-                                    style={{ color: "red", fontSize: 12, marginTop: 8 }}
-                                >
-                                    {error}
-                                </Text>
-                            )}
                             <Text
                                 onPress={() => simulate(() => {})}
                                 style={{
                                     color: theme.primary,
                                     fontSize: 13,
                                     textAlign: "right",
-                                    marginTop: 12,
+                                    marginTop: 8,
                                 }}
                             >
                                 {t("resendCode")}
@@ -178,30 +173,32 @@ export default function ForgotPassword() {
                             </Text>{" "}
                             {t("newPasswordSubtitleSuffix")}
                         </Text>
-                        <View style={{ marginTop: 30 }}>
-                            <Input
-                                placeholder={t("newPasswordPlaceholder")}
+                        <View style={{ marginTop: 16 }}>
+                            <LabeledInput
+                                label={t("newPasswordPlaceholder")}
+                                placeholder="••••••••"
                                 secureTextEntry
                                 textContentType="newPassword"
                                 autoComplete="new-password"
-                                onChangeText={setNewPassword}
+                                onChangeText={(v) => {
+                                    setNewPassword(v);
+                                    setError(null);
+                                }}
                                 value={newPassword}
                             />
-                            <Input
-                                placeholder={t("confirmPasswordPlaceholder")}
+                            <LabeledInput
+                                label={t("confirmPasswordPlaceholder")}
+                                placeholder="••••••••"
                                 secureTextEntry
                                 textContentType="newPassword"
                                 autoComplete="new-password"
-                                onChangeText={setConfPassword}
+                                onChangeText={(v) => {
+                                    setConfPassword(v);
+                                    setError(null);
+                                }}
                                 value={confPassword}
+                                error={error ?? undefined}
                             />
-                            {error && (
-                                <Text
-                                    style={{ color: "red", fontSize: 12, marginTop: 4 }}
-                                >
-                                    {error}
-                                </Text>
-                            )}
                         </View>
                         <Button
                             style={{ marginTop: "auto" }}

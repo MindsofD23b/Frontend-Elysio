@@ -69,7 +69,7 @@ function AppContent() {
     async function getCustomerInfo() {
         try {
             const customerInfo = await Purchases.getCustomerInfo();
-            console.log("Customer Info:", customerInfo);
+            if (__DEV__) console.log("Customer Info:", customerInfo);
         } catch (error) {
             console.error("Error fetching customer info:", error);
         }
@@ -78,7 +78,7 @@ function AppContent() {
     async function getOfferings() {
         try {
             const offerings = await Purchases.getOfferings();
-            console.log("Offerings:", JSON.stringify(offerings, null, 2));
+            if (__DEV__) console.log("Offerings:", JSON.stringify(offerings, null, 2));
         } catch (error) {
             console.error("Error fetching offerings:", error);
         }
@@ -105,7 +105,7 @@ function AppContent() {
                 return false;
             })
             .then((configured) => {
-                console.log("Purchases configured:", configured);
+                if (__DEV__) console.log("Purchases configured:", configured);
                 if (!configured) {
                     return;
                 }

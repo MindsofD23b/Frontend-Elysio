@@ -1,7 +1,7 @@
 import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import Input from "@/components/input";
+import LabeledInput from "@/components/LabeledInput";
 import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { BtnText, Button, Loader } from "@/components/button";
 import { useState } from "react";
@@ -14,61 +14,6 @@ import { CountryCode } from "libphonenumber-js";
 import { getLocales } from "expo-localization";
 
 const t = createT("auth.register.profileData");
-
-const inputStyle = {
-    height: 52,
-    borderWidth: 0,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    marginTop: 0,
-} as const;
-
-function Field({
-    label,
-    placeholder,
-    value,
-    onChangeText,
-    keyboardType,
-    autoCapitalize,
-    autoCorrect,
-    error,
-}: {
-    label: string;
-    placeholder: string;
-    value: string;
-    onChangeText: (v: string) => void;
-    keyboardType?: "default" | "numeric" | "email-address" | "phone-pad";
-    autoCapitalize?: "none" | "words" | "sentences" | "characters";
-    autoCorrect?: boolean;
-    error?: string;
-}) {
-    const { theme } = useTheme();
-    return (
-        <View style={{ width: "100%", marginTop: 14 }}>
-            <Text
-                style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    marginBottom: 6,
-                    color: theme.primary,
-                }}
-            >
-                {label}
-            </Text>
-            <Input
-                placeholder={placeholder}
-                value={value}
-                onChangeText={onChangeText}
-                keyboardType={keyboardType}
-                autoCapitalize={autoCapitalize}
-                autoCorrect={autoCorrect}
-                style={[inputStyle, { backgroundColor: theme.card }]}
-            />
-            {error && <Text style={styles.errorText}>{error}</Text>}
-        </View>
-    );
-}
 
 export default function AddProfileDataPage() {
     const { gs, theme } = useTheme();
@@ -279,8 +224,7 @@ export default function AddProfileDataPage() {
                         )}
                     </View>
 
-                    {/* Full name */}
-                    <Field
+                    <LabeledInput
                         label={t("fullName")}
                         placeholder="Anna Müller"
                         value={fullName}
@@ -292,8 +236,7 @@ export default function AddProfileDataPage() {
                         error={errors.fullName?.message}
                     />
 
-                    {/* Date of birth */}
-                    <Field
+                    <LabeledInput
                         label={t("dateOfBirth")}
                         placeholder="1995-08-24"
                         value={dateOfBirth}
@@ -311,8 +254,7 @@ export default function AddProfileDataPage() {
                         error={errors.dateOfBirth?.message}
                     />
 
-                    {/* Job title */}
-                    <Field
+                    <LabeledInput
                         label={t("jobTitle")}
                         placeholder="Software Engineer"
                         value={jobTitle}
@@ -324,8 +266,7 @@ export default function AddProfileDataPage() {
                         error={errors.jobTitle?.message}
                     />
 
-                    {/* About me */}
-                    <Field
+                    <LabeledInput
                         label={t("aboutMe")}
                         placeholder="I love hiking, coffee and good conversations…"
                         value={aboutMe}
@@ -337,8 +278,7 @@ export default function AddProfileDataPage() {
                         error={errors.aboutMe?.message}
                     />
 
-                    {/* City */}
-                    <Field
+                    <LabeledInput
                         label="City"
                         placeholder="Zurich"
                         value={city}
@@ -347,8 +287,7 @@ export default function AddProfileDataPage() {
                         autoCorrect={false}
                     />
 
-                    {/* Country */}
-                    <Field
+                    <LabeledInput
                         label={t("countryCode")}
                         placeholder="CH"
                         value={country}

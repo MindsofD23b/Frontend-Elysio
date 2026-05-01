@@ -1,5 +1,13 @@
+import {
+    View,
+    Text,
+    StyleSheet,
+    Pressable,
+    Animated,
+    PanResponder,
+    useWindowDimensions,
+} from "react-native";
 import i18n, { createT } from "@/i18n";
-import { View, Text, StyleSheet, Pressable, Animated } from "react-native";
 import { RTCView } from "react-native-webrtc";
 import {
     Ionicons,
@@ -11,6 +19,7 @@ import { useSafeAreaControl } from "@/components/SafeArea";
 import { useEffect, useRef, useMemo } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { Theme } from "@/lib/theme/theme";
+import { useNavigation } from "expo-router";
 
 const tCall = createT("videocall.call");
 
@@ -61,6 +70,12 @@ function FloatingReaction({ emoji, startX }: { emoji: string; startX: number }) 
     );
 }
 
+const PREVIEW_W = 94;
+const PREVIEW_H = 154;
+const MARGIN = 16;
+const TOP_INSET = 80;
+const BOTTOM_INSET = 120;
+
 interface Props {
     remoteUrl: string | null;
     localUrl: string | null;
@@ -68,9 +83,6 @@ interface Props {
     facingMode: "user" | "environment";
     controlsVisible: boolean;
     controlsOpacity: Animated.Value;
-    previewBottomAnim: Animated.Value;
-    localPreviewAnim: Animated.ValueXY;
-    panHandlers: object;
     icebreakerVisible: boolean;
     icebreakerLoading: boolean;
     icebreakerIndex: number;
@@ -100,9 +112,6 @@ export function CallScreen({
     facingMode,
     controlsVisible,
     controlsOpacity,
-    previewBottomAnim,
-    localPreviewAnim,
-    panHandlers,
     icebreakerVisible,
     icebreakerLoading,
     icebreakerIndex,
@@ -139,13 +148,102 @@ export function CallScreen({
     }, [showBanner, likeNotifOpacity]);
 
     const { setDisableSafeArea } = useSafeAreaControl();
+    const { width: W, height: H } = useWindowDimensions();
 
     useEffect(() => {
         setDisableSafeArea(true);
-        return () => {
-            setDisableSafeArea(false);
-        };
+        return () => setDisableSafeArea(false);
     });
+
+    const parentNavigation = useNavigation("/(protected)");
+    const navigation = useNavigation();
+
+    useEffect(() => {
+        navigation.setOptions({ gestureEnabled: false });
+        parentNavigation.setOptions({ gestureEnabled: false });
+        return () => {
+            navigation.setOptions({ gestureEnabled: true });
+            parentNavigation.setOptions({ gestureEnabled: true });
+        };
+    }, [navigation, parentNavigation]);
+
+    // Corner positions
+    const corners = {
+        topLeft: { x: MARGIN, y: TOP_INSET },
+        topRight: { x: W - PREVIEW_W - MARGIN, y: TOP_INSET },
+        bottomLeft: { x: MARGIN, y: H - PREVIEW_H - BOTTOM_INSET },
+        bottomRight: { x: W - PREVIEW_W - MARGIN, y: H - PREVIEW_H - BOTTOM_INSET },
+    };
+
+    const [swapped, setSwapped] = useState(false);
+    const swapScale = useRef(new Animated.Value(1)).current;
+
+    function handleSwap() {
+        Animated.sequence([
+            Animated.spring(swapScale, {
+                toValue: 0.88,
+                useNativeDriver: true,
+                speed: 40,
+                bounciness: 0,
+            }),
+            Animated.spring(swapScale, {
+                toValue: 1,
+                useNativeDriver: true,
+                speed: 14,
+                bounciness: 8,
+            }),
+        ]).start();
+        setSwapped((v) => !v);
+    }
+
+    const bgUrl = swapped ? localUrl : remoteUrl;
+    const previewUrl = swapped ? remoteUrl : localUrl;
+    const previewMirror = swapped ? false : facingMode === "user";
+
+    const pos = useRef(new Animated.ValueXY(corners.topRight)).current;
+    const currentPos = useRef(corners.topRight);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                pos.setOffset(currentPos.current);
+                pos.setValue({ x: 0, y: 0 });
+            },
+            onPanResponderMove: Animated.event([null, { dx: pos.x, dy: pos.y }], {
+                useNativeDriver: false,
+            }),
+            onPanResponderRelease: () => {
+                pos.flattenOffset();
+                const cx = (pos.x as any)._value + PREVIEW_W / 2;
+                const cy = (pos.y as any)._value + PREVIEW_H / 2;
+
+                // Pick nearest corner
+                const nearest = Object.values({
+                    topLeft: corners.topLeft,
+                    topRight: corners.topRight,
+                    bottomLeft: corners.bottomLeft,
+                    bottomRight: corners.bottomRight,
+                }).reduce((best, c) =>
+                    Math.hypot(cx - (c.x + PREVIEW_W / 2), cy - (c.y + PREVIEW_H / 2)) <
+                    Math.hypot(
+                        cx - (best.x + PREVIEW_W / 2),
+                        cy - (best.y + PREVIEW_H / 2),
+                    )
+                        ? c
+                        : best,
+                );
+
+                currentPos.current = nearest;
+                Animated.spring(pos, {
+                    toValue: nearest,
+                    useNativeDriver: false,
+                    bounciness: 6,
+                }).start();
+            },
+        }),
+    ).current;
 
     const likeButtonVariant = mutualLike || receivedLike ? "liked" : "success";
     const likeButtonIcon = isLiked || mutualLike ? "heart" : "heart-outline";
@@ -154,19 +252,25 @@ export function CallScreen({
     return (
         <View style={s.container}>
             <Pressable style={s.videoLayer} onPress={onToggleControls}>
-                {remoteUrl ? (
+                {bgUrl ? (
                     <RTCView
-                        key={remoteUrl}
-                        streamURL={remoteUrl}
+                        key={bgUrl}
+                        streamURL={bgUrl}
                         style={s.remoteVideo}
                         objectFit="cover"
-                        mirror={false}
+                        mirror={swapped && facingMode === "user"}
                     />
                 ) : (
                     <View style={[s.remoteVideo, s.waitingContainer]}>
                         <Text style={s.waitingText}>{tCall("waitingForPartner")}</Text>
                     </View>
                 )}
+
+                <View style={s.topBar} pointerEvents="box-none">
+                    <Pressable style={s.topButton} onPress={onStop}>
+                        <Ionicons name="chevron-back" size={22} color="#fff" />
+                    </Pressable>
+                </View>
 
                 <Animated.View
                     style={{ opacity: controlsOpacity, ...StyleSheet.absoluteFill }}
@@ -185,11 +289,6 @@ export function CallScreen({
                             )}
                         </Animated.View>
                     )}
-                    <View style={s.topBar}>
-                        <Pressable style={s.topButton} onPress={onStop}>
-                            <Ionicons name="chevron-back" size={22} color="#fff" />
-                        </Pressable>
-                    </View>
                     <View style={s.bottomControlsWrapper}>
                         <View style={s.bottomControls}>
                             <ControlButton
@@ -260,43 +359,22 @@ export function CallScreen({
                     </View>
                 </Animated.View>
 
-                <Animated.View
-                    style={[s.likeNotification, { opacity: likeNotifOpacity }]}
-                    pointerEvents={showBanner && !mutualLike ? "box-none" : "none"}
-                >
-                    <Ionicons name="heart" size={16} color="#fff" />
-                    {mutualLike ? (
-                        <Text style={s.likeNotificationText}>{"It's a match! 💬"}</Text>
-                    ) : (
-                        <>
-                            <Text style={s.likeNotificationText}>You got liked!</Text>
-                            <Pressable style={s.likeBackButton} onPress={onLikeBack}>
-                                <Text style={s.likeBackText}>Like back</Text>
-                            </Pressable>
-                        </>
-                    )}
-                </Animated.View>
-
-                {localUrl && (
+                {previewUrl && (
                     <Animated.View
                         style={[
                             s.localPreviewWrapper,
-                            {
-                                transform: localPreviewAnim.getTranslateTransform(),
-                                bottom: previewBottomAnim,
-                            },
+                            pos.getLayout(),
+                            { transform: [{ scale: swapScale }] },
                         ]}
-                        {...panHandlers}
-                        onStartShouldSetResponder={() => true}
+                        {...panResponder.panHandlers}
                     >
-                        <View pointerEvents="none" style={{ flex: 1 }}>
-                            <RTCView
-                                streamURL={localUrl}
-                                style={s.localPreview}
-                                objectFit="cover"
-                                mirror={facingMode === "user"}
-                            />
-                        </View>
+                        <RTCView
+                            streamURL={previewUrl}
+                            style={StyleSheet.absoluteFill}
+                            objectFit="cover"
+                            mirror={previewMirror}
+                        />
+                        <Pressable style={StyleSheet.absoluteFill} onPress={handleSwap} />
                     </Animated.View>
                 )}
             </Pressable>
