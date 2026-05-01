@@ -1,7 +1,7 @@
 import { useTheme } from "@/lib/theme/context";
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button, Loader } from "@/components/button";
-import Input from "@/components/input";
+import LabeledInput from "@/components/LabeledInput";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
@@ -80,8 +80,9 @@ export default function Password() {
             </Text>
 
             <View style={{ marginTop: 15 }}>
-                <Input
-                    placeholder={t("enterPassword")}
+                <LabeledInput
+                    label={t("enterPassword")}
+                    placeholder="••••••••"
                     textContentType="newPassword"
                     passwordRules="minlength: 6;"
                     value={password}
@@ -90,45 +91,28 @@ export default function Password() {
                     secureTextEntry
                     onChangeText={(val) => {
                         setPasswordInput(val);
-
                         if (error.password) {
-                            setError((prev) => ({
-                                ...prev,
-                                password: undefined,
-                            }));
+                            setError((prev) => ({ ...prev, password: undefined }));
                         }
                     }}
+                    error={error.password?.message}
                 />
 
-                {error.password && (
-                    <Text style={{ color: "red", fontSize: 12, marginTop: 6 }}>
-                        {error.password.message}
-                    </Text>
-                )}
-
-                <Input
-                    placeholder={t("confirmPassword")}
+                <LabeledInput
+                    label={t("confirmPassword")}
+                    placeholder="••••••••"
                     textContentType="newPassword"
                     value={confPassword}
                     autoComplete="new-password"
                     secureTextEntry
                     onChangeText={(val) => {
                         setConfPassword(val);
-
                         if (error.confPassword) {
-                            setError((prev) => ({
-                                ...prev,
-                                confPassword: undefined,
-                            }));
+                            setError((prev) => ({ ...prev, confPassword: undefined }));
                         }
                     }}
+                    error={error.confPassword?.message}
                 />
-
-                {error.confPassword && (
-                    <Text style={{ color: "red", fontSize: 12, marginTop: 6 }}>
-                        {error.confPassword.message}
-                    </Text>
-                )}
             </View>
 
             <Button

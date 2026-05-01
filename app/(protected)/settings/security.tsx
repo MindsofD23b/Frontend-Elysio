@@ -1,7 +1,7 @@
 import { createT } from "@/i18n";
 import BackWrapper from "@/components/backwrapper";
 import { BtnText, Button, Loader } from "@/components/button";
-import Input from "@/components/input";
+import LabeledInput from "@/components/LabeledInput";
 import { useTheme } from "@/lib/theme/context";
 import { useCallback, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
@@ -14,7 +14,6 @@ const t = createT("settings.security");
 
 export default function Security() {
     const { gs, theme } = useTheme();
-    const styles = makeStyles();
 
     const { setDisabledEdges } = useSafeAreaControl();
 
@@ -77,47 +76,32 @@ export default function Security() {
                 </Text>
 
                 <View style={styles.form}>
-                    <View style={styles.fieldWrap}>
-                        <Text style={[styles.label, { color: theme.primary }]}>
-                            {t("currentPassword")}
-                        </Text>
-                        <Input
-                            placeholder={t("currentPasswordPlaceholder")}
-                            value={currentPassword}
-                            onChangeText={setCurrentPassword}
-                            autoComplete="current-password"
-                            secureTextEntry
-                            style={{ marginTop: 0 }}
-                        />
-                    </View>
+                    <LabeledInput
+                        label={t("currentPassword")}
+                        placeholder={t("currentPasswordPlaceholder")}
+                        value={currentPassword}
+                        onChangeText={setCurrentPassword}
+                        autoComplete="current-password"
+                        secureTextEntry
+                    />
 
-                    <View style={styles.fieldWrap}>
-                        <Text style={[styles.label, { color: theme.primary }]}>
-                            {t("newPassword")}
-                        </Text>
-                        <Input
-                            placeholder={t("newPasswordPlaceholder")}
-                            value={newPassword}
-                            onChangeText={setNewPassword}
-                            autoComplete="new-password"
-                            secureTextEntry
-                            style={{ marginTop: 0 }}
-                        />
-                    </View>
+                    <LabeledInput
+                        label={t("newPassword")}
+                        placeholder={t("newPasswordPlaceholder")}
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        autoComplete="new-password"
+                        secureTextEntry
+                    />
 
-                    <View style={styles.fieldWrap}>
-                        <Text style={[styles.label, { color: theme.primary }]}>
-                            {t("confirmNewPassword")}
-                        </Text>
-                        <Input
-                            placeholder={t("confirmPasswordPlaceholder")}
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            autoComplete="new-password"
-                            secureTextEntry
-                            style={{ marginTop: 0 }}
-                        />
-                    </View>
+                    <LabeledInput
+                        label={t("confirmNewPassword")}
+                        placeholder={t("confirmPasswordPlaceholder")}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        autoComplete="new-password"
+                        secureTextEntry
+                    />
                 </View>
 
                 <Button style={{ marginTop: 24 }} onPress={handleSave} disabled={loading}>
@@ -128,20 +112,9 @@ export default function Security() {
     );
 }
 
-const makeStyles = () =>
-    StyleSheet.create({
-        page: {
-            width: "100%",
-            paddingTop: 2,
-            paddingBottom: 24,
-        },
-        title: { marginTop: 2, textAlign: "center" },
-        subtitle: { marginTop: 8, textAlign: "center", fontSize: 14 },
-        form: { marginTop: 24, gap: 4 },
-        fieldWrap: { width: "100%", marginTop: 14 },
-        label: {
-            fontSize: 14,
-            fontWeight: "600",
-            marginBottom: 6,
-        },
-    });
+const styles = StyleSheet.create({
+    page: { width: "100%", paddingTop: 2, paddingBottom: 24 },
+    title: { marginTop: 2, textAlign: "center" },
+    subtitle: { marginTop: 8, textAlign: "center", fontSize: 14 },
+    form: { marginTop: 24, gap: 0 },
+});
