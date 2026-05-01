@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { datePickerCallback } from "@/utils/datePickerCallback";
+import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -328,14 +329,41 @@ export default function PersonalDetails() {
                             keyboardType="email-address"
                             autoComplete="email"
                         />
-                        <Field
-                            label={t("phoneNumber")}
-                            placeholder={t("phonePlaceholder")}
-                            value={phone}
-                            onChangeText={setPhone}
-                            keyboardType="phone-pad"
-                            autoComplete="tel"
-                        />
+                        <View style={{ width: "100%", marginTop: 14 }}>
+                            <Text
+                                style={{
+                                    fontSize: 14,
+                                    fontWeight: "600",
+                                    marginBottom: 6,
+                                    color: theme.primary,
+                                }}
+                            >
+                                Phone Number
+                            </Text>
+                            {!userLoading && (
+                                <PhoneNumberInput
+                                    key={phone}
+                                    initialValue={phone}
+                                    style={{
+                                        height: 52,
+                                        borderWidth: 0,
+                                        borderRadius: 18,
+                                        paddingHorizontal: 16,
+                                        backgroundColor: theme.card,
+                                        marginVertical: 0,
+                                        gap: 8,
+                                    }}
+                                    sendData={(tel, nationalTel) => {
+                                        setPhone(
+                                            (nationalTel || tel || "").replace(
+                                                /\s+/g,
+                                                "",
+                                            ),
+                                        );
+                                    }}
+                                />
+                            )}
+                        </View>
                         <Field
                             label="Job title"
                             placeholder="Software Engineer"
@@ -537,7 +565,7 @@ const makeStyles = (theme: Theme) =>
             justifyContent: "center",
         },
         addImageBox: {
-            width: "31%",
+            width: "30%",
             aspectRatio: 1,
             borderRadius: 16,
             borderWidth: 1.5,
