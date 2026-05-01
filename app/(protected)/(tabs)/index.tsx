@@ -15,6 +15,7 @@ import { InfiniteColumn } from "@/components/videocall/InfiniteColumn";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { DebugFAB } from "@/components/debug/DebugFAB";
 import { useDebugSection } from "@/components/debug/DebugContext";
+import { useDebugEnabled } from "@/utils/debugState";
 
 const t = createT("auth.home");
 
@@ -32,6 +33,7 @@ function canCall(plan: PlanType, count: number | undefined) {
 }
 
 export default function Index() {
+    const IS_DEV = useDebugEnabled();
     const { theme, gs } = useTheme();
     const { plan } = useActivePlan();
     const [callsData, , , refetch] = useAuthFetch<{ callsToday: number }>(
@@ -151,7 +153,7 @@ export default function Index() {
 
     return (
         <View style={[gs.container, { paddingTop: 48 }]}>
-            <DebugFAB />
+            {IS_DEV && <DebugFAB />}
             <View style={styles.grid}>
                 <InfiniteColumn imgs={leftBase} duration={LEFT_DURATION} />
                 <InfiniteColumn imgs={rightBase} duration={RIGHT_DURATION} />

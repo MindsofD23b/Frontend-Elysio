@@ -18,6 +18,7 @@ import {
     useDebugActions,
 } from "@/components/debug/DebugContext";
 import { router } from "expo-router";
+import { useDebugEnabled } from "@/utils/debugState";
 
 registerGlobals();
 
@@ -29,6 +30,7 @@ type AppScreen = "setup" | "connecting" | "call" | "streak";
 
 export default function VideoCall() {
     const { setDisableSafeArea } = useSafeAreaControl();
+    const IS_DEV = useDebugEnabled();
 
     useEffect(() => {
         setDisableSafeArea(true);
@@ -41,6 +43,7 @@ export default function VideoCall() {
     const _rawLog = useDebugLog("VideoCall");
     const log = useCallback(
         (msg: string) => {
+            if (!IS_DEV) return;
             _rawLog(msg);
             setDebugTick((t) => t + 1);
         },
@@ -137,6 +140,9 @@ export default function VideoCall() {
     const matchmakingSocketRef = useRef<Socket | null>(null);
     const stopTracksRef = useRef<() => void>(() => {});
     const connectingIntentRef = useRef(false);
+    const selectedCameraRef = useRef<string>("");
+    const selectedMicRef = useRef<string>("");
+    const selectedOutputRef = useRef<string>("");
 
     const [, , , _activateMatchmakingRequest] = useAuthFetch<{
         type: "waiting" | "matched";
@@ -456,8 +462,12 @@ export default function VideoCall() {
 
         try {
             const localStream = await mediaDevices.getUserMedia({
-                audio: true,
-                video: { frameRate: 30, facingMode: "user" },
+                audio: selectedMicRef.current
+                    ? { deviceId: { exact: selectedMicRef.current } }
+                    : true,
+                video: selectedCameraRef.current
+                    ? { deviceId: { exact: selectedCameraRef.current }, frameRate: 30 }
+                    : { frameRate: 30, facingMode: "user" },
             });
 
             localStreamRef.current = localStream;
@@ -665,7 +675,9 @@ export default function VideoCall() {
     });
 
     const handleStartConnecting = useCallback(
-        async (_camera: string, _mic: string, _interests: string[]) => {
+        async (camera: string, mic: string, _interests: string[]) => {
+            selectedCameraRef.current = camera;
+            selectedMicRef.current = mic;
             connectingIntentRef.current = true;
             log("[Nav] → connecting");
             setScreen("connecting");
@@ -910,7 +922,6 @@ export default function VideoCall() {
         };
     }, []);
 
-    // Debug sections — only active in dev builds (__DEV__)
     useDebugSection(
         "Matchmaking",
         [
@@ -945,7 +956,7 @@ export default function VideoCall() {
                 value: deviceRef.current
                     ? Object.keys(deviceRef.current.rtpCapabilities?.codecs ?? {})
                           .length + " codecs"
-                    : "–",
+                    : "-",
             },
             {
                 label: "sendTransport",
@@ -963,12 +974,18 @@ export default function VideoCall() {
             { label: "remoteUrl", value: remoteUrl ? "✅" : "❌" },
             { label: "Muted", value: isMuted ? "🔇" : "🔊" },
             { label: "Camera", value: facingMode },
-            { label: "Consumers (active)", value: String(consumersRef.current.size) },
+            {
+                label: "Consumers (active)",
+                value: String(consumersRef.current.size),
+            },
             {
                 label: "Consumers (consuming)",
                 value: String(consumingProducerIdsRef.current.size),
             },
-            { label: "Consumed IDs", value: String(consumedProducerIdsRef.current.size) },
+            {
+                label: "Consumed IDs",
+                value: String(consumedProducerIdsRef.current.size),
+            },
         ],
         [localUrl, remoteUrl, isMuted, facingMode, debugTick],
         1,
@@ -1027,7 +1044,7 @@ export default function VideoCall() {
                         setScreen("streak");
                     }}
                 />
-                <DebugFAB />
+                {IS_DEV && <DebugFAB />}
             </>
         );
     }
@@ -1036,7 +1053,7 @@ export default function VideoCall() {
         return (
             <>
                 <ConnectingScreen matchState={matchState} onCancel={stopCall} />
-                <DebugFAB />
+                {IS_DEV && <DebugFAB />}
             </>
         );
     }
@@ -1066,7 +1083,7 @@ export default function VideoCall() {
                 onReaction={handleReaction}
                 onIcebreaker={handleIcebreaker}
             />
-            <DebugFAB />
+            {IS_DEV && <DebugFAB />}
         </>
     );
 }

@@ -24,6 +24,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { datePickerCallback } from "@/utils/datePickerCallback";
+import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { useSafeAreaControl } from "@/components/SafeArea";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -588,6 +589,99 @@ export default function PersonalDetails() {
                                     value={country}
                                     onChangeText={setCountry}
                                 />
+                            )}
+                            <Pressable
+                                style={[
+                                    styles.editIcon,
+                                    { backgroundColor: theme.primary },
+                                ]}
+                                onPress={changePicture}
+                            >
+                                <Ionicons name="pencil" size={18} color="#fff" />
+                            </Pressable>
+                        </View>
+
+                        <Text style={[styles.name, { color: theme.text }]}>
+                            {userLoading ? "" : fullName}
+                        </Text>
+                        <Text style={[styles.emailTop, { color: theme.text + "80" }]}>
+                            {userLoading ? "" : email}
+                        </Text>
+                    </View>
+
+                    <View style={styles.form}>
+                        <Field
+                            label={t("fullName")}
+                            placeholder={t("fullNamePlaceholder")}
+                            value={fullName}
+                            onChangeText={setFullName}
+                        />
+                        <Field
+                            label={t("emailAddress")}
+                            placeholder={t("emailPlaceholder")}
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoComplete="email"
+                        />
+                        <View style={{ width: "100%", marginTop: 14 }}>
+                            <Text
+                                style={{
+                                    fontSize: 14,
+                                    fontWeight: "600",
+                                    marginBottom: 6,
+                                    color: theme.primary,
+                                }}
+                            >
+                                Phone Number
+                            </Text>
+                            {!userLoading && (
+                                <PhoneNumberInput
+                                    key={phone}
+                                    initialValue={phone}
+                                    style={{
+                                        height: 52,
+                                        borderWidth: 0,
+                                        borderRadius: 18,
+                                        paddingHorizontal: 16,
+                                        backgroundColor: theme.card,
+                                        marginVertical: 0,
+                                        gap: 8,
+                                    }}
+                                    sendData={(tel, nationalTel) => {
+                                        setPhone(
+                                            (nationalTel || tel || "").replace(
+                                                /\s+/g,
+                                                "",
+                                            ),
+                                        );
+                                    }}
+                                />
+                            )}
+                        </View>
+                        <Field
+                            label="Job title"
+                            placeholder="Software Engineer"
+                            value={jobTitle}
+                            onChangeText={setJobTitle}
+                        />
+                        <Field
+                            label={t("dateOfBirth")}
+                            placeholder="dd.mm.yyyy"
+                            value={birthday}
+                            onPress={() => {
+                                router.push({
+                                    pathname: "/datePickerModal",
+                                    params: { birthday },
+                                });
+                            }}
+                        />
+                        <Field
+                            label={t("country")}
+                            placeholder={t("country")}
+                            value={country}
+                            onChangeText={setCountry}
+                        />
 
                                 {/* ── Bio ── */}
                                 <View style={styles.bioWrap}>
@@ -880,7 +974,7 @@ const makeStyles = (theme: Theme) =>
             justifyContent: "center",
         },
         addImageBox: {
-            width: "31%",
+            width: "30%",
             aspectRatio: 1,
             borderRadius: 16,
             borderWidth: 1.5,
