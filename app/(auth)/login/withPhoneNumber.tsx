@@ -2,7 +2,7 @@ import BackWrapper from "@/components/backwrapper";
 import { useTheme } from "../../../lib/theme/context";
 import { Text, View } from "react-native";
 import { BtnText, Button, Loader } from "@/components/button";
-import Input from "@/components/input";
+import LabeledInput from "@/components/LabeledInput";
 import { useEffect, useState } from "react";
 import { parsePhoneNumberWithError } from "libphonenumber-js";
 import { router } from "expo-router";
@@ -11,6 +11,7 @@ import { usePublicFetch } from "@/hooks/usePublicFetch";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { LoginResponse } from "./withEmail";
 import Purchases from "react-native-purchases";
+
 type FormErrors = {
     tel?: { message: string };
     password?: { message: string };
@@ -113,9 +114,10 @@ export default function WithPhoneNumber() {
                         {t("body")}{" "}
                         <Text style={{ fontWeight: "bold" }}>{t("bodyBold")}</Text>
                     </Text>
-                    <View style={{ width: "100%", marginTop: 30 }}>
-                        <Input
-                            placeholder={t("phonePlaceholder")}
+                    <View style={{ width: "100%", marginTop: 16 }}>
+                        <LabeledInput
+                            label={t("phonePlaceholder")}
+                            placeholder="+41 79 123 45 67"
                             textContentType="telephoneNumber"
                             keyboardType="phone-pad"
                             autoComplete="tel"
@@ -130,14 +132,12 @@ export default function WithPhoneNumber() {
                                     }));
                                 }
                             }}
+                            error={errors.tel?.message}
                         />
-                        {errors.tel && (
-                            <Text style={{ color: "red", fontSize: 12 }}>
-                                {errors.tel.message}
-                            </Text>
-                        )}
-                        <Input
-                            placeholder={t("passwordPlaceholder")}
+
+                        <LabeledInput
+                            label={t("passwordPlaceholder")}
+                            placeholder="••••••••"
                             secureTextEntry={true}
                             textContentType="password"
                             autoComplete="current-password"
@@ -152,12 +152,9 @@ export default function WithPhoneNumber() {
                                     }));
                                 }
                             }}
+                            error={errors.password?.message}
                         />
-                        {errors.password && (
-                            <Text style={{ color: "red", fontSize: 12 }}>
-                                {errors.password.message}
-                            </Text>
-                        )}
+
                         {errors.general && (
                             <Text style={{ color: "red", fontSize: 12, marginTop: 8 }}>
                                 {errors.general.message}
